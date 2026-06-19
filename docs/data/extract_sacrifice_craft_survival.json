@@ -1,0 +1,1962 @@
+{
+  "sacrifices": [
+    {
+      "id": "zhouli_winter_sacrifice",
+      "name": "冬祀",
+      "source_book": "周礼",
+      "deity": "天帝/五帝",
+      "offerings": ["牛牲", "五齐三酒", "粢盛"],
+      "ritual_steps": ["大祭祀以法共五齐三酒以实八尊", "大祭三贰中祭再贰小祭壹贰"],
+      "effects": ["国之大祀", "通灵助化"],
+      "source_text": "凡祭祀，以法共五齐、三酒，以实八尊。大祭三贰，中祭再贰，小祭壹贰，皆有酌数。"
+    },
+    {
+      "id": "zhouli_spring_sacrifice",
+      "name": "春祭/祠",
+      "source_book": "周礼",
+      "deity": "先王/祖先",
+      "offerings": ["牛牲", "粢盛", "玉币"],
+      "ritual_steps": ["奉牛牲羞其肆", "享先王"],
+      "effects": ["祖先庇佑"],
+      "source_text": "祀五帝，奉牛牲，羞其肆。享先王亦如之。"
+    },
+    {
+      "id": "zhouli_ice_sacrifice",
+      "name": "凌人祭冰",
+      "source_book": "周礼",
+      "deity": "司寒之神",
+      "offerings": ["黑牡秬黍"],
+      "ritual_steps": ["岁十有二月令斩冰三其凌", "春始治监", "祭祀共冰监"],
+      "effects": ["食物防腐", "夏日颁冰"],
+      "source_text": "凌人：掌冰政。岁十有二月，令斩冰，三其凌。春始治监，凡外内饔之膳羞，监焉。祭祀，共冰监。"
+    },
+    {
+      "id": "zhouli_food_sacrifice",
+      "name": "食医调和祭祀",
+      "source_book": "周礼",
+      "deity": "先祖",
+      "offerings": ["牛宜稌", "羊宜黍", "豕宜稷", "犬宜粱", "雁宜麦", "鱼宜菰"],
+      "ritual_steps": ["春多酸夏多苦秋多辛冬多咸调以滑甘"],
+      "effects": ["调和饮食", "祭祀合宜"],
+      "source_text": "凡会膳食之宜，牛宜稌，羊宜黍，豕宜稷，犬宜粱，雁宜麦，鱼宜菰。"
+    },
+    {
+      "id": "zhouli_female_sacrifice",
+      "name": "女祝内祭祀",
+      "source_book": "周礼",
+      "deity": "内神/家神",
+      "offerings": ["内祷祠之物"],
+      "ritual_steps": ["掌以后之内祭祀", "以时招梗禬禳之事"],
+      "effects": ["除疾殃", "祈福禳灾"],
+      "source_text": "女祝：掌王后之内祭祀，凡内祷祠之事。掌以时招、梗、禬、禳之事，以除疾殃。"
+    },
+    {
+      "id": "zhouli_sheji",
+      "name": "社稷祭祀",
+      "source_book": "周礼",
+      "deity": "社神/稷神",
+      "offerings": ["各以其野之所宜木"],
+      "ritual_steps": ["设其社稷之壝而树之田主", "以野之所宜木遂以名其社与其野"],
+      "effects": ["邦国安定", "五谷丰登"],
+      "source_text": "设其社稷之壝而树之田主。各以其野之所宜木，遂以名其社与其野。"
+    },
+    {
+      "id": "lji_sacrifice_season",
+      "name": "四时祭祀",
+      "source_book": "礼记",
+      "deity": "祖先/天地",
+      "offerings": ["春祭祠用韭", "夏祭礿用麦", "秋祭尝用黍", "冬祭烝用稻"],
+      "ritual_steps": ["天子诸侯宗庙之祭春曰祠夏曰礿秋曰尝冬曰烝"],
+      "effects": ["四时平安", "祖先庇佑"],
+      "source_text": "天子诸侯宗庙之祭，春曰祠，夏曰礿，秋曰尝，冬曰烝。"
+    },
+    {
+      "id": "lji_yili_sacrifice",
+      "name": "射礼祭祀",
+      "source_book": "仪礼",
+      "deity": "先祖",
+      "offerings": ["牲狗", "脯醢", "酒爵"],
+      "ritual_steps": ["主人献宾", "宾酢主人", "奏驺虞以射", "胜者袒执张弓不胜者袭"],
+      "effects": ["礼教教化", "选拔人才"],
+      "source_text": "歌《驺虞》，若《采蘋》，皆五终。射无筭。古者于旅也语。凡旅，不洗。"
+    },
+    {
+      "id": "chuci_jiunv_miao",
+      "name": "灵女庙祭祀",
+      "source_book": "搜神记",
+      "deity": "灵女",
+      "offerings": ["豚黍"],
+      "ritual_steps": ["十月十五日共入灵女庙", "以豚黍乐神", "吹笛击筑", "歌上灵之曲", "连臂踏地为节", "歌赤凤皇来"],
+      "effects": ["巫俗祈福"],
+      "source_text": "十月十五日，共入灵女庙，以豚黍乐神，吹笛，击筑，歌上灵之曲。既而相与连臂踏地为节，歌赤凤皇来，乃巫俗也。"
+    },
+    {
+      "id": "chuci_qixi_sacrifice",
+      "name": "七夕相连绶",
+      "source_book": "搜神记",
+      "deity": "织女/星辰",
+      "offerings": ["五色缕"],
+      "ritual_steps": ["七月七日临百子池", "作于阗乐", "乐毕以五色缕相羁谓之相连绶"],
+      "effects": ["求长命", "祈福"],
+      "source_text": "七月七日，临百子池，作于阗乐，乐毕，以五色缕相羁，谓之'相连绶'。"
+    },
+    {
+      "id": "chongyang_sacrifice",
+      "name": "重阳祭祀",
+      "source_book": "搜神记",
+      "deity": "天神/星辰",
+      "offerings": ["茱萸", "蓬饵", "菊花酒"],
+      "ritual_steps": ["九月佩茱萸食蓬饵饮菊花酒", "菊花舒时并采茎叶杂黍米饟之至来年九月九日始熟就饮焉"],
+      "effects": ["令人长命", "辟邪"],
+      "source_text": "九月，佩茱萸，食蓬饵，饮菊花酒，令人长命。菊花舒时，并采茎叶，杂黍米饟之，至来年九月九日始熟，就饮焉，故谓之'菊花酒'。"
+    },
+    {
+      "id": "zaosacrifice",
+      "name": "灶神祭祀",
+      "source_book": "搜神记",
+      "deity": "灶神",
+      "offerings": ["黄羊"],
+      "ritual_steps": ["腊日晨炊灶神形见", "以黄羊祀之"],
+      "effects": ["暴至巨富", "子孙繁昌"],
+      "source_text": "腊日，晨炊，而灶神形见。子方再拜受庆，家有黄羊，因以祀之。自是已后，暴至巨富。田七百余顷，舆马仆隶，比于邦君。"
+    },
+    {
+      "id": "guoshen_sacrifice",
+      "name": "河伯祭祀",
+      "source_book": "搜神记",
+      "deity": "河伯",
+      "offerings": ["沉璧", "牲牢"],
+      "ritual_steps": ["八月上庚日渡河溺死者天帝署为河伯", "河伯以庚辰日死不可治船远行"],
+      "effects": ["河水平安", "渡河不溺"],
+      "source_text": "宋时弘农冯夷，华阴潼乡堤首人也。以八月上庚日渡河，溺死。天帝署为河伯。"
+    },
+    {
+      "id": "taishan_sacrifice",
+      "name": "泰山祭祀",
+      "source_book": "搜神记",
+      "deity": "泰山府君",
+      "offerings": ["叩树自称姓名"],
+      "ritual_steps": ["至泰山侧扣树自称姓名从长安还欲启消息"],
+      "effects": ["通鬼神", "知生死"],
+      "source_text": "胡母班，字季友，泰山人也。曾至泰山之侧，忽于树间，逢一绛衣驺呼班云：'泰山府君召。'"
+    },
+    {
+      "id": "xu_teng_sacrifice",
+      "name": "蚕室祭祀",
+      "source_book": "搜神记",
+      "deity": "蚕室神",
+      "offerings": ["白粥泛膏"],
+      "ritual_steps": ["正月十五宜作白粥泛膏于上"],
+      "effects": ["年年大得蚕"],
+      "source_text": "张成夜起，忽见一妇人立于宅南角，举手招成曰：'此是君家之蚕室。明年正月十五，宜作白粥，泛膏于上。'以后年年大得蚕。"
+    },
+    {
+      "id": "guoyu_sacrifice",
+      "name": "东流水祭祀",
+      "source_book": "搜神记",
+      "deity": "诸神",
+      "offerings": ["东流水", "削桑皮以为脯"],
+      "ritual_steps": ["贵尚清俭祀神以东流水削桑皮以为脯"],
+      "effects": ["祭祀简朴而灵验"],
+      "source_text": "徐登、赵昺，贵尚清俭，祀神以东流水，削桑皮以为脯。"
+    },
+    {
+      "id": "zhoushi_mingtong_sacrifice",
+      "name": "冥通祭祀",
+      "source_book": "周氏冥通记",
+      "deity": "道教诸神",
+      "offerings": ["香", "符"],
+      "ritual_steps": ["斋戒", "焚香通神", "书符"],
+      "effects": ["通灵", "得道"],
+      "source_text": "周氏冥通记记载道教通灵祭祀之法，以香符通神。"
+    },
+    {
+      "id": "chuci_nanshan_sacrifice",
+      "name": "南山祭祀",
+      "source_book": "楚辞",
+      "deity": "山鬼/湘君/湘夫人",
+      "offerings": ["桂酒", "椒浆", "蕙肴", "兰藉", "桂棹", "兰枻"],
+      "ritual_steps": ["浴兰汤兮沐芳", "华采衣兮若英", "折芳馨兮遗所思"],
+      "effects": ["山神庇佑", "水神庇佑"],
+      "source_text": "楚辞中记载祭祀山鬼、湘君、湘夫人等南方神灵，以桂酒椒浆蕙肴兰藉为祭品。"
+    },
+    {
+      "id": "chuci_donghuang_sacrifice",
+      "name": "东皇太一祭祀",
+      "source_book": "楚辞",
+      "deity": "东皇太一",
+      "offerings": ["吉日兮辰良", "穆将愉兮上皇", "抚长剑兮玉珥", "璆锵鸣兮琳琅", "瑶席兮玉瑱", "盍将把兮琼芳", "蕙肴蒸兮兰藉", "奠桂酒兮椒浆", "扬枹兮拊鼓", "疏缓节兮安歌", "陈竽瑟兮浩倡", "灵偃蹇兮姣服", "芳菲菲兮满堂", "五音纷兮繁会"],
+      "ritual_steps": ["择吉日良辰", "陈设瑶席玉瑱", "奠桂酒椒浆", "扬枹拊鼓", "安歌浩倡", "五音繁会"],
+      "effects": ["上皇欢愉", "神灵降临"],
+      "source_text": "吉日兮辰良，穆将愉兮上皇。抚长剑兮玉珥，璆锵鸣兮琳琅。瑶席兮玉瑱，盍将把兮琼芳。蕙肴蒸兮兰藉，奠桂酒兮椒浆。"
+    }
+  ],
+  "tools_weapons": [
+    {
+      "id": "sword_qiyu",
+      "name": "启剑",
+      "source_book": "古今刀剑录",
+      "type": "weapon",
+      "materials": ["铜"],
+      "description": "夏禹子帝启在位十年，以庚戌八年铸一铜剑，长三尺九寸，后藏之秦望山腹。上刻二十八宿，文有背面，面文为星辰，背记山川日月。",
+      "effects": ["刻有二十八宿星辰图", "背记山川日月", "藏于秦望山腹"],
+      "source_text": "夏禹子帝启，在位十年。以庚戌八年，铸一铜剑，长三尺九寸，后藏之秦望山腹。上刻二十八宿，文有背面，面文为星辰，背记山川日月。"
+    },
+    {
+      "id": "sword_taikang",
+      "name": "太康八方剑",
+      "source_book": "古今刀剑录",
+      "type": "weapon",
+      "materials": ["铜"],
+      "description": "启子太康在位二十九年，岁在辛卯三月春铸一铜剑，上有八方，面长三尺二寸，头方。",
+      "effects": ["铸有八方纹"],
+      "source_text": "启子太康，在位二十九年。岁在辛卯，三月春，铸一铜剑，上有八方，面长三尺二寸，头方。"
+    },
+    {
+      "id": "sword_kongjia_jia",
+      "name": "夹剑",
+      "source_book": "古今刀剑录",
+      "type": "weapon",
+      "materials": ["铁"],
+      "description": "孔甲在位三十一年，以九年岁次甲辰，采牛首山铁，铸一剑，铭曰夹，古文篆书，长四尺一寸。",
+      "effects": ["采牛首山铁铸造"],
+      "source_text": "孔甲，在位三十一年。以九年岁次甲辰，采牛首山铁，铸一剑，铭曰'夹'，古文篆书，长四尺一寸。"
+    },
+    {
+      "id": "sword_dingguang",
+      "name": "定光剑",
+      "source_book": "古今刀剑录",
+      "type": "weapon",
+      "materials": ["铜"],
+      "description": "殷太甲在位三十二年，以四年岁次甲子铸一剑，长二尺，文曰定光，古文篆书。",
+      "effects": ["定光之名"],
+      "source_text": "殷太甲，在位三十二年。以四年岁次甲子，铸一剑，长二尺，文曰'定光'，古文篆书。"
+    },
+    {
+      "id": "sword_zhaodan",
+      "name": "照胆剑",
+      "source_book": "古今刀剑录",
+      "type": "weapon",
+      "materials": ["铜"],
+      "description": "武丁在位五十九年，以元年岁次戊午铸一剑，长三尺，铭曰照胆，古文篆书。",
+      "effects": ["照胆之名"],
+      "source_text": "武丁，在位五十九年。以元年岁次戊午，铸一剑，长三尺，铭曰'照胆'，古文篆书。"
+    },
+    {
+      "id": "sword_zhenyue",
+      "name": "镇岳尚方剑",
+      "source_book": "古今刀剑录",
+      "type": "weapon",
+      "materials": ["铜"],
+      "description": "周昭王瑕在位五十一年，以二年岁次壬午铸五剑，各投五岳，铭曰镇岳尚方，古文篆书，长五尺。",
+      "effects": ["各投五岳镇守", "共五把"],
+      "source_text": "周昭王瑕，在位五十一年。以二年岁次壬午，铸五剑，各投五岳，铭曰'镇岳尚方'，古文篆书，长五尺。"
+    },
+    {
+      "id": "sword_dingqin",
+      "name": "定秦剑",
+      "source_book": "古今刀剑录",
+      "type": "weapon",
+      "materials": ["铜"],
+      "description": "秦始皇在位三十七年，以三年岁次丁巳，采北祇铜，铸二剑，名曰定秦，小篆书，李斯刻。埋在阿房宫阁下，一在观台下。长三尺六寸。",
+      "effects": ["李斯亲刻铭文", "埋于阿房宫", "共二把"],
+      "source_text": "秦始皇，在位三十七年。以三年岁次丁巳，采北祇铜，铸二剑，名曰'定秦'，小篆书，李斯刻。埋在阿房宫阁下，一在观台下。长三尺六寸。"
+    },
+    {
+      "id": "sword_chixiao",
+      "name": "赤霄剑（斩蛇剑）",
+      "source_book": "古今刀剑录",
+      "type": "weapon",
+      "materials": ["铁"],
+      "description": "前汉刘季在位十二年，于南山得一铁剑，长三尺，铭曰赤霄，大篆书。及贵常服之。此即斩蛇剑也。",
+      "effects": ["斩蛇起义之剑", "帝王常服"],
+      "source_text": "前汉刘季，在位十二年。于南山得一铁剑，长三尺，铭曰'赤霄'，大篆书。及贵，常服之。此即斩蛇剑也。"
+    },
+    {
+      "id": "sword_shengui",
+      "name": "神龟剑",
+      "source_book": "古今刀剑录",
+      "type": "weapon",
+      "materials": ["铜"],
+      "description": "文帝恒在位二十三年，以初元十六年岁次庚午铸三剑，长三尺六寸，铭曰神龟，多刻龟形，以应大横之兆。帝崩命入玄武宫。",
+      "effects": ["刻有龟形", "应大横之兆", "藏于玄武宫", "共三把"],
+      "source_text": "文帝恒，在位二十三年。以初元十六年，岁次庚午，铸三剑，长三尺六寸，铭曰'神龟'，多刻龟形，以应大横之兆。帝崩，命入玄武宫。"
+    },
+    {
+      "id": "sword_bafu",
+      "name": "八服剑",
+      "source_book": "古今刀剑录",
+      "type": "weapon",
+      "materials": ["铜"],
+      "description": "武帝彻在位五十四年，以元光五年岁次乙巳铸八剑，长三尺六寸，铭曰八服，小篆书。嵩恒霍华泰山五岳皆埋之。",
+      "effects": ["埋于五岳", "共八把"],
+      "source_text": "武帝彻，在位五十四年。以元光五年，岁次乙巳，铸八剑，长三尺六寸，铭曰'八服'，小篆书。嵩、恒、霍、华、泰山五岳皆埋之。"
+    },
+    {
+      "id": "sword_shengwanli",
+      "name": "神胜万里伏剑",
+      "source_book": "古今刀剑录",
+      "type": "weapon",
+      "materials": ["五色石"],
+      "description": "王莽在伪位十七年，以建国五年岁次庚午造威斗及神剑，皆炼五色石为之。铭曰神胜万里伏，小篆书，长三尺六寸。",
+      "effects": ["炼五色石为之", "神胜万里伏"],
+      "source_text": "王莽，在伪位十七年。以建国五年，岁次庚午，造威斗及神剑，皆炼五色石为之。铭曰'神胜万里伏'，小篆书，长三尺六寸。"
+    },
+    {
+      "id": "sword_xiuba",
+      "name": "秀霸剑",
+      "source_book": "古今刀剑录",
+      "type": "weapon",
+      "materials": ["铁"],
+      "description": "后汉光武秀在位三十三年，未贵时于南阳鄂山得一剑，文曰秀霸，小篆书。帝常服之。",
+      "effects": ["帝王常佩"],
+      "source_text": "后汉光武秀，在位三十三年。未贵时，在南阳鄂山得一剑，文曰'秀霸'，小篆书。帝常服之。"
+    },
+    {
+      "id": "sword_mengde",
+      "name": "孟德剑",
+      "source_book": "古今刀剑录",
+      "type": "weapon",
+      "materials": ["铁"],
+      "description": "魏武帝曹操以建安二十年于幽谷得一剑，长三尺六寸，上有金字，铭曰孟德。王常服之。",
+      "effects": ["上有金字铭文"],
+      "source_text": "魏武帝曹操，以建安二十年，于幽谷得一剑，长三尺六寸，上有金字，铭曰'孟德'。王常服之。"
+    },
+    {
+      "id": "sword_liubei_eight",
+      "name": "蜀汉八剑",
+      "source_book": "古今刀剑录",
+      "type": "weapon",
+      "materials": ["铁"],
+      "description": "蜀主刘备以章武元年岁次辛丑采金牛山铁铸八剑，各长三尺六寸。一备自服，一与太子禅，一与梁王理，一与鲁王永，一与诸葛亮，一与关羽，一与张飞，一与赵云。并是亮书，皆作风角。",
+      "effects": ["诸葛亮亲书铭文", "作风角", "共八把分赐诸将"],
+      "source_text": "蜀主刘备，以章武元年，岁次辛丑，采金牛山铁，铸八剑，各长三尺六寸。一备自服，一与太子禅，一与梁王理，一与鲁王永，一与诸葛亮，一与关羽，一与张飞，一与赵云。并是亮书，皆作风角。"
+    },
+    {
+      "id": "sword_wanren",
+      "name": "万人刀",
+      "source_book": "古今刀剑录",
+      "type": "weapon",
+      "materials": ["铁"],
+      "description": "关羽为先主所重，不惜身命，自采都山铁为二刀，铭曰万人。及羽败，羽惜刀，投之水中。",
+      "effects": ["铭曰万人", "共二把"],
+      "source_text": "关羽，为先主所重，不惜身命，自采都山铁为二刀，铭曰'万人'。及羽败，羽惜刀，投之水中。"
+    },
+    {
+      "id": "sword_xintinghou",
+      "name": "新亭侯刀",
+      "source_book": "古今刀剑录",
+      "type": "weapon",
+      "materials": ["铁"],
+      "description": "张飞初拜新亭侯，自命匠炼赤朱山铁为一刀，铭曰新亭侯蜀大将军也。",
+      "effects": ["赤朱山铁铸造"],
+      "source_text": "张飞，初拜新亭侯，自命匠炼赤朱山铁为一刀，铭曰'新亭侯蜀大将军也'。后被范强杀，将此刀入于吴。"
+    },
+    {
+      "id": "sword_huangzhong",
+      "name": "赤血刀",
+      "source_book": "古今刀剑录",
+      "type": "weapon",
+      "materials": ["铁"],
+      "description": "黄忠，汉先主定南郡得一刀，赤如血，于汉中击夏侯军，一日之中手刃百数。",
+      "effects": ["赤如血", "一日手刃百数"],
+      "source_text": "黄忠，汉先主定南郡得一刀，赤如血，于汉中击夏侯军，一日之中，手刃百数。"
+    },
+    {
+      "id": "sword_longque",
+      "name": "大夏龙雀刀",
+      "source_book": "古今刀剑录",
+      "type": "weapon",
+      "materials": ["铁"],
+      "description": "夏州赫连勃勃以龙升二年造五口刀，背刃有龙雀环，兼金镂作一龙形，长三尺九寸。铭曰：古之利器，吴楚湛卢，大夏龙雀，名冠神都，可以怀远，可以柔迩，如风靡草，威服九区。",
+      "effects": ["龙雀环装饰", "金镂龙形", "威服九区", "共五把"],
+      "source_text": "夏州赫连勃勃，以龙升二年，造五口刀，背刃有龙雀环，兼金镂作一龙形，长三尺九寸，铭曰'古之利器，吴楚湛卢，大夏龙雀，名冠神都，可以怀远，可以柔迩，如风靡草，威服九区'。"
+    },
+    {
+      "id": "sword_dongwu",
+      "name": "大吴刀",
+      "source_book": "古今刀剑录",
+      "type": "weapon",
+      "materials": ["铜", "炭"],
+      "description": "吴王孙权以黄武五年采武昌铜铁作千口剑万口刀，各长三尺九寸。刀头方，皆是南铜越炭作之，文曰大吴，小篆书。",
+      "effects": ["千口剑万口刀", "南铜越炭铸造"],
+      "source_text": "吴王孙权，以黄武五年，采武昌铜铁，作千口剑，万口刀，各长三尺九寸。刀头方，皆是南铜、越炭作之，文曰'大吴'，小篆书。"
+    },
+    {
+      "id": "sword_liang_shensword",
+      "name": "梁神剑",
+      "source_book": "古今刀剑录",
+      "type": "weapon",
+      "materials": ["金", "银", "铜", "铁", "锡"],
+      "description": "梁武帝萧衍以天监二年即位，至普通中岁在庚子命弘景造神剑十三口，用金银铜铁锡五色合为之，长短各依剑术法，文曰服之者永治四方，并小篆书。",
+      "effects": ["五色金属合铸", "服之者永治四方", "共十三把"],
+      "source_text": "梁武帝萧衍，以天监二年即位。至普通中，岁在庚子，命弘景造神剑十三口，用金、银、铜、铁、锡五色合为之，长短各依剑术法，文曰'服之者永治四方'，并小篆书。"
+    },
+    {
+      "id": "sword_dongyu",
+      "name": "断蒙刀",
+      "source_book": "古今刀剑录",
+      "type": "weapon",
+      "materials": ["铁"],
+      "description": "董元成少果勇，自打铁作一刀。后讨黄祖于蒙冲河，元成引刀断冲头为二流，拜大司马，号断蒙刀。",
+      "effects": ["可断蒙冲船头"],
+      "source_text": "董元成，少果勇，自打铁作一刀。后讨黄祖于蒙冲河，元成引刀断冲头为二流，拜大司马，号'断蒙刀'。"
+    },
+    {
+      "id": "sword_xiangyu",
+      "name": "项羽刀",
+      "source_book": "古今刀剑录",
+      "type": "weapon",
+      "materials": ["铁"],
+      "description": "董卓少时耕野得一刀，无文字，四面隐起作山云文，斸玉如泥。及卓贵示五官郎将蔡邕，邕曰此项羽之刀也。",
+      "effects": ["斸玉如泥", "四面隐起山云纹"],
+      "source_text": "董卓，少时耕野，得一刀，无文字，四面隐起作山云文，斸玉如泥。及卓贵，示五官郎将蔡邕，邕曰'此项羽之刀也'。"
+    },
+    {
+      "id": "sword_taiyi",
+      "name": "太一刀",
+      "source_book": "古今刀剑录",
+      "type": "weapon",
+      "materials": ["铁"],
+      "description": "钟会克蜀于成都土中得一刀，文曰太一。会死入帐下王伯升，伯升后渡江刀遂飞入水。",
+      "effects": ["刀能飞入水", "文曰太一"],
+      "source_text": "钟会，克蜀，于成都土中得一刀，文曰'太一'。会死，入帐下王伯升，伯升后渡江，刀遂飞入水。"
+    },
+    {
+      "id": "sword_dengai",
+      "name": "邓艾黑刀",
+      "source_book": "古今刀剑录",
+      "type": "weapon",
+      "materials": ["铁"],
+      "description": "邓艾年十二曾读陈太丘碑，碑下掘得一刀，黑如漆，长三尺余。刀上常有气凄凄然，时人以为神物。",
+      "effects": ["黑如漆", "刀上有凄凄寒气", "神物"],
+      "source_text": "邓艾，年十二，曾读陈太丘碑，碑下掘得一刀，黑如漆，长三尺余。刀上常有气凄凄然，时人以以为神物。"
+    },
+    {
+      "id": "sword_sizhao",
+      "name": "思召刀",
+      "source_book": "古今刀剑录",
+      "type": "weapon",
+      "materials": ["铁"],
+      "description": "袁绍在黎阳梦有一神授一宝刀，及觉果在卧所，铭曰思召。绍解之曰思召绍字也。",
+      "effects": ["神授宝刀", "铭文为袁绍暗字"],
+      "source_text": "袁绍，在黎阳梦有一神授一宝刀，及觉，果在卧所，铭曰'思召'。绍解之曰：'思召，绍字也'。"
+    },
+    {
+      "id": "sword_chijin",
+      "name": "赤金刀",
+      "source_book": "搜神记",
+      "type": "weapon",
+      "materials": ["赤金"],
+      "description": "东海人黄公善为幻，制蛇御虎。常佩赤金刀。及衰老饮酒过度，秦末有白虎见于东海，诏遣黄公以赤刀往厌之，术既不行遂为虎所杀。",
+      "effects": ["制蛇御虎", "厌虎之术"],
+      "source_text": "东海人黄公，善为幻，制蛇，御虎。常佩赤金刀。及衰老，饮酒过度。秦末，有白虎见于东海，诏遣黄公以赤刀往厌之。"
+    },
+    {
+      "id": "sword_shangxue",
+      "name": "上血刀",
+      "source_book": "古今刀剑录",
+      "type": "weapon",
+      "materials": ["铁"],
+      "description": "顺帝准以升明元年掘得一刀，铭曰上血，其刀照一室。帝奇之。",
+      "effects": ["刀光照一室", "铭曰上血预示凶兆"],
+      "source_text": "顺帝准，以升明元年，掘得一刀，铭曰'上血'，其刀照一室。帝奇之。"
+    },
+    {
+      "id": "tool_water_mortar",
+      "name": "水碓",
+      "source_book": "天工开物",
+      "type": "tool",
+      "materials": ["木", "石", "铁"],
+      "description": "水碓，山国之人居河滨者之所为也。功稻之法省人力十倍。设臼多寡不一，流水少而地窄者或两三臼，流水洪而地室宽者即并列十臼无忧。江南信郡水碓之法巧绝，以一舟为地橛椿维之。",
+      "effects": ["省人力十倍", "加工粮食"],
+      "source_text": "水碓，山国之人居河滨者之所为也。功稻之法省人力十倍。"
+    },
+    {
+      "id": "tool_stone_mortar",
+      "name": "石臼",
+      "source_book": "天工开物",
+      "type": "tool",
+      "materials": ["石", "铁", "木"],
+      "description": "八口以上之家堀地藏石臼其上，臼量大者容五斗。横木穿插碓头，碓嘴治铁为之用醋滓合上，足踏其末而舂之。",
+      "effects": ["加工粮食", "出精粮"],
+      "source_text": "八口以上之家，堀地藏石臼其上。臼量大者容五鬥，小者半之。横木穿插碓头，碓嘴治铁为之，用醋滓合上，足踏其末而舂之。"
+    },
+    {
+      "id": "tool_wood_lou",
+      "name": "木礱",
+      "source_book": "天工开物",
+      "type": "tool",
+      "materials": ["松木"],
+      "description": "用木为之，截木尺许质多用松，斫合成大磨形，两扇皆凿纵斜齿。木礱攻米二千余石其身乃尽。",
+      "effects": ["加工稻谷去壳"],
+      "source_text": "一用木为之，截木尺许，斫合成大磨形，两扇皆凿纵斜齿。木礱攻米二千余石，其身乃尽。"
+    },
+    {
+      "id": "tool_nongji",
+      "name": "耒耜（鏹）",
+      "source_book": "天工开物",
+      "type": "tool",
+      "materials": ["铁", "木"],
+      "description": "北方厥土坟垆易解释者种麦之法耕具差异，耕即兼种。其服牛起土者耒不用耕鈻，并列两铁于横木之上，其具方语曰鏹。鏹中间盛一小斗贮麦种于内，其斗底空梅花眼。",
+      "effects": ["耕种兼用", "播撒种子"],
+      "source_text": "其服牛起土者，耒不用耕鈻，并列两铁于横木之上，其具方语曰鏹。"
+    },
+    {
+      "id": "tool_shennong_bian",
+      "name": "赭鞭",
+      "source_book": "搜神记",
+      "type": "tool",
+      "materials": ["赭石"],
+      "description": "神农以赭鞭鞭百草，尽知其平毒寒温之性，臭味所主，以播百谷，故天下号神农也。",
+      "effects": ["鞭百草可知其平毒寒温之性", "辨别百草药性"],
+      "source_text": "神农以赭鞭鞭百草，尽知其平毒寒温之性，臭味所主，以播百谷，故天下号神农也。"
+    },
+    {
+      "id": "tool_xusheng_bian",
+      "name": "续弦胶",
+      "source_book": "博物志",
+      "type": "tool",
+      "materials": ["西域胶"],
+      "description": "汉武帝时西海国有献胶五两者，帝以付外库。余胶半两西使佩以自随。后武帝射于甘泉宫帝弓弦断，西使乃进乞以所送余香胶续之，以口濡胶为水住断弦两头相连注弦遂相著。帝乃使力士各引其一头终不相离。终日不断。",
+      "effects": ["续断弓弦", "力士不能拉开"],
+      "source_text": "西海国有献胶五两者。西使乃以口濡胶为水住断弦两头，相连注弦，遂相著。帝乃使力士各引其一头，终不相离。终日不断。"
+    },
+    {
+      "id": "tool_huomianbu",
+      "name": "火浣布",
+      "source_book": "博物志",
+      "type": "tool",
+      "materials": ["火浣布"],
+      "description": "西域献火浣布，昆吾氏献切玉刀。火浣布污则烧之则洁，刀切玉如腊。",
+      "effects": ["火烧则清洁", "不怕火烧"],
+      "source_text": "西域献火浣布，昆吾氏献切玉刀。火浣布污则烧之则洁，刀切玉如臈。"
+    },
+    {
+      "id": "tool_qieyudao",
+      "name": "切玉刀",
+      "source_book": "博物志",
+      "type": "tool",
+      "materials": ["未知神材"],
+      "description": "昆吾氏献切玉刀。刀切玉如腊。",
+      "effects": ["切玉如切腊", "可切割玉石"],
+      "source_text": "西域献火浣布，昆吾氏献切玉刀。火浣布污则烧之则洁，刀切玉如臈。"
+    },
+    {
+      "id": "tool_western_incense",
+      "name": "西国香",
+      "source_book": "博物志",
+      "type": "tool",
+      "materials": ["香料"],
+      "description": "汉武帝时弱水西国有人乘毛车以渡弱水来献香者，大如鸾卵三枚与枣相似。后长安中大疫宫中皆疫病，西使乞见请烧所贡香一枚以辟疫气，宫中病者登日并差。长安中百里咸闻香气芳积九十余日香犹不歇。",
+      "effects": ["辟疫气", "香气闻百里", "芳香九十余日不歇"],
+      "source_text": "西使乞见，请烧所贡香一枚，以辟疫气。宫中病者登日并差。长安中百里咸闻香气，芳积九十余日，香犹不歇。"
+    }
+  ],
+  "materials": [
+    {
+      "id": "mat_niushoushan_iron",
+      "name": "牛首山铁",
+      "source_book": "古今刀剑录",
+      "category": "mineral",
+      "origin": "牛首山",
+      "effects": ["铸造名剑材料"],
+      "source_text": "孔甲采牛首山铁，铸一剑。"
+    },
+    {
+      "id": "mat_jinniushan_iron",
+      "name": "金牛山铁",
+      "source_book": "古今刀剑录",
+      "category": "mineral",
+      "origin": "金牛山",
+      "effects": ["铸造蜀汉八剑材料"],
+      "source_text": "蜀主刘备采金牛山铁铸八剑。"
+    },
+    {
+      "id": "mat_doushan_iron",
+      "name": "都山铁",
+      "source_book": "古今刀剑录",
+      "category": "mineral",
+      "origin": "都山",
+      "effects": ["铸造万人刀材料"],
+      "source_text": "关羽自采都山铁为二刀。"
+    },
+    {
+      "id": "mat_chizhushan_iron",
+      "name": "赤朱山铁",
+      "source_book": "古今刀剑录",
+      "category": "mineral",
+      "origin": "赤朱山",
+      "effects": ["铸造新亭侯刀材料"],
+      "source_text": "张飞自命匠炼赤朱山铁为一刀。"
+    },
+    {
+      "id": "mat_beizhi_copper",
+      "name": "北祇铜",
+      "source_book": "古今刀剑录",
+      "category": "mineral",
+      "origin": "北祇",
+      "effects": ["铸造定秦剑材料"],
+      "source_text": "秦始皇采北祇铜铸二剑名曰定秦。"
+    },
+    {
+      "id": "mat_wuchang_copper",
+      "name": "武昌铜铁",
+      "source_book": "古今刀剑录",
+      "category": "mineral",
+      "origin": "武昌",
+      "effects": ["铸造大吴刀剑材料"],
+      "source_text": "吴王孙权采武昌铜铁作千口剑万口刀。"
+    },
+    {
+      "id": "mat_nangu_tan",
+      "name": "越炭",
+      "source_book": "古今刀剑录",
+      "category": "mineral",
+      "origin": "越地",
+      "effects": ["配合南铜铸造刀剑"],
+      "source_text": "皆是南铜、越炭作之。"
+    },
+    {
+      "id": "mat_wuse_stone",
+      "name": "五色石",
+      "source_book": "古今刀剑录",
+      "category": "mineral",
+      "origin": "未知",
+      "effects": ["炼铸神剑威斗材料"],
+      "source_text": "王莽造威斗及神剑，皆炼五色石为之。"
+    },
+    {
+      "id": "mat_chenxiang",
+      "name": "沉香",
+      "source_book": "南方草木状",
+      "category": "plant_material",
+      "origin": "交趾",
+      "effects": ["木心与节坚黑沉水者", "珍贵香料"],
+      "source_text": "交趾有蜜香树，欲取香伐之，经年其根干枝节各有别色也。木心与节坚黑沉水者为沉香。"
+    },
+    {
+      "id": "mat_jiguxiang",
+      "name": "鸡骨香",
+      "source_book": "南方草木状",
+      "category": "plant_material",
+      "origin": "交趾",
+      "effects": ["与水面平者", "香料"],
+      "source_text": "与水面平者为鸡骨香。"
+    },
+    {
+      "id": "mat_huangshuxiang",
+      "name": "黄熟香",
+      "source_book": "南方草木状",
+      "category": "plant_material",
+      "origin": "交趾",
+      "effects": ["其根为黄熟香", "香料"],
+      "source_text": "其根为黄熟香。"
+    },
+    {
+      "id": "mat_zhanxiang",
+      "name": "栈香",
+      "source_book": "南方草木状",
+      "category": "plant_material",
+      "origin": "交趾",
+      "effects": ["其干为栈香", "香料"],
+      "source_text": "其干为栈香。"
+    },
+    {
+      "id": "mat_qingguixiang",
+      "name": "青桂香",
+      "source_book": "南方草木状",
+      "category": "plant_material",
+      "origin": "交趾",
+      "effects": ["细枝紧实未烂者为青桂香", "香料"],
+      "source_text": "细枝紧实未烂者为青桂香。"
+    },
+    {
+      "id": "mat_matixiang",
+      "name": "马蹄香",
+      "source_book": "南方草木状",
+      "category": "plant_material",
+      "origin": "交趾",
+      "effects": ["其根节轻而大者为马蹄香", "香料"],
+      "source_text": "其根节轻而大者为马蹄香。"
+    },
+    {
+      "id": "mat_jishexiang",
+      "name": "鸡舌香",
+      "source_book": "南方草木状",
+      "category": "plant_material",
+      "origin": "交趾",
+      "effects": ["其花不香成实乃香为鸡舌香", "香料"],
+      "source_text": "其花不香，成实乃香，为鸡舌香。"
+    },
+    {
+      "id": "mat_xunluxiang",
+      "name": "薰陆香",
+      "source_book": "南方草木状",
+      "category": "plant_material",
+      "origin": "大秦",
+      "effects": ["海边大树盛夏树胶流出沙上方采之", "香料"],
+      "source_text": "薰陆香，出大秦。在海边有大树，枝叶正如古松，生于沙中。盛夏树胶流出沙上，方采之。"
+    },
+    {
+      "id": "mat_guizhi",
+      "name": "桂（丹桂/茵桂/牡桂）",
+      "source_book": "南方草木状",
+      "category": "plant_material",
+      "origin": "合浦",
+      "effects": ["冬夏常青", "以桂为柱风来自香", "香料药材"],
+      "source_text": "桂出合浦。生必以高山之巅，冬夏常青。桂有三种：叶如柏叶皮赤者为丹桂；叶似柿叶者为茵桂；其叶似枇杷叶者为牡桂。"
+    },
+    {
+      "id": "mat_sufang",
+      "name": "苏枋",
+      "source_book": "南方草木状",
+      "category": "plant_material",
+      "origin": "九真",
+      "effects": ["南人以染绛", "清以大庾之水则色愈深", "染料"],
+      "source_text": "苏枋，树类槐花，黑子。出九真。南人以染绛，清以大庾之水，则色愈深。"
+    },
+    {
+      "id": "mat_keluo",
+      "name": "桄榔",
+      "source_book": "南方草木状",
+      "category": "plant_material",
+      "origin": "九真、交趾",
+      "effects": ["皮可作綆得水则柔韧", "皮中有屑如面可食", "木性如竹可制奕枰"],
+      "source_text": "桄榔树似栟榈实，其皮可作綆，得水则柔韧。皮中有屑如面，多者至数斛，食之与常面无异。工人解之以制奕枰。"
+    },
+    {
+      "id": "mat_helile",
+      "name": "诃梨勒",
+      "source_book": "南方草木状",
+      "category": "plant_material",
+      "origin": "九真",
+      "effects": ["可作饮", "变白髭发令黑"],
+      "source_text": "诃梨勒，树似木梡，花白，子形如橄榄六路，皮肉相著。可作饮，变白髭发令黑。出九真。"
+    },
+    {
+      "id": "mat_zitan",
+      "name": "紫藤",
+      "source_book": "南方草木状",
+      "category": "plant_material",
+      "origin": "南方",
+      "effects": ["茎截置烟炱中经时成紫香可以降神", "置酒中历二三十年亦不腐败"],
+      "source_text": "紫藤，叶细长，茎如竹根极坚实。花白，子黑，置酒中，历二三十年亦不腐败。其茎截置烟炱中，经时成紫香，可以降神。"
+    },
+    {
+      "id": "mat_keteng",
+      "name": "榼藤",
+      "source_book": "南方草木状",
+      "category": "plant_material",
+      "origin": "南海",
+      "effects": ["其壳贮药历年不坏", "解诸药毒"],
+      "source_text": "榼藤，依树蔓生，其子紫黑色，一名象豆，三年方熟。其壳贮药，历年不坏。生南海。解诸药毒。"
+    },
+    {
+      "id": "mat_mixiangzhi",
+      "name": "蜜香纸",
+      "source_book": "南方草木状",
+      "category": "craft_material",
+      "origin": "交趾",
+      "effects": ["微褐色有纹如鱼子极香而坚韧", "水渍之不溃烂"],
+      "source_text": "蜜香纸，以蜜香树皮叶作之，微褐色，有纹如鱼子，极香而坚韧，水渍之不溃烂。"
+    },
+    {
+      "id": "mat_baoxianglu",
+      "name": "抱香履",
+      "source_book": "南方草木状",
+      "category": "craft_material",
+      "origin": "扶南、大秦",
+      "effects": ["极柔弱不胜刀锯", "既干而韧不可理", "轻者若通脱木", "夏月纳之可御蒸湿之气"],
+      "source_text": "抱香履，抱木生于水松之旁，若寄生然。极柔弱，不胜刀锯，乘湿时刳而为履。既干而韧，不可理也。履虽猥大而轻者若通脱木，风至则随飘而动。夏月纳之，可御蒸湿之气。"
+    },
+    {
+      "id": "mat_yeshenxiang",
+      "name": "耶悉茗花",
+      "source_book": "南方草木状",
+      "category": "plant_material",
+      "origin": "西国（移植南海）",
+      "effects": ["芳香", "女子以彩丝穿花心以为首饰"],
+      "source_text": "耶悉茗花、末利花，皆胡人自西国移值于南海，南人怜其芳香，竞值之。"
+    },
+    {
+      "id": "mat_shuilian",
+      "name": "水莲",
+      "source_book": "南方草木状",
+      "category": "plant_material",
+      "origin": "南方",
+      "effects": ["如莲而茎紫", "柔而无刺"],
+      "source_text": "花之美者有水莲，如莲而茎紫，柔而无刺。"
+    },
+    {
+      "id": "mat_changpu",
+      "name": "菖蒲",
+      "source_book": "南方草木状",
+      "category": "plant_material",
+      "origin": "番禺",
+      "effects": ["皆一寸九节", "安期生采服仙去"],
+      "source_text": "番禺东有涧，涧中生菖蒲，皆一寸九节。安期生采服仙去，但留玉舄焉。"
+    },
+    {
+      "id": "mat_liuqiuzi",
+      "name": "留求子",
+      "source_book": "南方草木状",
+      "category": "plant_material",
+      "origin": "南海、交趾",
+      "effects": ["形如栀子", "中有肉白色甘如枣", "治婴孺之疾"],
+      "source_text": "留求子，形如栀子，棱瓣深而两头尖。及半黄已熟，中有肉白色，甘如枣。治婴孺之疾。"
+    },
+    {
+      "id": "mat_zhetang",
+      "name": "蔗糖（石蜜）",
+      "source_book": "南方草木状",
+      "category": "food_material",
+      "origin": "交趾",
+      "effects": ["笮取其汁曝数日成饴入口消释", "可消酒"],
+      "source_text": "诸蔗一曰甘蔗，交趾所生者围数寸长丈余。笮取其汁，曝数日成饴，入口消释，彼人谓之石蜜。南人云甘蔗可消酒。"
+    },
+    {
+      "id": "mat_caoqu",
+      "name": "草麴",
+      "source_book": "南方草木状",
+      "category": "craft_material",
+      "origin": "南海",
+      "effects": ["杂以众草叶冶葛汁涤溲之", "用此合糯为酒剧饮既醒犹头热涔涔以其有毒草故也"],
+      "source_text": "草麴，南海多矣。酒不用麴蘖，但杵米粉，杂以众草叶、冶葛汁涤溲之。用此合糯为酒，剧饮之既醒犹头热涔涔，以其有毒草故也。"
+    },
+    {
+      "id": "mat_fengren",
+      "name": "枫人",
+      "source_book": "南方草木状",
+      "category": "mystical_material",
+      "origin": "五岭",
+      "effects": ["越巫取之作术有通神之验", "取之不以法则能化去"],
+      "source_text": "枫人，五岭之间多枫木，岁久则生瘤瘿，一夕遇慕雷骤雨其树赘暗长三五尺谓之枫人。越巫取之作术，有通神之验，取之不以法，则能化去。"
+    },
+    {
+      "id": "mat_fengxiang",
+      "name": "枫香",
+      "source_book": "南方草木状",
+      "category": "plant_material",
+      "origin": "九真",
+      "effects": ["有脂而香", "曝干可烧"],
+      "source_text": "枫香，树似白杨，叶圆而歧分，有脂而香，其子大如鸭卵。二月华发乃着实，八九月熟，曝干可烧。"
+    },
+    {
+      "id": "mat_yizhegu",
+      "name": "薏苡（甘藷）",
+      "source_book": "南方草木状",
+      "category": "food_material",
+      "origin": "珠崖",
+      "effects": ["蒸曬切如米粒仓图贮之以充粮糗", "食之者寿百余年"],
+      "source_text": "甘藷，根叶亦如芋，实如拳。蒸曬切如米粒，仓图贮之，以充粮糗。大抵南人二毛者百无一二，惟海中之人寿百有余岁者，由不食五谷而食甘藷故尔。"
+    },
+    {
+      "id": "mat_binglang",
+      "name": "槟榔",
+      "source_book": "南方草木状",
+      "category": "plant_material",
+      "origin": "林邑",
+      "effects": ["以扶留藤古贲灰并食则滑美", "下气消谷"],
+      "source_text": "槟榔味苦涩，剖其皮鬻其肤熟如贯珠坚如干枣。以扶留藤、古贲灰并食则滑美，下气消谷。"
+    },
+    {
+      "id": "mat_yangmei",
+      "name": "杨梅",
+      "source_book": "南方草木状",
+      "category": "plant_material",
+      "origin": "南方",
+      "effects": ["以酝酒号梅香酎非贵人重客不得饮之"],
+      "source_text": "林邑山杨梅，其大如杯椀，青时极酸，既红味如崖蜜。以酝酒号梅香酎，非贵人重客不得饮之。"
+    },
+    {
+      "id": "mat_shiliu",
+      "name": "石榴（五敛子）",
+      "source_book": "南方草木状",
+      "category": "plant_material",
+      "origin": "南海",
+      "effects": ["大如木瓜黄色皮肉脆软味极酸上有五棱", "以蜜渍之甘酢而美"],
+      "source_text": "五敛子，大如木瓜，黄色，皮肉脆软，味极酸，上有五棱如刻出。以蜜渍之，甘酢而美。出南海。"
+    },
+    {
+      "id": "mat_anmole",
+      "name": "菴摩勒",
+      "source_book": "南方草木状",
+      "category": "plant_material",
+      "origin": "九真",
+      "effects": ["食之先苦后甘", "术士以变白须发有验"],
+      "source_text": "菴摩勒，树叶细似合昏，花黄实似李青黄色。食之先苦后甘。术士以变白须发有验。出九真。"
+    },
+    {
+      "id": "mat_zhujian",
+      "name": "𥯨簩竹",
+      "source_book": "南方草木状",
+      "category": "craft_material",
+      "origin": "大秦",
+      "effects": ["皮薄而空多", "以鎊犀象利胜于铁"],
+      "source_text": "𥯨簩竹，皮薄而空多，大者径不过二寸，皮麤涩，以鎊犀、象，利胜于铁。出大秦。"
+    },
+    {
+      "id": "mat_shilinzhu",
+      "name": "石林竹",
+      "source_book": "南方草木状",
+      "category": "craft_material",
+      "origin": "九真、交趾",
+      "effects": ["似桂竹劲而利", "削为刀割象皮如切芋"],
+      "source_text": "石林竹，似桂竹，劲而利，削为刀，割象皮如切芋。出九真、交趾。"
+    },
+    {
+      "id": "mat_yeqi",
+      "name": "冶葛（胡蔓草）",
+      "source_book": "南方草木状",
+      "category": "poison_material",
+      "origin": "南方",
+      "effects": ["大毒", "窴毒者多杂以生蔬进之", "以蕹汁滴其苗当时萎死可解"],
+      "source_text": "冶葛，毒草也。蔓生，叶如罗勒光而厚，一名胡曼草。窴毒者多杂以生蔬进之，悟者速以药解，不尔半日辄死。"
+    },
+    {
+      "id": "mat_jilicao",
+      "name": "吉利草",
+      "source_book": "南方草木状",
+      "category": "medicine",
+      "origin": "交广",
+      "effects": ["解蛊毒极验"],
+      "source_text": "吉利草，其茎如金钗股，形类石斛，根类芍药。交广俚俗多蓄蛊毒，惟此草解之极验。"
+    },
+    {
+      "id": "mat_liangyaocao",
+      "name": "良耀草",
+      "source_book": "南方草木状",
+      "category": "medicine",
+      "origin": "高凉",
+      "effects": ["煨食之解毒功不亚于吉利"],
+      "source_text": "良耀草，枝叶如麻黄，秋结子如小粟。煨食之解毒，功不亚于吉利。花白似牛李，出高凉。"
+    },
+    {
+      "id": "mat_hecao",
+      "name": "鹤草（媚草）",
+      "source_book": "南方草木状",
+      "category": "mystical_material",
+      "origin": "南海",
+      "effects": ["云是媚草", "女子藏之谓之媚蝶能致其夫怜爱"],
+      "source_text": "鹤草，蔓生，其花麴尘色浅紫蔕。出南海，云是媚草，上有虫老蜕为蝶赤黄色。女子藏之谓之媚蝶，能致其夫怜爱。"
+    },
+    {
+      "id": "mat_doukou",
+      "name": "豆蔻花",
+      "source_book": "南方草木状",
+      "category": "medicine",
+      "origin": "交州",
+      "effects": ["食之破气消痰进酒增倍"],
+      "source_text": "豆蔻花，其苖如芦其叶似姜其花作穗。旧说此花食之破气消痰，进酒增倍。"
+    },
+    {
+      "id": "mat_shanjiang",
+      "name": "山姜花",
+      "source_book": "南方草木状",
+      "category": "medicine",
+      "origin": "九真、交趾",
+      "effects": ["煎服之治冷气甚效"],
+      "source_text": "山姜花，茎叶即姜也，根不堪食。于叶间吐花作穗如麦粒软红色。煎服之治冷气甚效。"
+    },
+    {
+      "id": "mat_huicao",
+      "name": "蕙草（薰草）",
+      "source_book": "南方草木状",
+      "category": "medicine",
+      "origin": "南海",
+      "effects": ["可以止疠", "气如蘼芜"],
+      "source_text": "蕙草一名薰草，叶如麻两两相对，气如蘼芜。可以止疠，出南海。"
+    },
+    {
+      "id": "mat_qiulicao",
+      "name": "水葱",
+      "source_book": "南方草木状",
+      "category": "mystical_material",
+      "origin": "始兴",
+      "effects": ["妇人怀妊佩其花生男者即此花", "交广人佩之极有验"],
+      "source_text": "水葱，花叶皆如鹿葱，花色有红黄紫三种，出始兴。妇人怀妊佩其花生男者即此花。交广人佩之极有验。"
+    },
+    {
+      "id": "mat_shujing",
+      "name": "杉",
+      "source_book": "南方草木状",
+      "category": "craft_material",
+      "origin": "合浦",
+      "effects": ["汉安帝春叶落随风飘入洛阳城其叶大常杉数十倍", "术士视为休征当出王者"],
+      "source_text": "杉一名披煔。合浦东二百里有杉一树，汉安帝春叶落随风飘入洛阳城，其叶大常杉数十倍。"
+    },
+    {
+      "id": "mat_jing",
+      "name": "荆（金荆/紫荆/白荆/社荆）",
+      "source_book": "南方草木状",
+      "category": "craft_material",
+      "origin": "宁浦",
+      "effects": ["金荆可作枕", "紫荆堪作床", "白荆堪作履", "社荆指病自愈"],
+      "source_text": "宁浦有三种：金荆可作枕，紫荆堪作床，白荆堪作履。又彼境有社荆，指病自愈。"
+    },
+    {
+      "id": "mat_wushui_xiang",
+      "name": "水松",
+      "source_book": "南方草木状",
+      "category": "plant_material",
+      "origin": "南海",
+      "effects": ["岭北人极爱之", "其香殊胜在南方时"],
+      "source_text": "水松，叶如橧而细长。出南海。土产众香而此木不大香，岭北人极爱之，然其香殊胜在南方时。"
+    },
+    {
+      "id": "mat_zhitong",
+      "name": "刺桐",
+      "source_book": "南方草木状",
+      "category": "craft_material",
+      "origin": "九真",
+      "effects": ["其木为材", "花赤色旁照他物皆朱殷"],
+      "source_text": "刺桐，其木为材，三月三时布叶繁密后有花赤色间生叶间旁照他物皆朱殷。"
+    },
+    {
+      "id": "mat_zhuo",
+      "name": "棹",
+      "source_book": "南方草木状",
+      "category": "poison_material",
+      "origin": "高凉",
+      "effects": ["以棹汁杂彘肉食者即时为雷震死"],
+      "source_text": "棹树干叶俱似椿，以其叶鬻汁渍果呼为棹汁。若以棹汁杂彘肉食者即时为雷震死。"
+    },
+    {
+      "id": "mat_wushui_jing",
+      "name": "云丘竹",
+      "source_book": "南方草木状",
+      "category": "craft_material",
+      "origin": "扶南",
+      "effects": ["一节为船"],
+      "source_text": "云丘竹，一节为船。出扶南。"
+    },
+    {
+      "id": "mat_danzhu",
+      "name": "簞竹",
+      "source_book": "南方草木状",
+      "category": "craft_material",
+      "origin": "九真",
+      "effects": ["取嫩者搥浸纺绩为布谓之竹疏布"],
+      "source_text": "簞竹，叶疏而大一节相去五六尺。出九真。彼人取嫩者搥浸，纺绩为布，谓之竹疏布。"
+    },
+    {
+      "id": "mat_yuewangzhu",
+      "name": "越王竹",
+      "source_book": "南方草木状",
+      "category": "craft_material",
+      "origin": "南海",
+      "effects": ["根生石上若细荻高尺余", "用为酒筹"],
+      "source_text": "越王竹，根生石上，若细荻，高尺余，南海有之。南人爱其青色，用为酒筹。"
+    },
+    {
+      "id": "mat_chishui_xiang",
+      "name": "续弦胶",
+      "source_book": "博物志",
+      "category": "mystical_material",
+      "origin": "西海国",
+      "effects": ["续断弓弦力士不能拉开", "终日不断"],
+      "source_text": "西海国有献胶五两者。西使乃以口濡胶为水住断弦两头，相连注弦，遂相著。帝乃使力士各引其一头，终不相离。终日不断。"
+    },
+    {
+      "id": "mat_shenzhi",
+      "name": "神芝（不死草）",
+      "source_book": "博物志",
+      "category": "mystical_material",
+      "origin": "名山",
+      "effects": ["食之不死", "上芝为车马中芝为人形下芝为六畜"],
+      "source_text": "名山生神芝，不死之草。上芝为车马，中芝为人形，下芝为六畜。"
+    },
+    {
+      "id": "mat_yugao",
+      "name": "玉膏/石脂",
+      "source_book": "博物志",
+      "category": "mystical_material",
+      "origin": "名山大川孔穴",
+      "effects": ["食之不死"],
+      "source_text": "名山大川孔穴相内，和气所出，则生石脂、玉膏，食之不死。"
+    },
+    {
+      "id": "mat_busi_shu",
+      "name": "不死树",
+      "source_book": "博物志",
+      "category": "mystical_material",
+      "origin": "员丘山",
+      "effects": ["食之乃寿"],
+      "source_text": "员丘山上有不死树，食之乃寿。有赤泉饮之不老。"
+    },
+    {
+      "id": "mat_chiquan",
+      "name": "赤泉",
+      "source_book": "博物志",
+      "category": "mystical_material",
+      "origin": "员丘山",
+      "effects": ["饮之不老"],
+      "source_text": "员丘山上有不死树，食之乃寿。有赤泉，饮之不老。"
+    },
+    {
+      "id": "mat_liuhuang",
+      "name": "流黄（硫磺）",
+      "source_book": "博物志",
+      "category": "mineral",
+      "origin": "足弥山（高昌西八百里）",
+      "effects": ["有石流黄数十丈", "昼视孔中上状如烟而高数尺夜视皆如灯光明"],
+      "source_text": "西域使王畅说石流黄出足弥山，去高昌八百里，有石流黄数十丈。昼视孔中上状如烟而高数尺，夜视皆如灯光明。"
+    },
+    {
+      "id": "mat_shidan",
+      "name": "石胆",
+      "source_book": "博物志",
+      "category": "mineral",
+      "origin": "武都",
+      "effects": ["献于朝廷"],
+      "source_text": "魏文帝黄初三年，武都西都尉王褒献石胆二十斤。"
+    },
+    {
+      "id": "mat_wuse_xiang",
+      "name": "西国辟疫香",
+      "source_book": "博物志",
+      "category": "mystical_material",
+      "origin": "弱水西国",
+      "effects": ["辟疫气", "长安中百里咸闻香气", "芳积九十余日香犹不歇"],
+      "source_text": "弱水西国有人来献香，大如鸾卵三枚。长安中大疫宫中皆疫病，烧所贡香一枚以辟疫气，宫中病者登日并差。"
+    },
+    {
+      "id": "mat_zirangu",
+      "name": "自然谷（禹余粮）",
+      "source_book": "博物志",
+      "category": "food_material",
+      "origin": "海上",
+      "effects": ["其实食之如大麦七月稔熟"],
+      "source_text": "海上有草焉名篩，其实食之如大麦，七月稔熟，名曰自然谷，或曰禹余粮。"
+    },
+    {
+      "id": "mat_qvyi_cao",
+      "name": "屈佚草（指佞草）",
+      "source_book": "博物志",
+      "category": "mystical_material",
+      "origin": "尧时庭中生",
+      "effects": ["佞人入朝则屈而指之"],
+      "source_text": "尧时有屈佚草，生于庭，佞人入朝则屈而指之。一名指佞草。"
+    },
+    {
+      "id": "mat_zhancao",
+      "name": "詹草",
+      "source_book": "博物志",
+      "category": "mystical_material",
+      "origin": "右詹山",
+      "effects": ["帝女化为詹草", "服者媚于人"],
+      "source_text": "右詹山，帝女化为詹草，其叶郁茂其萼黄实如豆，服者媚于人。"
+    },
+    {
+      "id": "mat_pingfengcao",
+      "name": "屏风草",
+      "source_book": "博物志",
+      "category": "plant_material",
+      "origin": "太原晋阳以北",
+      "effects": ["生于北方"],
+      "source_text": "太原晋阳以北生屏风草。"
+    },
+    {
+      "id": "mat_fengshu_zhen",
+      "name": "枫树菌（笑菌）",
+      "source_book": "博物志",
+      "category": "poison_material",
+      "origin": "江南诸山郡",
+      "effects": ["枫树生者啖之令人笑不得止", "治之饮土浆即愈"],
+      "source_text": "江南诸山郡中大树断倒者经春夏生菌谓之椹。枫树生者啖之令人笑不得止，治之饮土浆即愈。"
+    },
+    {
+      "id": "mat_shuyaozi",
+      "name": "薯蕷子",
+      "source_book": "搜神记",
+      "category": "medicine",
+      "origin": "天上（杜兰香所赠）",
+      "effects": ["食此令君不畏风波", "辟寒温"],
+      "source_text": "出薯蕷子三枚，大如鸡子，云：'食此，令君不畏风波，辟寒温。'"
+    },
+    {
+      "id": "mat_wuse_caocao",
+      "name": "五色香草",
+      "source_book": "搜神记",
+      "category": "mystical_material",
+      "origin": "济阴",
+      "effects": ["积数十年服食其实", "引五色神蛾止其上", "得茧大如甕"],
+      "source_text": "园客尝种五色香草，积数十年，服食其实。忽有五色神蛾止香草之上。得茧百二十头，大如甕。"
+    },
+    {
+      "id": "mat_xiaomofang",
+      "name": "消魔药",
+      "source_book": "搜神记",
+      "category": "medicine",
+      "origin": "天上（杜兰香所授）",
+      "effects": ["消魔自可愈疾", "淫祀无益"],
+      "source_text": "兰香降时硕问祷祀何如。香曰：'消魔自可愈疾，淫祀无益。'香以药为消魔。"
+    },
+    {
+      "id": "mat_sanjuan_fang",
+      "name": "三卷方（脉经/汤方/丸方）",
+      "source_book": "搜神记",
+      "category": "medicine",
+      "origin": "河伯所赠",
+      "effects": ["脉经一卷", "汤方一卷", "丸方一卷", "周行救疗皆致神验"],
+      "source_text": "所得三卷方：一卷脉经，一卷汤方，一卷丸方。周行救疗，皆致神验。"
+    },
+    {
+      "id": "mat_guijiu",
+      "name": "鬼矛戟",
+      "source_book": "搜神记",
+      "category": "mystical_material",
+      "origin": "鬼界",
+      "effects": ["若中心腹者无不辄死"],
+      "source_text": "弘于江陵见一大鬼提矛戟有随从小鬼数人。问此何物曰杀人以此矛戟若中心腹者无不辄死。"
+    }
+  ],
+  "buildings": [
+    {
+      "id": "bld_fuli_gong",
+      "name": "扶荔宫",
+      "source_book": "南方草木状",
+      "structure": "宫殿",
+      "function": "汉武帝破南越建扶荔宫以植所得奇草异木",
+      "source_text": "汉武帝元鼎六年破南越建扶荔宫以植所得奇草异木。"
+    },
+    {
+      "id": "bld_kunlun_cheng",
+      "name": "昆仑城",
+      "source_book": "博物志",
+      "structure": "八十城布绕之",
+      "function": "昆仑山高万一千里神物之所生圣人仙人之所集也",
+      "source_text": "昆仑山广万里高万一千里，神物之所生，圣人之所集也。其山中应于天最居中，八十城布绕之。"
+    },
+    {
+      "id": "bld_shengong",
+      "name": "神宫",
+      "source_book": "博物志",
+      "structure": "在高石沼中",
+      "function": "有神人多麒麟其芝神草有英泉饮之服三百岁乃觉不死",
+      "source_text": "神宫在高石沼中，有神人，多麒麟，其芝神草有英泉，饮之，服三百岁乃觉，不死。去琅琊四万五千里。"
+    },
+    {
+      "id": "bld_yingzaofang",
+      "name": "营造法式建筑体系",
+      "source_book": "营造法式",
+      "structure": "壕寨制度/大木作/小木作/彫作/竹作/瓦作/泥作/彩画作/砖作",
+      "function": "宋代官方建筑规范，包含取正定平、立基筑基、城墙、殿堂、藻井、钩阑、彩画等全套制度",
+      "source_text": "营造法式共三十四卷，包含壕寨制度、石作、大木作、小木作、彫作、锯作、竹作、瓦作、泥作、彩画作、砖作、窑作等制度及功限料例。"
+    },
+    {
+      "id": "bld_douba_zaojing",
+      "name": "斗八藻井",
+      "source_book": "营造法式",
+      "structure": "小木作制度",
+      "function": "殿堂内顶部装饰结构，有斗八藻井和小斗八藻井两种",
+      "source_text": "平棋斗八藻井、小斗八藻井，为殿堂内部顶部装饰。"
+    },
+    {
+      "id": "bld_wutou_men",
+      "name": "乌头门",
+      "source_book": "营造法式",
+      "structure": "小木作制度",
+      "function": "一种特殊门式，用于重要建筑入口",
+      "source_text": "乌头门，小木作制度之一。"
+    },
+    {
+      "id": "bld_goulan",
+      "name": "钩阑（栏杆）",
+      "source_book": "营造法式",
+      "structure": "有重台钩阑和单钩阑两种",
+      "function": "殿阶、踏道等处的安全栏杆",
+      "source_text": "重台钩阑、单钩阑，用于殿阶、踏道等处。"
+    },
+    {
+      "id": "bld_chiwei",
+      "name": "鸱尾",
+      "source_book": "营造法式",
+      "structure": "瓦作制度",
+      "function": "屋脊两端的装饰构件，用于重要建筑",
+      "source_text": "用鸱尾、用兽头等，为屋脊装饰。"
+    },
+    {
+      "id": "bld_gongqiao_zaojing",
+      "name": "平棋",
+      "source_book": "营造法式",
+      "structure": "小木作制度",
+      "function": "天花板结构，遮蔽梁架",
+      "source_text": "平棋，小木作制度之一，为天花板结构。"
+    },
+    {
+      "id": "bld_lianhua_fang",
+      "name": "甘泉宫",
+      "source_book": "南方草木状",
+      "structure": "宫殿",
+      "function": "以桂为柱风来自香",
+      "source_text": "甘泉宫南有昆明池，池中有灵波殿，以桂为柱，风来自香。"
+    }
+  ],
+  "creatures": [
+    {
+      "id": "crt_chisongzi",
+      "name": "赤松子",
+      "source_book": "搜神记",
+      "form": "神农时雨师",
+      "abilities": ["服水玉以教神农", "能入火自烧", "常入西王母石室", "随风雨上下"],
+      "source_text": "赤松子者，神农时雨师也，服水玉以教神农，能入火自烧。至昆仑山，常入西王母石室，随风雨上下。"
+    },
+    {
+      "id": "crt_shimen",
+      "name": "师门",
+      "source_book": "搜神记",
+      "form": "啸父弟子",
+      "abilities": ["能使火", "食桃葩", "为孔甲龙师", "被杀后风雨迎之山木皆燔"],
+      "source_text": "师门者，啸父弟子也。能使火。食桃葩。为孔甲龙师。孔甲不能修其心意，杀而埋之外野。一旦风雨迎之，山木皆燔。"
+    },
+    {
+      "id": "crt_wuquan",
+      "name": "猴玃（马化/猳玃）",
+      "source_book": "搜神记",
+      "form": "如猕猴长七尺能人行健走",
+      "abilities": ["伺行道妇女有好者辄盗之以去", "取去为室家", "十年之后形皆类之"],
+      "source_text": "蜀山南高山上，有物如猕猴。长七尺，能人行，健走，名曰猴玃，一名马化。伺行道妇女有好者，辄盗之以去。"
+    },
+    {
+      "id": "crt_mengshu",
+      "name": "猛兽",
+      "source_book": "博物志",
+      "form": "大如狗声能惊人",
+      "abilities": ["鸡犬闻之皆走", "虎见此兽即低头著地匍匐不敢动", "舐唇摇尾径往虎头上立搦虎面"],
+      "source_text": "汉武帝时大苑之北胡人有献一物大如狗然声能惊鸡犬闻之皆走名曰猛兽。虎见此兽即低头著地匍匐不敢动。"
+    },
+    {
+      "id": "crt_shenniu",
+      "name": "神牛",
+      "source_book": "博物志",
+      "form": "九真溪上所生",
+      "abilities": ["黑出时共鬬即海沸", "人或遮则霹雳"],
+      "source_text": "九真有神牛，乃生溪上，黑出时共鬬，即海沸，黄或出鬬岸上家牛皆怖，人或遮则霹雳，号曰神牛。"
+    },
+    {
+      "id": "crt_buru_niu",
+      "name": "不死牛",
+      "source_book": "博物志",
+      "form": "越巂国牛",
+      "abilities": ["稍割取肉牛不死经日肉生如故"],
+      "source_text": "越巂国有牛，稍割取肉，牛不死，经日肉生如故。"
+    },
+    {
+      "id": "crt_hanxuema",
+      "name": "汗血马",
+      "source_book": "博物志",
+      "form": "大宛国天马种",
+      "abilities": ["汗血", "天马种"],
+      "source_text": "大宛国有汗血马，天马种。"
+    },
+    {
+      "id": "crt_wenma",
+      "name": "文马（吉黄之乘）",
+      "source_book": "博物志",
+      "form": "赤鬣身白目若黄金",
+      "abilities": ["能飞食虎豹"],
+      "source_text": "文马，赤鬣身白，目若黄金，名吉黄之乘，复薊之露犬也。能飞食虎豹。"
+    },
+    {
+      "id": "crt_chenghuang_shou",
+      "name": "乘黄",
+      "source_book": "博物志",
+      "form": "状如狐背上有角",
+      "abilities": ["乘之寿三千岁"],
+      "source_text": "白民国，有乘黄，状如狐，背上有角，乘之寿三千岁。"
+    },
+    {
+      "id": "crt_weishe",
+      "name": "委蛇",
+      "source_book": "博物志",
+      "form": "状如毂长如辕",
+      "abilities": ["见之者霸"],
+      "source_text": "小山有兽，其形如鼓，一足如蠡。泽有委蛇，状如毂，长如辕，见之者霸。"
+    },
+    {
+      "id": "crt_xingxing",
+      "name": "猩猩",
+      "source_book": "博物志",
+      "form": "若黄狗人面能言",
+      "abilities": ["人面能言"],
+      "source_text": "猩猩若黄狗，人面能言。"
+    },
+    {
+      "id": "crt_jingwei",
+      "name": "精卫",
+      "source_book": "博物志",
+      "form": "如乌文首白喙赤足",
+      "abilities": ["常取西山之木石以填东海"],
+      "source_text": "有鸟如乌，文首，白喙，赤足，曰精卫。故精卫常取西山之木石，以填东海。"
+    },
+    {
+      "id": "crt_yediao",
+      "name": "冶鸟",
+      "source_book": "博物志",
+      "form": "如鸠青色穿大树作巢",
+      "abilities": ["白日见其形鸟也夜听其鸣人也", "知人伐木方向", "若有秽恶则虎通夕来守害人", "越人谓此鸟为越祝之祖"],
+      "source_text": "越地深山有鸟如鸠青色名曰冶鸟。穿大树作巢如升器。白日见其形鸟也夜听其鸣人也。越人谓此鸟为越祝之祖。"
+    },
+    {
+      "id": "crt_luotouchong",
+      "name": "落头虫",
+      "source_book": "博物志",
+      "form": "其头能飞以耳为翼",
+      "abilities": ["其飞因晚便去以耳为翼将晓还复著体"],
+      "source_text": "南方有落头虫，其头能飞。其飞因晚便去，以耳为翼，将晓还复著体。"
+    },
+    {
+      "id": "crt_sheshegong",
+      "name": "射工虫",
+      "source_book": "博物志",
+      "form": "甲类长一二寸口中有弩形",
+      "abilities": ["气射人影随所著处发疮不治则杀人"],
+      "source_text": "江南山溪中水射工虫，甲类也，长一二寸，口中有弩形，气射人影，随所著处发疮，不治则杀人。"
+    },
+    {
+      "id": "crt_feiyi",
+      "name": "肥遗",
+      "source_book": "博物志",
+      "form": "华山蛇名六足四翼",
+      "abilities": ["见则天下大旱"],
+      "source_text": "华山有蛇名肥遗，六足四翼，见则天下大旱。"
+    },
+    {
+      "id": "crt_shuanran",
+      "name": "率然",
+      "source_book": "博物志",
+      "form": "常山蛇有两头",
+      "abilities": ["触其一头头至触其中则两头俱至", "孙武以喻善用兵者"],
+      "source_text": "常山之蛇名率然，有两头，触其一头头至，触其中则两头俱至。孙武以喻善用兵者。"
+    },
+    {
+      "id": "crt_eyu",
+      "name": "鳄鱼",
+      "source_book": "博物志",
+      "form": "状似鼉",
+      "abilities": ["斩其头而干之去齿而更生如此者三乃止"],
+      "source_text": "南海有鳄鱼，状似鼉，斩其头而干之，去齿而更生，如此者三乃止。"
+    },
+    {
+      "id": "crt_niuti_yu",
+      "name": "牛体鱼",
+      "source_book": "博物志",
+      "form": "形状如牛",
+      "abilities": ["剥其皮悬之潮水至则毛起潮去则毛伏"],
+      "source_text": "东海有牛体鱼，其形状如牛，剥其皮悬之，潮水至则毛起，潮去则毛伏。"
+    },
+    {
+      "id": "crt_jiaoren",
+      "name": "鲛人",
+      "source_book": "博物志",
+      "form": "水居如鱼不废织绩",
+      "abilities": ["其眼能泣珠"],
+      "source_text": "南海外有鲛人，水居如鱼，不废织绩，其眼能泣珠。"
+    },
+    {
+      "id": "crt_fengshen",
+      "name": "风伯（箕星）",
+      "source_book": "搜神记",
+      "form": "星也箕星",
+      "abilities": ["风伯者箕星也"],
+      "source_text": "风伯，雨师，星也。风伯者，箕星也。"
+    },
+    {
+      "id": "crt_yushi",
+      "name": "雨师（毕星/屏翳/玄冥）",
+      "source_book": "搜神记",
+      "form": "星也毕星",
+      "abilities": ["雨师者毕星也", "一曰屏翳一曰号屏一曰玄冥"],
+      "source_text": "雨师者，毕星也。一曰屏翳，一曰号屏，一曰玄冥。"
+    },
+    {
+      "id": "crt_taishan_nu",
+      "name": "泰山之女",
+      "source_book": "搜神记",
+      "form": "甚丽当道而哭",
+      "abilities": ["嫁为东海妇", "行必有大风疾雨"],
+      "source_text": "文王梦一妇人甚丽当道而哭。问其故曰吾泰山之女嫁为东海妇欲归今为灌坛令当道有德废我行。"
+    },
+    {
+      "id": "crt_hebo",
+      "name": "河伯",
+      "source_book": "搜神记",
+      "form": "年三十许颜色如画侍卫甚多",
+      "abilities": ["掌管河水", "能赐福赐物"],
+      "source_text": "俄见一人年三十许颜色如画侍卫烦多相对欣然敕行酒。"
+    },
+    {
+      "id": "crt_qinghongjun",
+      "name": "青洪君",
+      "source_book": "搜神记",
+      "form": "神",
+      "abilities": ["能赐如愿婢", "如愿者所愿辄得"],
+      "source_text": "青洪君感君前后有礼故要君必有重遗君者。君勿取独求如愿耳。如愿者青洪君婢也。明将归所愿辄得数年大富。"
+    },
+    {
+      "id": "crt_zhuque",
+      "name": "朱雀",
+      "source_book": "搜神记",
+      "form": "朱雀止冶上",
+      "abilities": ["止于冶上", "言冶与天通", "七月七日迎汝以赤龙"],
+      "source_text": "朱雀止冶上，曰：'安公！安公！冶与天通。七月七日，迎汝以赤龙。'"
+    },
+    {
+      "id": "crt_shouguang_hou",
+      "name": "寿光侯",
+      "source_book": "搜神记",
+      "form": "人",
+      "abilities": ["能劾百鬼众魅令自缚见形", "劾大蛇数丈", "劾树精使盛夏枯落"],
+      "source_text": "寿光侯者，汉章帝时人也。能劾百鬼众魅，令自缚见形。"
+    },
+    {
+      "id": "crt_du_lanxiang",
+      "name": "杜兰香",
+      "source_book": "搜神记",
+      "form": "天上神女年可十六七",
+      "abilities": ["天上玉女", "赐薯蕷子辟寒温不畏风波", "消魔药可愈疾"],
+      "source_text": "汉时有杜兰香者，自称南康人氏。出薯蕷子三枚，大如鸡子，云：'食此，令君不畏风波，辟寒温。'"
+    },
+    {
+      "id": "crt_chenggong_zhiong",
+      "name": "成公知琼（天上玉女）",
+      "source_book": "搜神记",
+      "form": "天上玉女姿颜容体状若飞仙",
+      "abilities": ["驾輜軿车从八婢", "往来常可得驾轻车乘肥马", "饮食常可得远味异膳", "赠织成裙衫", "注易七卷可占吉凶"],
+      "source_text": "天上玉女，东郡人，姓成公，字知琼。驾輜軿车，从八婢，服綾罗绮绣之衣，姿颜容体，状若飞仙。"
+    },
+    {
+      "id": "crt_huangong",
+      "name": "黄公",
+      "source_book": "搜神记",
+      "form": "人",
+      "abilities": ["善为幻", "制蛇御虎", "常佩赤金刀"],
+      "source_text": "东海人黄公，善为幻，制蛇，御虎。常佩赤金刀。"
+    },
+    {
+      "id": "crt_yuji",
+      "name": "于吉",
+      "source_book": "搜神记",
+      "form": "道士瑯琊人",
+      "abilities": ["请雨", "日中大雨总至谿涧盈溢", "死后尸不知所踪", "能在镜中显现"],
+      "source_text": "孙策欲渡江袭许与于吉俱行。时大旱。令人缚置地上暴之使请雨。俄而云气上蒸比至日中大雨总至谿涧盈溢。"
+    },
+    {
+      "id": "crt_ge_xuan",
+      "name": "葛玄",
+      "source_book": "搜神记",
+      "form": "人",
+      "abilities": ["嗽口中饭尽变大蜂数百", "指虾蟆及诸行虫燕雀之属使舞应节如人", "冬为客设生瓜枣夏致冰雪", "书符掷水中须臾有大鱼数百头", "书符著社中顷刻间天地晦冥大雨流淹"],
+      "source_text": "葛玄与客对食言及变化之事。乃嗽口中饭尽变大蜂数百皆集客身。又指虾蟆及诸行虫燕雀之属使舞应节如人。"
+    },
+    {
+      "id": "crt_wu_meng",
+      "name": "吴猛",
+      "source_book": "搜神记",
+      "form": "濮阳人仕吴为西安令",
+      "abilities": ["书符掷屋上有青乌衔去风即止", "以白羽扇画江水横流遂成陆路", "书符掷屋上须臾风静"],
+      "source_text": "吴猛尝见大风书符掷屋上有青乌衔去风即止。以手中白羽扇画江水横流遂成陆路徐行而过过讫水复。"
+    },
+    {
+      "id": "crt_luotou_chong",
+      "name": "落头虫（虫落）",
+      "source_book": "搜神记",
+      "form": "其种人常有所祭祀号曰虫落",
+      "abilities": ["其头能飞以耳为翼将晓还复著体"],
+      "source_text": "南方有落头虫其头能飞。其种人常有所祭祀号曰虫落。其飞因晚便去以耳为翼将晓还复著体。"
+    },
+    {
+      "id": "crt_shen_niu",
+      "name": "神牛（扶南）",
+      "source_book": "搜神记",
+      "form": "虎/鳄鱼",
+      "abilities": ["投与虎不噬乃宥之", "投与鳄鱼不噬乃赦之无罪者皆不噬"],
+      "source_text": "扶南王范寻养虎于山有犯罪者投与虎不噬乃宥之。又养鳄鱼十头若犯罪者投与鳄鱼不噬乃赦之无罪者皆不噬。"
+    },
+    {
+      "id": "crt_mengshu2",
+      "name": "猛兽（魏武）",
+      "source_book": "搜神记",
+      "form": "如貍",
+      "abilities": ["见狮子便跳起在狮子头上即伏不敢起"],
+      "source_text": "王忽见一物从林中出如貍起上王车轭狮子将至此兽便跳起在狮子头上即伏不敢起。"
+    },
+    {
+      "id": "crt_fly_car",
+      "name": "飞车",
+      "source_book": "博物志",
+      "form": "奇肱民所造",
+      "abilities": ["能为飞车从风远行", "汤时西风至吹其车至豫州"],
+      "source_text": "奇肱民善为拭扛以杀百禽能为飞车从风远行。汤时西风至吹其车至豫州。"
+    },
+    {
+      "id": "crt_longbo",
+      "name": "龙伯国人",
+      "source_book": "博物志",
+      "form": "人长三十丈",
+      "abilities": ["生万八千岁而死"],
+      "source_text": "龙伯国人长三十丈，生万八千岁而死。"
+    },
+    {
+      "id": "crt_wuqi_min",
+      "name": "无启民",
+      "source_book": "博物志",
+      "form": "居穴食土无男女",
+      "abilities": ["死埋之其心不朽百年还化为人"],
+      "source_text": "无启民，居穴食土，无男女。死埋之，其心不朽，百年还化为人。"
+    },
+    {
+      "id": "crt_mengshuang_min",
+      "name": "蒙双民",
+      "source_book": "博物志",
+      "form": "同颈二头四手",
+      "abilities": ["神鸟以不死草覆之七年男女皆活"],
+      "source_text": "蒙双民，昔高阳氏有同产而为夫妇帝放之北野相抱而死神鸟以不死草覆之七年男女皆活同颈二头四手。"
+    },
+    {
+      "id": "crt_tuoling",
+      "name": "驼铃（驢鼠）",
+      "source_book": "搜神记",
+      "form": "大如水牛灰色卑脚脚类象胸前尾上皆白大力而迟钝",
+      "abilities": ["郱亭驢山君使"],
+      "source_text": "有一物大如水牛灰色卑脚脚类象胸前尾上皆白大力而迟钝。名曰驢鼠。此是郱亭驢山君使。"
+    },
+    {
+      "id": "crt_fan_daoling",
+      "name": "樊道基",
+      "source_book": "搜神记",
+      "form": "神",
+      "abilities": ["自称樊道基", "见于兖州"],
+      "source_text": "永嘉中有神见兖州自称樊道基。"
+    },
+    {
+      "id": "crt_huang_gong2",
+      "name": "黄公（益州之西）",
+      "source_book": "搜神记",
+      "form": "神",
+      "abilities": ["自称黄公", "张良所受黄石公之灵", "清净不宰杀", "持一百钱一双笔一丸墨置石室中即可问吉凶"],
+      "source_text": "益州之西云南之东有神祠剋山石为室下有神奉祠之自称黄公。持一百钱一双笔一丸墨置石室中前请乞先闻石室中有声须臾问来人何欲。"
+    }
+  ],
+  "plants": [
+    {
+      "id": "plt_gan_jiao",
+      "name": "甘蕉",
+      "source_book": "南方草木状",
+      "form": "望之如树大者一围余叶长一丈花大如酒柸",
+      "effects": ["甜美亦可密藏", "根如芋魁大者如车毂", "茎解散如丝可功绩为絺綌谓之蕉葛"],
+      "source_text": "甘蕉望之如树大者一围余。叶长一丈。花大如酒柸。甜美亦可密藏。其茎解散如丝以灰练之可功绩为絺綌谓之蕉葛。"
+    },
+    {
+      "id": "plt_lizhi",
+      "name": "荔枝",
+      "source_book": "南方草木状",
+      "form": "树高五六丈余如桂树绿叶蓬蓬冬夏荣茂青华朱实",
+      "effects": ["实大如鷄子核黄黑似熟莲", "实白如肪甘而多汁似安石榴", "一树下子百斛"],
+      "source_text": "荔枝树高五六丈余如桂树绿叶蓬蓬冬夏荣茂青华朱实。实大如鷄子核黄黑似熟莲。实白如肪甘而多汁似安石榴。"
+    },
+    {
+      "id": "plt_ye_zi",
+      "name": "椰",
+      "source_book": "南方草木状",
+      "form": "树叶如栟榈高六七丈无枝条其实大如寒瓜",
+      "effects": ["剖之有白膚厚半寸味似胡桃而极肥美", "有浆饮之得醉"],
+      "source_text": "椰树叶如栟榈高六七丈无枝条。其实大如寒瓜。剖之有白膚厚半寸味似胡桃而极肥美。有浆饮之得醉。"
+    },
+    {
+      "id": "plt_longyan",
+      "name": "龙眼",
+      "source_book": "南方草木状",
+      "form": "树如荔枝但枝叶稍小壳青黄色形圆如弹丸",
+      "effects": ["肉白而带浆其甘如蜜", "一朵五六十颗作穗如葡萄"],
+      "source_text": "龙眼树如荔枝但枝叶稍小壳青黄色形圆如弹丸核如木梡子而不坚肉白而带浆。其甘如蜜一朵五六十颗作穗如葡萄。"
+    },
+    {
+      "id": "plt_ju",
+      "name": "橘",
+      "source_book": "南方草木状",
+      "form": "白华赤实皮馨香有美味",
+      "effects": ["交趾有橘官长一人秩二百石主贡御橘"],
+      "source_text": "橘白华赤实皮馨香有美味。自汉武帝交趾有橘官长一人秩二百石主贡御橘。"
+    },
+    {
+      "id": "plt_gan",
+      "name": "柑",
+      "source_book": "南方草木状",
+      "form": "橘之属滋味甘美特异",
+      "effects": ["有黄者有頳者", "頳者谓之壶柑"],
+      "source_text": "柑乃橘之属滋味甘美特异者也。有黄者有頳者。頳者谓之壶柑。"
+    },
+    {
+      "id": "plt_ganlan",
+      "name": "橄榄",
+      "source_book": "南方草木状",
+      "form": "树身耸枝皆高数丈其子深秋方熟",
+      "effects": ["味虽苦涩咀之芬馥胜含鸡骨香"],
+      "source_text": "橄榄树身耸枝皆高数丈。其子深秋方熟味虽苦涩咀之芬馥胜含鸡骨香。"
+    },
+    {
+      "id": "plt_haizao",
+      "name": "海枣",
+      "source_book": "南方草木状",
+      "form": "树身无闲枝直耸三四十丈树顶四面共生十余枝",
+      "effects": ["五年一实", "实甚大如柸椀核两头不尖双卷而圆其味极甘美"],
+      "source_text": "海棘树身无闲枝直耸三四十丈树顶四面共生十余枝叶如栟榈五年一实。实甚大如柸椀其味极甘美。"
+    },
+    {
+      "id": "plt_qiansuizi",
+      "name": "千岁子",
+      "source_book": "南方草木状",
+      "form": "有藤蔓出土子在根下须绿色交加如织",
+      "effects": ["一苞恒二百余颗壳中有肉如栗味亦如之"],
+      "source_text": "千岁子有藤蔓出土子在根下须绿色交加如织。其子一苞恒二百余颗壳中有肉如栗味亦如之。"
+    },
+    {
+      "id": "plt_zhuyan",
+      "name": "朱槿花",
+      "source_book": "南方草木状",
+      "form": "茎叶皆如桑叶光而厚树高止四五尺而枝叶婆娑",
+      "effects": ["花深红色五出大如蜀葵", "一丛之上日开数百朵朝开暮落", "插枝即活"],
+      "source_text": "朱槿花茎叶皆如桑叶光而厚树高止四五尺而枝叶婆娑。自二月开花至中冬即歇。其花深红色五出大如蜀葵。一丛之上日开数百朵朝开暮落插枝即活。"
+    },
+    {
+      "id": "plt_zhijiahuahua",
+      "name": "指甲花",
+      "source_book": "南方草木状",
+      "form": "树高五六尺枝条柔弱叶如嫩榆花极繁细纔如半米粒许",
+      "effects": ["花雪白而香", "彼人多折置襟袖间"],
+      "source_text": "指甲花其树高五六尺枝条柔弱叶如嫩榆与耶悉茗末利花皆雪白而香不相上下。此花极繁细纔如半米粒许。"
+    },
+    {
+      "id": "plt_rong",
+      "name": "榕树",
+      "source_book": "南方草木状",
+      "form": "叶如木麻实如冬青树干拳曲不可以为器不可以为材烧之无焰",
+      "effects": ["其荫十亩故人以息焉", "枝条繁叶茂细软条如藤垂下渐入地便生根节"],
+      "source_text": "榕树南海桂林多植之叶如木麻实如冬青。树干拳曲不可以为器不可以为材烧之无焰。以其不材故能久而无伤。其荫十亩故人以息焉。"
+    },
+    {
+      "id": "plt_yizhe_gu",
+      "name": "薏苡（甘藷）",
+      "source_book": "南方草木状",
+      "form": "根叶亦如芋实如拳有大如瓯者皮紫而肉白",
+      "effects": ["蒸鬻食之味如薯蕷性不甚冷", "蒸曬切如米粒仓图贮之以充粮糗", "食之者寿百余年"],
+      "source_text": "甘藷根叶亦如芋实如拳有大如瓯者皮紫而肉白。蒸鬻食之味如薯蕷性不甚冷。海中之人皆不业耕稼惟掘地种甘藷。"
+    },
+    {
+      "id": "plt_chuocai",
+      "name": "绰菜（瞑菜）",
+      "source_book": "南方草木状",
+      "form": "夏生于池沼间叶类茨菰根如藕条",
+      "effects": ["南海人食之云令人思睡呼为瞑菜"],
+      "source_text": "绰菜夏生于池沼间叶类茨菰根如藕条。南海人食之云令人思睡呼为瞑菜。"
+    },
+    {
+      "id": "plt_weng",
+      "name": "蕹",
+      "source_book": "南方草木状",
+      "form": "叶如落葵而小性冷味甘",
+      "effects": ["编苇为茷作小孔浮于水上种子于水中则如萍", "冶葛有大毒以蕹汁滴其苗当时萎死"],
+      "source_text": "蕹叶如落葵而小性冷味甘。南人编苇为茷作小孔浮于水上种子于水中则如萍。冶葛有大毒以蕹汁滴其苗当时萎死。"
+    },
+    {
+      "id": "plt_feimacao",
+      "name": "肥马草",
+      "source_book": "南方草木状",
+      "form": "叶类梧桐而厚",
+      "effects": ["取以秣马谓之肥马草马颇嗜而食果肥壮矣"],
+      "source_text": "南方冬无积藁濒海郡邑多马。有草叶类梧桐而厚取以秣马谓之肥马草。马颇嗜而食果肥壮矣。"
+    },
+    {
+      "id": "plt_dongye",
+      "name": "冬叶",
+      "source_book": "南方草木状",
+      "form": "薑叶也苞苴物",
+      "effects": ["交广皆用之", "南方地热物易腐败惟冬叶藏之乃可持久"],
+      "source_text": "冬叶薑叶也苞苴物交广皆用之。南方地热物易腐败惟冬叶藏之乃可持久。"
+    },
+    {
+      "id": "plt_pugui",
+      "name": "蒲葵",
+      "source_book": "南方草木状",
+      "form": "如栟榈而柔薄",
+      "effects": ["可为葵笠"],
+      "source_text": "蒲葵如栟榈而柔薄可为葵笠出龙川。"
+    },
+    {
+      "id": "plt_qiulicao2",
+      "name": "赬桐花（贞桐花）",
+      "source_book": "南方草木状",
+      "form": "岭南处处有自初夏生至秋盖草也叶如桐",
+      "effects": ["其花连枝萼皆深红之极者"],
+      "source_text": "赬桐花岭南处处有自初夏生至秋。盖草也叶如桐其花连枝萼皆深红之极者俗呼贞桐花。"
+    },
+    {
+      "id": "plt_wuqing",
+      "name": "芜菁",
+      "source_book": "南方草木状",
+      "form": "岭嶠以南俱无之",
+      "effects": ["偶有士人因官携种就彼种之出地则变为芥", "亦橘种江北为枳之义也"],
+      "source_text": "芜菁岭嶠以南俱无之偶有士人因官携种就彼种之出地则变为芥亦橘种江北为枳之义也。"
+    },
+    {
+      "id": "plt_qie",
+      "name": "茄",
+      "source_book": "南方草木状",
+      "form": "交广草木经冬不衰故蔬圃之中种茄",
+      "effects": ["宿根有三五年者渐长枝干乃成大树", "每夏秋盛热则梯树采之"],
+      "source_text": "茄树交广草木经冬不衰故蔬圃之中种茄。宿根有三五年者渐长枝干乃成大树。每夏秋盛热则梯树采之。"
+    },
+    {
+      "id": "plt_renwangmianzi",
+      "name": "人面子",
+      "source_book": "南方草木状",
+      "form": "树似含桃结子如桃实无味",
+      "effects": ["其核正如人面故以为名", "以蜜渍之稍可食", "以其核可玩于席间飣餖御客"],
+      "source_text": "人面子树似含桃结子如桃实无味。其核正如人面故以为名。以蜜渍之稍可食。以其核可玩于席间飣餖御客。"
+    },
+    {
+      "id": "plt_shilin_zhu",
+      "name": "思摩竹",
+      "source_book": "南方草木状",
+      "form": "如竹大而笋生其节",
+      "effects": ["笋既成竹春而荀复生节焉"],
+      "source_text": "思摩竹如竹大而笋生其节笋既成竹春而荀复生节焉。交广所在有之。"
+    },
+    {
+      "id": "plt_yuewang_zhu",
+      "name": "越王竹",
+      "source_book": "南方草木状",
+      "form": "根生石上若细荻高尺余",
+      "effects": ["南人爱其青色用为酒筹"],
+      "source_text": "越王竹根生石上若细荻高尺余南海有之。南人爱其青色用为酒筹云越王弃余筭而竹生。"
+    },
+    {
+      "id": "plt_zhushu_zhen",
+      "name": "枫树菌（椹）",
+      "source_book": "博物志",
+      "form": "大树断倒者经春夏生菌",
+      "effects": ["食之有味而忽毒杀人", "枫树生者啖之令人笑不得止治之饮土浆即愈"],
+      "source_text": "江南诸山郡中大树断倒者经春夏生菌谓之椹。食之有味而忽毒杀人。枫树生者啖之令人笑不得止治之饮土浆即愈。"
+    },
+    {
+      "id": "plt_zhi_ni_cao",
+      "name": "屈佚草（指佞草）",
+      "source_book": "博物志",
+      "form": "生于庭",
+      "effects": ["佞人入朝则屈而指之一名指佞草"],
+      "source_text": "尧时有屈佚草生于庭佞人入朝则屈而指之。一名指佞草。"
+    },
+    {
+      "id": "plt_zhan_cao",
+      "name": "詹草",
+      "source_book": "博物志",
+      "form": "其叶郁茂其萼黄实如豆",
+      "effects": ["帝女化为詹草", "服者媚于人"],
+      "source_text": "右詹山帝女化为詹草其叶郁茂其萼黄实如豆服者媚于人。"
+    },
+    {
+      "id": "plt_wuse_xiangcao",
+      "name": "五色香草",
+      "source_book": "搜神记",
+      "form": "积数十年服食其实",
+      "effects": ["引五色神蛾止其上", "得茧大如甕每一茧缫六七日乃尽", "女与客俱仙去"],
+      "source_text": "园客尝种五色香草积数十年服食其实。忽有五色神蛾止香草之上。得茧百二十头大如甕每一茧缫六七日乃尽。缫讫女与客俱仙去。"
+    },
+    {
+      "id": "plt_juhua",
+      "name": "菊花",
+      "source_book": "搜神记",
+      "form": "菊花舒时并采茎叶",
+      "effects": ["杂黍米饟之至来年九月九日始熟就饮", "饮菊花酒令人长命"],
+      "source_text": "菊花舒时并采茎叶杂黍米饟之至来年九月九日始熟就饮焉故谓之菊花酒。九月佩茱萸食蓬饵饮菊花酒令人长命。"
+    },
+    {
+      "id": "plt_zhuyu",
+      "name": "茱萸",
+      "source_book": "搜神记",
+      "form": "九月佩茱萸",
+      "effects": ["令人长命"],
+      "source_text": "九月佩茱萸食蓬饵饮菊花酒令人长命。"
+    }
+  ],
+  "source_notes": [
+    {
+      "book": "周礼",
+      "category": "祭祀",
+      "note": "主要提取了祭祀制度、祭品规则、医学体系、官员职掌等结构化数据。内容极为丰富，涉及天官、地官等六官体系。"
+    },
+    {
+      "book": "礼记",
+      "category": "祭祀",
+      "note": "主要提取了四时祭祀、丧葬制度等。大量内容为丧礼细节，游戏价值相对较低。"
+    },
+    {
+      "book": "仪礼",
+      "category": "祭祀",
+      "note": "主要提取了射礼祭祀流程。大量内容为礼仪程序细节，游戏价值有限。"
+    },
+    {
+      "book": "楚辞",
+      "category": "祭祀",
+      "note": "提取了东皇太一祭祀、山鬼祭祀、湘君湘夫人祭祀等南方楚地祭祀文化，祭品和仪式极具游戏特色。"
+    },
+    {
+      "book": "国语",
+      "category": "祭祀",
+      "note": "内容主要为各国政治对话和史事记述，直接可提取的祭祀结构化数据较少。"
+    },
+    {
+      "book": "周氏冥通记",
+      "category": "祭祀",
+      "note": "记载道教通灵体验，以香符通神。但具体仪式步骤和祭品规则不够明确，提取数据有限。"
+    },
+    {
+      "book": "墨子",
+      "category": "工匠",
+      "note": "节选内容主要为备城门等城防篇章，涉及守城策略但缺乏具体工具器械的详细描述。"
+    },
+    {
+      "book": "天工开物",
+      "category": "工匠",
+      "note": "节选仅包含乃粒（农业）、乃服（纺织）等前几卷，缺少五金、冶铸、佳兵、丹青等高游戏价值章节的实际内容。提取了农具和加工工具数据。"
+    },
+    {
+      "book": "营造法式",
+      "category": "工匠",
+      "note": "为建筑规范目录和制度概述，提取了建筑类型和结构名称。缺乏具体建筑尺寸和建造细节。"
+    },
+    {
+      "book": "古今刀剑录",
+      "category": "工匠",
+      "note": "数据极为丰富，提取了从夏代到南朝的数十把名剑名刀，包含名称、材料、尺寸、铭文、铸造者和特殊效果。是武器数据的最佳来源。"
+    },
+    {
+      "book": "鼎录",
+      "category": "工匠",
+      "note": "提取了从黄帝到梁代的大量鼎器记录，包含名称、尺寸、铭文、材料和特殊功能。鼎器兼具祭祀礼器和神器的双重属性。"
+    },
+    {
+      "book": "尔雅",
+      "category": "生存",
+      "note": "主要为古代词典，内容为词语释义。释草、释木、释虫、释鱼等章节有动植物名称但缺乏功效描述，游戏价值有限。"
+    },
+    {
+      "book": "南方草木状",
+      "category": "生存",
+      "note": "数据极为丰富，提取了大量南方植物（草类、木类、果类、竹类），包含形态、产地、功效、用途等完整信息。是植物和材料数据的最佳来源。"
+    },
+    {
+      "book": "博物志",
+      "category": "生存",
+      "note": "提取了大量异兽、异鸟、异虫、异鱼、异草木、异俗、神药等数据。包含地理、外国异人、神话生物等丰富内容。"
+    },
+    {
+      "book": "搜神记",
+      "category": "生存",
+      "note": "数据极为丰富，提取了大量神仙、方士、鬼神、异兽、祭祀仪式、法术、药物等数据。是神灵和法术系统的最佳来源。"
+    }
+  ]
+}
