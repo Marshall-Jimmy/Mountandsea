@@ -13,8 +13,9 @@
 | [extract_medicine_cultivation.json](extract_medicine_cultivation.json) | 草药、方剂、修仙功法、异兽、材料 | 102 | 神农本草经、伤寒论、抱朴子内篇、养性延命录、登真隐诀、坐忘论等 23 部 |
 | [extract_sacrifice_craft_survival.json](extract_sacrifice_craft_survival.json) | 祭祀、工具/武器、材料、建筑、异兽、植物 | 196 | 古今刀剑录、南方草木状、搜神记、博物志、周礼、礼记、楚辞等 15 部 |
 | [extract_farming_shanhai.json](extract_farming_shanhai.json) | 作物、牲畜、农具、耕作技术、山海经异兽/植物/矿物 | 221 | 齐民要术、氾胜之书等 7 部农牧典籍 + 山海经原文 18 卷 |
+| [tiangong_full_extract.json](tiangong_full_extract.json) | 工具、武器、材料、冶炼工艺、建筑、食品加工、纺织染色、造纸 | 125 | 天工开物完本 18 卷（五金/冶铸/佳兵/锤锻等高价值章节） |
 
-**总计：519 条结构化数据条目**
+**总计：644 条结构化数据条目**
 
 ---
 
