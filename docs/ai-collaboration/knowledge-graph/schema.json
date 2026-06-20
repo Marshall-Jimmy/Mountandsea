@@ -1,0 +1,183 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "山海经知识图谱 Schema",
+  "description": "用于AI协作的统一知识图谱，确保所有AI Agent共享一致的世界观设定",
+  "version": "0.1.0",
+  "lastUpdated": "2026-06-20",
+  "maintainer": "文化内核AI负责人",
+
+  "entityTypes": {
+    "creature": {
+      "description": "异兽/生物实体",
+      "fields": {
+        "id": "string - 唯一标识符，格式：creature_拼音",
+        "name": "string - 中文名（文言文）",
+        "alias": "array - 别名",
+        "mountain": "string - 出处山系",
+        "appearance": "string - 外形描述",
+        "cry": "string - 叫声描述",
+        "properties": {
+          "type": "object",
+          "properties": {
+            "edible": "boolean - 是否可食用",
+            "toxic": "boolean - 是否有毒",
+            "domesticable": "boolean - 是否可驯服",
+            "rideable": "boolean - 是否可骑乘"
+          }
+        },
+        "effects": {
+          "type": "object",
+          "properties": {
+            "eat": "string - 食用效果",
+            "wear": "string - 佩戴效果",
+            "sacrifice": "string - 祭祀用途"
+          }
+        },
+        "techBranches": "array - 关联科技树分支 [survival, medicine, cultivation, sacrifice, craft, farming]",
+        "rarity": "string - 稀有度 common/uncommon/rare/epic/legendary",
+        "source": "string - 原文出处，如：南山经·鹊山"
+      }
+    },
+
+    "plant": {
+      "description": "草木/植物实体",
+      "fields": {
+        "id": "string - 唯一标识符，格式：plant_拼音",
+        "name": "string - 中文名（文言文）",
+        "mountain": "string - 出处山系",
+        "appearance": "string - 外形描述",
+        "properties": {
+          "type": "object",
+          "properties": {
+            "edible": "boolean - 是否可食用",
+            "medicinal": "boolean - 是否可入药",
+            "poisonous": "boolean - 是否有毒"
+          }
+        },
+        "effects": {
+          "type": "object",
+          "properties": {
+            "eat": "string - 食用效果",
+            "medicine": "string - 药用效果",
+            "sacrifice": "string - 祭祀用途"
+          }
+        },
+        "techBranches": "array - 关联科技树分支",
+        "rarity": "string - 稀有度",
+        "source": "string - 原文出处"
+      }
+    },
+
+    "mineral": {
+      "description": "矿物/玉石实体",
+      "fields": {
+        "id": "string - 唯一标识符，格式：mineral_拼音",
+        "name": "string - 中文名（文言文）",
+        "mountain": "string - 出处山系",
+        "description": "string - 描述",
+        "properties": {
+          "type": "object",
+          "properties": {
+            "metal": "boolean - 是否金属",
+            "jade": "boolean - 是否玉石",
+            "gem": "boolean - 是否宝石"
+          }
+        },
+        "uses": {
+          "type": "object",
+          "properties": {
+            "craft": "string - 锻造用途",
+            "sacrifice": "string - 祭祀用途",
+            "medicine": "string - 药用"
+          }
+        },
+        "techBranches": "array - 关联科技树分支",
+        "rarity": "string - 稀有度",
+        "source": "string - 原文出处"
+      }
+    },
+
+    "mountain": {
+      "description": "山系/地理实体",
+      "fields": {
+        "id": "string - 唯一标识符，格式：mountain_拼音",
+        "name": "string - 山名",
+        "section": "string - 所属山经（南山经/西山经等）",
+        "position": "number - 在山经中的序号",
+        "distanceFromPrev": "number - 距上一山的里数",
+        "description": "string - 描述",
+        "god": "string - 山神",
+        "sacrificeRule": "string - 祭祀规则",
+        "creatures": "array - 山中异兽",
+        "plants": "array - 山中草木",
+        "minerals": "array - 山中矿物",
+        "biome": "string - 生态类型"
+      }
+    },
+
+    "god": {
+      "description": "神灵/山神实体",
+      "fields": {
+        "id": "string - 唯一标识符，格式：god_拼音",
+        "name": "string - 神名",
+        "mountainRange": "string - 管辖山系",
+        "appearance": "string - 神的形貌",
+        "sacrifice": {
+          "type": "object",
+          "properties": {
+            "hair": "string - 毛物要求",
+            "jade": "string - 吉玉要求",
+            "rice": "string - 米的要求",
+            "mat": "string - 席子要求",
+            "special": "string - 特殊要求"
+          }
+        },
+        "blessings": "array - 可赐予的庇佑效果",
+        "source": "string - 原文出处"
+      }
+    },
+
+    "technique": {
+      "description": "科技/技能实体",
+      "fields": {
+        "id": "string - 唯一标识符，格式：tech_分支_序号",
+        "name": "string - 科技名称",
+        "branch": "string - 所属分支 survival/medicine/cultivation/sacrifice/craft/farming",
+        "tier": "number - 层级 1-10",
+        "description": "string - 描述",
+        "prerequisites": "array - 前置科技",
+        "crossBranchPrereqs": "array - 跨分支前置",
+        "unlocks": "array - 解锁内容",
+        "materials": "array - 所需材料",
+        "source": "string - 典籍出处"
+      }
+    }
+  },
+
+  "relationTypes": {
+    "lives_in": "生物 -> 山系",
+    "grows_in": "植物 -> 山系",
+    "found_in": "矿物 -> 山系",
+    "governs": "山神 -> 山系",
+    "requires": "科技 -> 材料",
+    "prerequisite_for": "科技 -> 科技",
+    "used_in": "物品 -> 科技",
+    "cures": "药物 -> 疾病",
+    "grants": "祭祀 -> 效果",
+    "evolves_from": "生物 -> 生物（进化/驯化关系）"
+  },
+
+  "consistencyRules": [
+    "所有实体必须有明确的原文出处（source字段）",
+    "异兽的效果必须与山海经原文一致，不得随意增减",
+    "科技的典籍出处必须在45部补充典籍范围内",
+    "跨分支科技组合必须有逻辑合理性和典籍依据",
+    "稀有度评定需参考原文出现频率和重要性"
+  ],
+
+  "namingConvention": {
+    "文言文优先": "所有实体的正式名称使用古文献中的原名",
+    "拼音ID": "ID使用拼音，便于AI检索和引用",
+    "避免现代词": "不得使用现代科技术语作为正式名称"
+  }
+}

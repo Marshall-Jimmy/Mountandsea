@@ -1,0 +1,220 @@
+{
+  "description": "山海经知识图谱示例数据 - 南山经部分",
+  "version": "0.1.0",
+  "lastUpdated": "2026-06-20",
+
+  "mountains": [
+    {
+      "id": "mountain_queshan",
+      "name": "鹊山",
+      "section": "南山经",
+      "position": 1,
+      "distanceFromPrev": 0,
+      "description": "南山经之首曰鹊山。其首曰招摇之山，临于西海之上。",
+      "god": "god_nanshan",
+      "sacrificeRule": "毛用一璋玉瘗，糈用稌米，一璧，稻米白菅为席",
+      "creatures": ["creature_diyu", "creature_xingxing"],
+      "plants": ["plant_migu", "plant_zhujing"],
+      "minerals": ["mineral_yu", "mineral_jin"],
+      "biome": "亚热带山林",
+      "source": "南山经·鹊山"
+    },
+    {
+      "id": "mountain_zhaoyao",
+      "name": "招摇之山",
+      "section": "南山经",
+      "position": 2,
+      "distanceFromPrev": 0,
+      "description": "临于西海之上，多桂，多金玉。",
+      "god": "god_nanshan",
+      "creatures": ["creature_diyu"],
+      "plants": ["plant_migu"],
+      "minerals": ["mineral_yu", "mineral_jin"],
+      "biome": "沿海山林",
+      "source": "南山经·招摇之山"
+    }
+  ],
+
+  "creatures": [
+    {
+      "id": "creature_diyu",
+      "name": "狌狌",
+      "alias": ["猩猩", "独狌"],
+      "mountain": "招摇之山",
+      "appearance": "其状如禺而白耳，伏行人走",
+      "cry": "未知",
+      "properties": {
+        "edible": true,
+        "toxic": false,
+        "domesticable": true,
+        "rideable": false
+      },
+      "effects": {
+        "eat": "食之善走",
+        "wear": "未知",
+        "sacrifice": "可作毛物祭祀"
+      },
+      "techBranches": ["survival", "medicine"],
+      "rarity": "uncommon",
+      "source": "南山经·招摇之山"
+    },
+    {
+      "id": "creature_jiuwei",
+      "name": "九尾狐",
+      "alias": ["九尾之狐"],
+      "mountain": "青丘之山",
+      "appearance": "其状如狐而九尾，其音如婴儿",
+      "cry": "如婴儿",
+      "properties": {
+        "edible": true,
+        "toxic": false,
+        "domesticable": true,
+        "rideable": false
+      },
+      "effects": {
+        "eat": "食者不蛊",
+        "wear": "佩之辟邪",
+        "sacrifice": "高级祭祀用品"
+      },
+      "techBranches": ["survival", "sacrifice", "cultivation"],
+      "rarity": "epic",
+      "source": "南山经·青丘之山"
+    }
+  ],
+
+  "plants": [
+    {
+      "id": "plant_migu",
+      "name": "迷穀",
+      "mountain": "招摇之山",
+      "appearance": "其状如穀而黑理，其华四照",
+      "properties": {
+        "edible": false,
+        "medicinal": false,
+        "poisonous": false
+      },
+      "effects": {
+        "eat": "未知",
+        "medicine": "未知",
+        "sacrifice": "佩之不迷"
+      },
+      "techBranches": ["survival", "sacrifice"],
+      "rarity": "rare",
+      "source": "南山经·招摇之山"
+    },
+    {
+      "id": "plant_zhujing",
+      "name": "祝馀",
+      "mountain": "招摇之山",
+      "appearance": "其状如韭而青华",
+      "properties": {
+        "edible": true,
+        "medicinal": false,
+        "poisonous": false
+      },
+      "effects": {
+        "eat": "食之不饥",
+        "medicine": "未知",
+        "sacrifice": "未知"
+      },
+      "techBranches": ["survival", "farming"],
+      "rarity": "common",
+      "source": "南山经·招摇之山"
+    }
+  ],
+
+  "minerals": [
+    {
+      "id": "mineral_yu",
+      "name": "玉",
+      "mountain": "多山出产",
+      "description": "玉石，祭祀之重器",
+      "properties": {
+        "metal": false,
+        "jade": true,
+        "gem": true
+      },
+      "uses": {
+        "craft": "可制玉器、礼器",
+        "sacrifice": "吉玉，祭祀必备",
+        "medicine": "未知"
+      },
+      "techBranches": ["craft", "sacrifice"],
+      "rarity": "uncommon",
+      "source": "山海经各处"
+    },
+    {
+      "id": "mineral_jin",
+      "name": "金",
+      "mountain": "多山出产",
+      "description": "金属，泛指铜铁等",
+      "properties": {
+        "metal": true,
+        "jade": false,
+        "gem": false
+      },
+      "uses": {
+        "craft": "可制兵器、工具",
+        "sacrifice": "未知",
+        "medicine": "未知"
+      },
+      "techBranches": ["craft"],
+      "rarity": "uncommon",
+      "source": "山海经各处"
+    }
+  ],
+
+  "gods": [
+    {
+      "id": "god_nanshan",
+      "name": "南山神",
+      "mountainRange": "南山经",
+      "appearance": "鸟身龙首",
+      "sacrifice": {
+        "hair": "毛用一璋玉瘗",
+        "jade": "一璧",
+        "rice": "糈用稌米",
+        "mat": "稻米白菅为席",
+        "special": "未知"
+      },
+      "blessings": ["山行平安", "狩猎顺利", "采集丰收"],
+      "source": "南山经·末"
+    }
+  ],
+
+  "techniques": [
+    {
+      "id": "tech_survival_1",
+      "name": "采集",
+      "branch": "survival",
+      "tier": 1,
+      "description": "基础采集技能，可采集草木果实",
+      "prerequisites": [],
+      "crossBranchPrereqs": [],
+      "unlocks": ["采集祝馀等基础植物"],
+      "materials": [],
+      "source": "生存本能"
+    },
+    {
+      "id": "tech_survival_2",
+      "name": "狩猎",
+      "branch": "survival",
+      "tier": 2,
+      "description": "基础狩猎技能，可捕猎小型异兽",
+      "prerequisites": ["tech_survival_1"],
+      "crossBranchPrereqs": [],
+      "unlocks": ["捕猎狌狌等异兽"],
+      "materials": ["石器工具"],
+      "source": "生存本能"
+    }
+  ],
+
+  "relations": [
+    {"from": "creature_diyu", "type": "lives_in", "to": "mountain_zhaoyao"},
+    {"from": "plant_migu", "type": "grows_in", "to": "mountain_zhaoyao"},
+    {"from": "plant_zhujing", "type": "grows_in", "to": "mountain_zhaoyao"},
+    {"from": "mineral_yu", "type": "found_in", "to": "mountain_zhaoyao"},
+    {"from": "god_nanshan", "type": "governs", "to": "mountain_queshan"},
+    {"from": "god_nanshan", "type": "governs", "to": "mountain_zhaoyao"}
+  ]
+}
