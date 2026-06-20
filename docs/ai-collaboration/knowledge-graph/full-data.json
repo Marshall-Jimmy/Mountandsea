@@ -6,9 +6,9 @@
   "scope": "完整山经5篇 + 海外经 + 海内经 + 大荒经 + 补充典籍",
   "stats": {
     "mountains": 39,
-    "creatures": 140,
-    "plants": 84,
-    "minerals": 28,
+    "creatures": 165,
+    "plants": 91,
+    "minerals": 37,
     "gods": 22,
     "techniques": 30
   },
@@ -622,7 +622,7 @@
       "source": "南山经·灌湘之山"
     },
     {
-      "id": "mountain_jishan",
+      "id": "mountain_jishan_xi",
       "name": "鷄山",
       "section": "南山经·南次三经",
       "position": 9,
@@ -1526,7 +1526,7 @@
       "source": "西山经·天帝之山"
     },
     {
-      "id": "creature_yu",
+      "id": "creature_yu_niushoushan",
       "name": "𤣎如",
       "alias": [],
       "type": "兽",
@@ -2096,7 +2096,7 @@
       "source": "西山经·天山"
     },
     {
-      "id": "creature_huan",
+      "id": "creature_huan_beishan",
       "name": "欢",
       "alias": [],
       "type": "兽",
@@ -4325,6 +4325,647 @@
       "techBranches": [],
       "rarity": "uncommon",
       "source": "搜神记"
+    },
+    {
+      "id": "creature_xingxing",
+      "name": "猩猩",
+      "alias": [
+        "狌狌"
+      ],
+      "type": "兽",
+      "mountain": "招摇山",
+      "appearance": "其状如禺而白耳，伏行人走",
+      "cry": "未知",
+      "properties": {
+        "edible": true,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "食之善走",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "未知",
+      "techBranches": [
+        "survival"
+      ],
+      "rarity": "common",
+      "source": "南山经·招摇之山"
+    },
+    {
+      "id": "creature_yupei",
+      "name": "禺狖",
+      "alias": [],
+      "type": "兽",
+      "mountain": "招摇山",
+      "appearance": "禺属，似猕猴而大，赤目长尾",
+      "cry": "未知",
+      "properties": {
+        "edible": true,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "未知",
+      "techBranches": [],
+      "rarity": "common",
+      "source": "南山经·招摇之山"
+    },
+    {
+      "id": "creature_baiyuan",
+      "name": "白猿",
+      "alias": [],
+      "type": "兽",
+      "mountain": "堂庭山",
+      "appearance": "白色猿猴，性灵巧",
+      "cry": "未知",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "未知",
+      "techBranches": [],
+      "rarity": "uncommon",
+      "source": "南山经·堂庭之山"
+    },
+    {
+      "id": "creature_jiuwei",
+      "name": "九尾狐",
+      "alias": [],
+      "type": "兽",
+      "mountain": "青丘山",
+      "appearance": "其状如狐而九尾，其音如婴儿，能食人",
+      "cry": "其音如婴儿",
+      "properties": {
+        "edible": true,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": true
+      },
+      "effects": {
+        "eat": "食者不蛊",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "未知",
+      "techBranches": [
+        "medicine"
+      ],
+      "rarity": "legendary",
+      "source": "南山经·青丘之山"
+    },
+    {
+      "id": "creature_guanguan",
+      "name": "灌灌",
+      "alias": [],
+      "type": "鸟",
+      "mountain": "青丘山",
+      "appearance": "其状如鸠，其音若呵",
+      "cry": "其音若呵",
+      "properties": {
+        "edible": true,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "佩之不惑",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "未知",
+      "techBranches": [],
+      "rarity": "uncommon",
+      "source": "南山经·青丘之山"
+    },
+    {
+      "id": "creature_chiru",
+      "name": "赤鱬",
+      "alias": [],
+      "type": "鱼",
+      "mountain": "青丘山",
+      "appearance": "其状如鱼而人面，其音如鸳鸯",
+      "cry": "其音如鸳鸯",
+      "properties": {
+        "edible": true,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "食之不疥",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "未知",
+      "techBranches": [],
+      "rarity": "uncommon",
+      "source": "南山经·青丘之山"
+    },
+    {
+      "id": "creature_zhu",
+      "name": "鸀",
+      "alias": [],
+      "type": "鸟",
+      "mountain": "柜山",
+      "appearance": "其状如鸡而三首六目六足三翼",
+      "cry": "未知",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "见则其邑大兵",
+      "techBranches": [],
+      "rarity": "rare",
+      "source": "南山经·柜山"
+    },
+    {
+      "id": "creature_jiyu",
+      "name": "鮨鱼",
+      "alias": [],
+      "type": "鱼",
+      "mountain": "浮玉之山",
+      "appearance": "鱼身而犬首，其音如婴儿",
+      "cry": "其音如婴儿",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": true
+      },
+      "effects": {
+        "eat": "食之已狂",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "未知",
+      "techBranches": [
+        "medicine"
+      ],
+      "rarity": "rare",
+      "source": "南山经·浮玉之山"
+    },
+    {
+      "id": "creature_piluo",
+      "name": "猲貐",
+      "alias": [],
+      "type": "兽",
+      "mountain": "洵山",
+      "appearance": "其状如狼，赤首鼠目，其音如豚",
+      "cry": "其音如豚",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": true
+      },
+      "effects": {
+        "eat": "是食人",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "未知",
+      "techBranches": [],
+      "rarity": "uncommon",
+      "source": "南山经·洵山"
+    },
+    {
+      "id": "creature_quru",
+      "name": "渠觜",
+      "alias": [],
+      "type": "鸟",
+      "mountain": "祷过之山",
+      "appearance": "其状如山鸡而赤目鸟喙",
+      "cry": "未知",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "未知",
+      "techBranches": [],
+      "rarity": "uncommon",
+      "source": "南山经·祷过之山"
+    },
+    {
+      "id": "creature_xi",
+      "name": "犀",
+      "alias": [],
+      "type": "兽",
+      "mountain": "祷过之山",
+      "appearance": "犀牛，形似牛，头有独角或双角",
+      "cry": "未知",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "角可入药",
+        "sacrifice": "未知"
+      },
+      "omen": "未知",
+      "techBranches": [
+        "medicine"
+      ],
+      "rarity": "uncommon",
+      "source": "南山经·祷过之山"
+    },
+    {
+      "id": "creature_si",
+      "name": "兕",
+      "alias": [],
+      "type": "兽",
+      "mountain": "祷过之山",
+      "appearance": "形似牛，苍黑色，一角",
+      "cry": "未知",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "皮可制甲",
+        "sacrifice": "未知"
+      },
+      "omen": "未知",
+      "techBranches": [
+        "craft"
+      ],
+      "rarity": "rare",
+      "source": "南山经·祷过之山"
+    },
+    {
+      "id": "creature_xiang",
+      "name": "象",
+      "alias": [],
+      "type": "兽",
+      "mountain": "祷过之山",
+      "appearance": "大象，长鼻大耳，灰白色",
+      "cry": "未知",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": true,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "象牙可雕",
+        "sacrifice": "未知"
+      },
+      "omen": "未知",
+      "techBranches": [
+        "craft"
+      ],
+      "rarity": "uncommon",
+      "source": "南山经·祷过之山"
+    },
+    {
+      "id": "creature_tuanyu",
+      "name": "鴾鵌",
+      "alias": [],
+      "type": "鸟",
+      "mountain": "鷄山",
+      "appearance": "其状如凫而鼠尾",
+      "cry": "未知",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "见则其邑大旱",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "见则其邑大旱",
+      "techBranches": [],
+      "rarity": "uncommon",
+      "source": "南山经·鷄山"
+    },
+    {
+      "id": "creature_yong",
+      "name": "雍和",
+      "alias": [],
+      "type": "兽",
+      "mountain": "令丘之山",
+      "appearance": "其状如猿，赤如丹火，六足四翼",
+      "cry": "未知",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "见则天下大旱",
+      "techBranches": [],
+      "rarity": "rare",
+      "source": "南山经·令丘之山"
+    },
+    {
+      "id": "creature_yuanchu",
+      "name": "鼋",
+      "alias": [],
+      "type": "鱼虫",
+      "mountain": "南禺之山",
+      "appearance": "大鳖，似鳖而大",
+      "cry": "未知",
+      "properties": {
+        "edible": true,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "未知",
+      "techBranches": [],
+      "rarity": "common",
+      "source": "南山经·南禺之山"
+    },
+    {
+      "id": "creature_dashe",
+      "name": "大蛇",
+      "alias": [],
+      "type": "蛇虫",
+      "mountain": "禺槀之山",
+      "appearance": "巨蛇，身长数丈",
+      "cry": "未知",
+      "properties": {
+        "edible": false,
+        "toxic": true,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": true
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "未知",
+      "techBranches": [],
+      "rarity": "rare",
+      "source": "南山经·禺槀之山"
+    },
+    {
+      "id": "creature_guaishou",
+      "name": "怪兽",
+      "alias": [],
+      "type": "兽",
+      "mountain": "generic",
+      "appearance": "泛指山中各种奇异怪兽",
+      "cry": "未知",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "未知",
+      "techBranches": [],
+      "rarity": "common",
+      "source": "山海经·通用"
+    },
+    {
+      "id": "creature_guaiyu",
+      "name": "怪鱼",
+      "alias": [],
+      "type": "鱼",
+      "mountain": "generic",
+      "appearance": "泛指水中各种奇异鱼类",
+      "cry": "未知",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "未知",
+      "techBranches": [],
+      "rarity": "common",
+      "source": "山海经·通用"
+    },
+    {
+      "id": "creature_fuchong",
+      "name": "蝗虫",
+      "alias": [
+        "蝮虫"
+      ],
+      "type": "蛇虫",
+      "mountain": "generic",
+      "appearance": "泛指各种毒虫蝮蛇",
+      "cry": "未知",
+      "properties": {
+        "edible": false,
+        "toxic": true,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "未知",
+      "techBranches": [],
+      "rarity": "common",
+      "source": "山海经·通用"
+    },
+    {
+      "id": "creature_guaishe",
+      "name": "怪蛇",
+      "alias": [],
+      "type": "蛇虫",
+      "mountain": "generic",
+      "appearance": "泛指山中各种奇异蛇类",
+      "cry": "未知",
+      "properties": {
+        "edible": false,
+        "toxic": true,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "未知",
+      "techBranches": [],
+      "rarity": "common",
+      "source": "山海经·通用"
+    },
+    {
+      "id": "creature_guaimu",
+      "name": "怪木",
+      "alias": [],
+      "type": "兽",
+      "mountain": "generic",
+      "appearance": "泛指山中各种奇异树木（注：此ID被山引用为creature类型）",
+      "cry": "未知",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "未知",
+      "techBranches": [],
+      "rarity": "common",
+      "source": "山海经·通用"
+    },
+    {
+      "id": "creature_boyi",
+      "name": "伯益",
+      "alias": [],
+      "type": "兽",
+      "mountain": "generic",
+      "appearance": "伯益，舜时贤臣，善驯鸟兽",
+      "cry": "未知",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "未知",
+      "techBranches": [],
+      "rarity": "common",
+      "source": "山海经·通用"
+    },
+    {
+      "id": "creature_changfu",
+      "name": "长蝠",
+      "alias": [],
+      "type": "兽",
+      "mountain": "generic",
+      "appearance": "大型蝙蝠类生物",
+      "cry": "未知",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "未知",
+      "techBranches": [],
+      "rarity": "uncommon",
+      "source": "山海经·通用"
+    },
+    {
+      "id": "creature_guainiao",
+      "name": "怪鸟",
+      "alias": [],
+      "type": "鸟",
+      "mountain": "generic",
+      "appearance": "泛指山中各种奇异鸟类",
+      "cry": "未知",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "未知",
+      "techBranches": [],
+      "rarity": "common",
+      "source": "山海经·通用"
     }
   ],
   "plants": [
@@ -4814,7 +5455,7 @@
       "id": "plant_mangcao",
       "name": "莽草",
       "mountain": "朝歌之山",
-      "appearance": "",
+      "appearance": "莽草，叶如兰而细，花紫赤色",
       "properties": {
         "edible": false,
         "medicinal": true,
@@ -5334,7 +5975,7 @@
       "id": "plant_xuncao_gaoliang",
       "name": "嘉荣草",
       "mountain": "杳山",
-      "appearance": "",
+      "appearance": "薰草高粱，茎叶高大如芦苇",
       "properties": {
         "edible": false,
         "medicinal": false,
@@ -5413,7 +6054,7 @@
       "id": "plant_ruomu",
       "name": "若木",
       "mountain": "南海之内",
-      "appearance": "",
+      "appearance": "若木，日所入处，其叶如棠，花赤黄色",
       "properties": {
         "edible": false,
         "medicinal": false,
@@ -6076,6 +6717,149 @@
       ],
       "rarity": "common",
       "source": "搜神记"
+    },
+    {
+      "id": "plant_yanmu",
+      "name": "棪木",
+      "mountain": "堂庭山",
+      "appearance": "棪树，乔木，果实可食",
+      "properties": {
+        "edible": true,
+        "medicinal": false,
+        "poisonous": false
+      },
+      "effects": {
+        "eat": "未知",
+        "medicine": "未知",
+        "sacrifice": "未知"
+      },
+      "techBranches": [
+        "survival"
+      ],
+      "rarity": "common",
+      "source": "南山经·堂庭之山"
+    },
+    {
+      "id": "plant_guaimu",
+      "name": "怪木",
+      "mountain": "generic",
+      "appearance": "泛指山中各种奇异树木",
+      "properties": {
+        "edible": false,
+        "medicinal": false,
+        "poisonous": false
+      },
+      "effects": {
+        "eat": "未知",
+        "medicine": "未知",
+        "sacrifice": "未知"
+      },
+      "techBranches": [],
+      "rarity": "common",
+      "source": "山海经·通用"
+    },
+    {
+      "id": "plant_zi",
+      "name": "紫",
+      "mountain": "generic",
+      "appearance": "梓树，良木，可制器",
+      "properties": {
+        "edible": false,
+        "medicinal": false,
+        "poisonous": false
+      },
+      "effects": {
+        "eat": "未知",
+        "medicine": "未知",
+        "sacrifice": "未知"
+      },
+      "techBranches": [
+        "craft"
+      ],
+      "rarity": "common",
+      "source": "山海经·通用"
+    },
+    {
+      "id": "plant_nan",
+      "name": "楠",
+      "mountain": "generic",
+      "appearance": "楠木，常绿乔木，木材珍贵",
+      "properties": {
+        "edible": false,
+        "medicinal": false,
+        "poisonous": false
+      },
+      "effects": {
+        "eat": "未知",
+        "medicine": "未知",
+        "sacrifice": "未知"
+      },
+      "techBranches": [
+        "craft"
+      ],
+      "rarity": "common",
+      "source": "山海经·通用"
+    },
+    {
+      "id": "plant_jing",
+      "name": "荆",
+      "mountain": "generic",
+      "appearance": "荆条，灌木，可编器物",
+      "properties": {
+        "edible": false,
+        "medicinal": false,
+        "poisonous": false
+      },
+      "effects": {
+        "eat": "未知",
+        "medicine": "未知",
+        "sacrifice": "未知"
+      },
+      "techBranches": [
+        "craft"
+      ],
+      "rarity": "common",
+      "source": "山海经·通用"
+    },
+    {
+      "id": "plant_qi",
+      "name": "杞",
+      "mountain": "generic",
+      "appearance": "杞柳，落叶乔木或灌木",
+      "properties": {
+        "edible": false,
+        "medicinal": false,
+        "poisonous": false
+      },
+      "effects": {
+        "eat": "未知",
+        "medicine": "未知",
+        "sacrifice": "未知"
+      },
+      "techBranches": [
+        "craft"
+      ],
+      "rarity": "common",
+      "source": "山海经·通用"
+    },
+    {
+      "id": "plant_baijiu",
+      "name": "白咎",
+      "mountain": "仑者之山",
+      "appearance": "白色植物，具体形态不详",
+      "properties": {
+        "edible": false,
+        "medicinal": false,
+        "poisonous": false
+      },
+      "effects": {
+        "eat": "未知",
+        "medicine": "未知",
+        "sacrifice": "未知"
+      },
+      "techBranches": [],
+      "rarity": "uncommon",
+      "source": "南山经·仑者之山"
     }
   ],
   "minerals": [
@@ -6720,6 +7504,215 @@
       "techBranches": [],
       "rarity": "legendary",
       "source": "海外南经·厌火国北"
+    },
+    {
+      "id": "mineral_jin",
+      "name": "金",
+      "alias": [],
+      "type": "金属",
+      "mountain": "generic",
+      "description": "泛指各类金属矿物",
+      "properties": {
+        "metal": true,
+        "jade": false,
+        "gem": false
+      },
+      "uses": {
+        "craft": "铸造器物",
+        "sacrifice": "祭祀用品",
+        "medicine": "未知"
+      },
+      "techBranches": [
+        "craft"
+      ],
+      "rarity": "common",
+      "source": "山海经·通用"
+    },
+    {
+      "id": "mineral_gui",
+      "name": "珪",
+      "alias": [
+        "硅"
+      ],
+      "type": "玉石",
+      "mountain": "generic",
+      "description": "珪石，似玉之石",
+      "properties": {
+        "metal": false,
+        "jade": true,
+        "gem": false
+      },
+      "uses": {
+        "craft": "制器",
+        "sacrifice": "祭祀",
+        "medicine": "未知"
+      },
+      "techBranches": [
+        "craft"
+      ],
+      "rarity": "uncommon",
+      "source": "山海经·通用"
+    },
+    {
+      "id": "mineral_chijin",
+      "name": "赤金",
+      "alias": [],
+      "type": "金属",
+      "mountain": "generic",
+      "description": "赤色金属，即铜",
+      "properties": {
+        "metal": true,
+        "jade": false,
+        "gem": false
+      },
+      "uses": {
+        "craft": "铸造兵器礼器",
+        "sacrifice": "祭祀用品",
+        "medicine": "未知"
+      },
+      "techBranches": [
+        "craft"
+      ],
+      "rarity": "uncommon",
+      "source": "山海经·通用"
+    },
+    {
+      "id": "mineral_baijin",
+      "name": "白金",
+      "alias": [],
+      "type": "金属",
+      "mountain": "generic",
+      "description": "白色金属，即银",
+      "properties": {
+        "metal": true,
+        "jade": false,
+        "gem": false
+      },
+      "uses": {
+        "craft": "铸造器物",
+        "sacrifice": "祭祀用品",
+        "medicine": "未知"
+      },
+      "techBranches": [
+        "craft"
+      ],
+      "rarity": "uncommon",
+      "source": "山海经·通用"
+    },
+    {
+      "id": "mineral_qinghuo",
+      "name": "青雘",
+      "alias": [],
+      "type": "颜料矿物",
+      "mountain": "generic",
+      "description": "青色颜料矿物，可作彩绘",
+      "properties": {
+        "metal": false,
+        "jade": false,
+        "gem": false
+      },
+      "uses": {
+        "craft": "彩绘涂饰",
+        "sacrifice": "未知",
+        "medicine": "未知"
+      },
+      "techBranches": [
+        "craft"
+      ],
+      "rarity": "uncommon",
+      "source": "山海经·通用"
+    },
+    {
+      "id": "mineral_fushi",
+      "name": "砆石",
+      "alias": [],
+      "type": "玉石",
+      "mountain": "generic",
+      "description": "似玉之石，次于真玉",
+      "properties": {
+        "metal": false,
+        "jade": true,
+        "gem": false
+      },
+      "uses": {
+        "craft": "制器装饰",
+        "sacrifice": "未知",
+        "medicine": "未知"
+      },
+      "techBranches": [
+        "craft"
+      ],
+      "rarity": "uncommon",
+      "source": "山海经·通用"
+    },
+    {
+      "id": "mineral_boshi",
+      "name": "博石",
+      "alias": [],
+      "type": "宝石",
+      "mountain": "generic",
+      "description": "博石，可用于装饰",
+      "properties": {
+        "metal": false,
+        "jade": false,
+        "gem": true
+      },
+      "uses": {
+        "craft": "装饰",
+        "sacrifice": "未知",
+        "medicine": "未知"
+      },
+      "techBranches": [
+        "craft"
+      ],
+      "rarity": "uncommon",
+      "source": "山海经·通用"
+    },
+    {
+      "id": "mineral_shi",
+      "name": "石",
+      "alias": [],
+      "type": "石材",
+      "mountain": "generic",
+      "description": "泛指各类石材",
+      "properties": {
+        "metal": false,
+        "jade": false,
+        "gem": false
+      },
+      "uses": {
+        "craft": "建筑制器",
+        "sacrifice": "未知",
+        "medicine": "未知"
+      },
+      "techBranches": [
+        "craft"
+      ],
+      "rarity": "common",
+      "source": "山海经·通用"
+    },
+    {
+      "id": "mineral_danhuo",
+      "name": "丹雘",
+      "alias": [],
+      "type": "颜料矿物",
+      "mountain": "generic",
+      "description": "红色颜料矿物，可作彩绘",
+      "properties": {
+        "metal": false,
+        "jade": false,
+        "gem": false
+      },
+      "uses": {
+        "craft": "彩绘涂饰",
+        "sacrifice": "未知",
+        "medicine": "未知"
+      },
+      "techBranches": [
+        "craft"
+      ],
+      "rarity": "uncommon",
+      "source": "山海经·通用"
     }
   ],
   "gods": [

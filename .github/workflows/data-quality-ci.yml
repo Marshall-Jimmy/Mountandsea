@@ -1,0 +1,54 @@
+# 山海经项目 - 数据质量校验 CI
+# 每次推送或PR时自动运行全部校验工具
+
+name: Data Quality CI
+
+on:
+  push:
+    branches: [ master, main ]
+    paths:
+      - 'docs/ai-collaboration/knowledge-graph/**'
+      - 'docs/ai-collaboration/tools/**'
+      - 'docs/data/**'
+  pull_request:
+    branches: [ master, main ]
+    paths:
+      - 'docs/ai-collaboration/knowledge-graph/**'
+      - 'docs/ai-collaboration/tools/**'
+      - 'docs/data/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    name: 数据质量校验
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 设置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: L1 数据格式校验
+        run: python docs/ai-collaboration/tools/kg_validator.py
+        continue-on-error: false
+
+      - name: L2 设定一致性检查
+        run: python docs/ai-collaboration/tools/consistency_checker.py
+        continue-on-error: true
+
+      - name: L4 文言文风格检查
+        run: python docs/ai-collaboration/tools/style_linter.py
+        continue-on-error: true
+
+      - name: L3 数值平衡仿真
+        run: python docs/ai-collaboration/tools/balance_simulator.py
+        continue-on-error: true
+
+      - name: 上传仿真报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: balance-report
+          path: docs/ai-collaboration/tools/balance_report.md
