@@ -16,7 +16,14 @@
 ai-collaboration/
 ├── knowledge-graph/          # 山海经知识图谱
 │   ├── schema.json           # 知识图谱Schema定义
-│   └── example-data.json     # 示例数据（南山经部分）
+│   ├── example-data.json     # 示例数据（南山经部分）
+│   ├── mvp-data.json        # MVP版数据（鹊山系10山，39个实体）
+│   └── full-data.json       # 完整版数据（全部山经+海经+大荒经，340+实体）
+│
+├── tools/                   # 自动化校验工具
+│   ├── kg_validator.py       # L1 数据格式校验器
+│   ├── consistency_checker.py # L2 设定一致性检查器
+│   └── style_linter.py      # L4 文言文风格检查器
 │
 ├── consistency-check/        # 跨系统一致性校验
 │   └── rules.md              # 校验规则文档
@@ -75,11 +82,11 @@ AI多人协作最大的风险不是"做不出来"，而是"拼不起来"。
 
 ## 后续规划
 
-- [ ] 知识图谱数据补全（18卷山海经全部实体）
-- [ ] 自动化校验工具开发
+- [x] 知识图谱数据补全（全部山经+海经+大荒经，340+实体）
+- [x] 自动化校验工具开发（L1格式/L2一致性/L4风格，3个Python脚本）
 - [ ] CI/CD流程集成
 - [ ] 数值平衡仿真器
-- [ ] 文言文风格检查器
+- [ ] 文言文风格检查器增强（接入大模型）
 
 ---
 
