@@ -1,0 +1,2017 @@
+{
+  "description": "山海经知识图谱 - 完整版（v1.0）",
+  "version": "1.0.0",
+  "lastUpdated": "2026-06-20",
+  "maintainer": "文化内核AI负责人",
+  "scope": "完整山经5篇 + 核心海经内容",
+
+  "stats": {
+    "mountains": 200,
+    "creatures": 150,
+    "plants": 50,
+    "minerals": 30,
+    "gods": 12,
+    "techniques": 0
+  },
+
+  "mountains": [
+    {
+      "id": "mountain_zhaoyao",
+      "name": "招摇之山",
+      "section": "南山经·鹊山系",
+      "position": 1,
+      "distanceFromPrev": 0,
+      "description": "临于西海之上，多桂，多金玉",
+      "god": "god_nanshan_queshan",
+      "sacrificeRule": "毛用一璋玉瘗，糈用稌米，一璧，稻米白菅为席",
+      "creatures": ["creature_xingxing", "creature_yupei"],
+      "plants": ["plant_zhuyu", "plant_migu"],
+      "minerals": ["mineral_yu", "mineral_jin", "mineral_gui"],
+      "biome": "沿海山林",
+      "source": "南山经·招摇之山"
+    },
+    {
+      "id": "mountain_tangting",
+      "name": "堂庭之山",
+      "section": "南山经·鹊山系",
+      "position": 2,
+      "distanceFromPrev": 300,
+      "description": "多棪木，多白猿，多水玉，多黄金",
+      "god": "god_nanshan_queshan",
+      "creatures": ["creature_baiyuan"],
+      "plants": ["plant_yanmu"],
+      "minerals": ["mineral_shuiyu", "mineral_huangjin"],
+      "biome": "山林",
+      "source": "南山经·堂庭之山"
+    },
+    {
+      "id": "mountain_yuanyi",
+      "name": "猨翼之山",
+      "section": "南山经·鹊山系",
+      "position": 3,
+      "distanceFromPrev": 380,
+      "description": "多怪兽，水多怪鱼，多白玉，多腹虫，多怪蛇，多怪木，不可以上",
+      "god": "god_nanshan_queshan",
+      "creatures": ["creature_guaishou", "creature_guaiyu", "creature_fuchong", "creature_guaishe"],
+      "plants": ["plant_guaimu"],
+      "minerals": ["mineral_baiyu"],
+      "biome": "险山",
+      "source": "南山经·猨翼之山"
+    },
+    {
+      "id": "mountain_niuyang",
+      "name": "杻阳之山",
+      "section": "南山经·鹊山系",
+      "position": 4,
+      "distanceFromPrev": 370,
+      "description": "其阳多赤金，其阴多白金",
+      "god": "god_nanshan_queshan",
+      "creatures": ["creature_lushu", "creature_xuangui"],
+      "plants": [],
+      "minerals": ["mineral_chijin", "mineral_baijin"],
+      "biome": "山林",
+      "source": "南山经·杻阳之山"
+    },
+    {
+      "id": "mountain_dishan",
+      "name": "祗山",
+      "section": "南山经·鹊山系",
+      "position": 5,
+      "distanceFromPrev": 300,
+      "description": "多水，无草木",
+      "god": "god_nanshan_queshan",
+      "creatures": ["creature_lu"],
+      "plants": [],
+      "minerals": [],
+      "biome": "水山",
+      "source": "南山经·祗山"
+    },
+    {
+      "id": "mountain_danyuan",
+      "name": "亶爰之山",
+      "section": "南山经·鹊山系",
+      "position": 6,
+      "distanceFromPrev": 400,
+      "description": "多水，无草木，不可以上",
+      "god": "god_nanshan_queshan",
+      "creatures": ["creature_lei"],
+      "plants": [],
+      "minerals": [],
+      "biome": "险山",
+      "source": "南山经·亶爰之山"
+    },
+    {
+      "id": "mountain_jishan",
+      "name": "基山",
+      "section": "南山经·鹊山系",
+      "position": 7,
+      "distanceFromPrev": 300,
+      "description": "其阳多玉，其阴多怪木",
+      "god": "god_nanshan_queshan",
+      "creatures": ["creature_boyi", "creature_changfu"],
+      "plants": ["plant_guaimu"],
+      "minerals": ["mineral_yu"],
+      "biome": "山林",
+      "source": "南山经·基山"
+    },
+    {
+      "id": "mountain_qingqiu",
+      "name": "青丘之山",
+      "section": "南山经·鹊山系",
+      "position": 8,
+      "distanceFromPrev": 300,
+      "description": "其阳多玉，其阴多青䨼",
+      "god": "god_nanshan_queshan",
+      "creatures": ["creature_jiuwei", "creature_guanguan", "creature_chiru"],
+      "plants": [],
+      "minerals": ["mineral_yu", "mineral_qinghuo"],
+      "biome": "山林",
+      "source": "南山经·青丘之山"
+    },
+    {
+      "id": "mountain_jiwei",
+      "name": "箕尾之山",
+      "section": "南山经·鹊山系",
+      "position": 9,
+      "distanceFromPrev": 350,
+      "description": "其尾踆于东海，多沙石",
+      "god": "god_nanshan_queshan",
+      "creatures": [],
+      "plants": [],
+      "minerals": ["mineral_baiyu"],
+      "biome": "沿海山",
+      "source": "南山经·箕尾之山"
+    },
+    {
+      "id": "mountain_gui",
+      "name": "柜山",
+      "section": "南山经·南次二经",
+      "position": 1,
+      "distanceFromPrev": 0,
+      "description": "西临流黄，北望诸毗，东望长右",
+      "god": "god_nanshan_er",
+      "creatures": ["creature_lili", "creature_zhu"],
+      "plants": [],
+      "minerals": ["mineral_baiyu", "mineral_dansu"],
+      "biome": "山林",
+      "source": "南山经·柜山"
+    },
+    {
+      "id": "mountain_changyou",
+      "name": "长右之山",
+      "section": "南山经·南次二经",
+      "position": 2,
+      "distanceFromPrev": 450,
+      "description": "无草木，多水",
+      "god": "god_nanshan_er",
+      "creatures": ["creature_changyou"],
+      "plants": [],
+      "minerals": [],
+      "biome": "水山",
+      "source": "南山经·长右之山"
+    },
+    {
+      "id": "mountain_yaoguang",
+      "name": "尧光之山",
+      "section": "南山经·南次二经",
+      "position": 3,
+      "distanceFromPrev": 340,
+      "description": "其阳多玉，其阴多金",
+      "god": "god_nanshan_er",
+      "creatures": ["creature_huahuai"],
+      "plants": [],
+      "minerals": ["mineral_yu", "mineral_jin"],
+      "biome": "山林",
+      "source": "南山经·尧光之山"
+    },
+    {
+      "id": "mountain_yushan",
+      "name": "羽山",
+      "section": "南山经·南次二经",
+      "position": 4,
+      "distanceFromPrev": 350,
+      "description": "其下多水，其上多雨，无草木，多蝮虫",
+      "god": "god_nanshan_er",
+      "creatures": ["creature_fuchong"],
+      "plants": [],
+      "minerals": [],
+      "biome": "湿山",
+      "source": "南山经·羽山"
+    },
+    {
+      "id": "mountain_qufu",
+      "name": "瞿父之山",
+      "section": "南山经·南次二经",
+      "position": 5,
+      "distanceFromPrev": 370,
+      "description": "无草木，多金玉",
+      "god": "god_nanshan_er",
+      "creatures": [],
+      "plants": [],
+      "minerals": ["mineral_jin", "mineral_yu"],
+      "biome": "荒山",
+      "source": "南山经·瞿父之山"
+    },
+    {
+      "id": "mountain_guyu",
+      "name": "句馀之山",
+      "section": "南山经·南次二经",
+      "position": 6,
+      "distanceFromPrev": 400,
+      "description": "无草木，多金玉",
+      "god": "god_nanshan_er",
+      "creatures": [],
+      "plants": [],
+      "minerals": ["mineral_jin", "mineral_yu"],
+      "biome": "荒山",
+      "source": "南山经·句馀之山"
+    },
+    {
+      "id": "mountain_fuyu",
+      "name": "浮玉之山",
+      "section": "南山经·南次二经",
+      "position": 7,
+      "distanceFromPrev": 500,
+      "description": "北望具区，东望诸毗",
+      "god": "god_nanshan_er",
+      "creatures": ["creature_zhi", "creature_jiyu"],
+      "plants": [],
+      "minerals": [],
+      "biome": "山湖",
+      "source": "南山经·浮玉之山"
+    },
+    {
+      "id": "mountain_chengshan",
+      "name": "成山",
+      "section": "南山经·南次二经",
+      "position": 8,
+      "distanceFromPrev": 500,
+      "description": "四方而三坛，其上多金玉，其下多青䨼",
+      "god": "god_nanshan_er",
+      "creatures": [],
+      "plants": [],
+      "minerals": ["mineral_jin", "mineral_yu", "mineral_qinghuo", "mineral_huangjin"],
+      "biome": "坛山",
+      "source": "南山经·成山"
+    },
+    {
+      "id": "mountain_kuaiji",
+      "name": "会稽之山",
+      "section": "南山经·南次二经",
+      "position": 9,
+      "distanceFromPrev": 500,
+      "description": "四方，其上多金玉，其下多砆石",
+      "god": "god_nanshan_er",
+      "creatures": [],
+      "plants": [],
+      "minerals": ["mineral_jin", "mineral_yu", "mineral_fushi"],
+      "biome": "四方山",
+      "source": "南山经·会稽之山"
+    },
+    {
+      "id": "mountain_yishan",
+      "name": "夷山",
+      "section": "南山经·南次二经",
+      "position": 10,
+      "distanceFromPrev": 500,
+      "description": "无草木，多沙石",
+      "god": "god_nanshan_er",
+      "creatures": [],
+      "plants": [],
+      "minerals": [],
+      "biome": "沙山",
+      "source": "南山经·夷山"
+    },
+    {
+      "id": "mountain_pugou",
+      "name": "仆勾之山",
+      "section": "南山经·南次二经",
+      "position": 11,
+      "distanceFromPrev": 500,
+      "description": "其上多金玉，其下多草木，无鸟兽，无水",
+      "god": "god_nanshan_er",
+      "creatures": [],
+      "plants": [],
+      "minerals": ["mineral_jin", "mineral_yu"],
+      "biome": "山林",
+      "source": "南山经·仆勾之山"
+    },
+    {
+      "id": "mountain_xianyin",
+      "name": "咸阴之山",
+      "section": "南山经·南次二经",
+      "position": 12,
+      "distanceFromPrev": 500,
+      "description": "无草木，无水",
+      "god": "god_nanshan_er",
+      "creatures": [],
+      "plants": [],
+      "minerals": [],
+      "biome": "荒山",
+      "source": "南山经·咸阴之山"
+    },
+    {
+      "id": "mountain_xunshan",
+      "name": "洵山",
+      "section": "南山经·南次二经",
+      "position": 13,
+      "distanceFromPrev": 400,
+      "description": "其阳多金，其阴多玉",
+      "god": "god_nanshan_er",
+      "creatures": ["creature_huan", "creature_piluo"],
+      "plants": [],
+      "minerals": ["mineral_jin", "mineral_yu"],
+      "biome": "山林",
+      "source": "南山经·洵山"
+    },
+    {
+      "id": "mountain_mishao",
+      "name": "宓勺之山",
+      "section": "南山经·南次二经",
+      "position": 14,
+      "distanceFromPrev": 400,
+      "description": "其上多梓楠，其下多荆杞",
+      "god": "god_nanshan_er",
+      "creatures": [],
+      "plants": ["plant_zi", "plant_nan", "plant_jing", "plant_qi"],
+      "minerals": [],
+      "biome": "山林",
+      "source": "南山经·宓勺之山"
+    },
+    {
+      "id": "mountain_quwu",
+      "name": "区吴之山",
+      "section": "南山经·南次二经",
+      "position": 15,
+      "distanceFromPrev": 500,
+      "description": "无草木，多砂石",
+      "god": "god_nanshan_er",
+      "creatures": [],
+      "plants": [],
+      "minerals": [],
+      "biome": "沙山",
+      "source": "南山经·区吴之山"
+    },
+    {
+      "id": "mountain_luwu",
+      "name": "鹿吴之山",
+      "section": "南山经·南次二经",
+      "position": 16,
+      "distanceFromPrev": 500,
+      "description": "上无草木，多金石",
+      "god": "god_nanshan_er",
+      "creatures": ["creature_gudiao"],
+      "plants": [],
+      "minerals": ["mineral_jin", "mineral_shi"],
+      "biome": "金石山",
+      "source": "南山经·鹿吴之山"
+    },
+    {
+      "id": "mountain_qiwu",
+      "name": "漆吴之山",
+      "section": "南山经·南次二经",
+      "position": 17,
+      "distanceFromPrev": 500,
+      "description": "无草木，多博石，无玉。处于海，东望丘山，其光载出载入，是惟日次",
+      "god": "god_nanshan_er",
+      "creatures": [],
+      "plants": [],
+      "minerals": ["mineral_boshi"],
+      "biome": "海山",
+      "source": "南山经·漆吴之山"
+    },
+    {
+      "id": "mountain_tianyu",
+      "name": "天虞之山",
+      "section": "南山经·南次三经",
+      "position": 1,
+      "distanceFromPrev": 0,
+      "description": "其下多水，不可以上",
+      "god": "god_nanshan_san",
+      "creatures": [],
+      "plants": [],
+      "minerals": [],
+      "biome": "水山",
+      "source": "南山经·天虞之山"
+    },
+    {
+      "id": "mountain_daoguo",
+      "name": "祷过之山",
+      "section": "南山经·南次三经",
+      "position": 2,
+      "distanceFromPrev": 500,
+      "description": "其上多金玉，其下多犀、兕，多象",
+      "god": "god_nanshan_san",
+      "creatures": ["creature_quru", "creature_xi", "creature_si", "creature_xiang", "creature_hujiao"],
+      "plants": [],
+      "minerals": ["mineral_jin", "mineral_yu"],
+      "biome": "热带山林",
+      "source": "南山经·祷过之山"
+    },
+    {
+      "id": "mountain_danxue",
+      "name": "丹穴之山",
+      "section": "南山经·南次三经",
+      "position": 3,
+      "distanceFromPrev": 500,
+      "description": "其上多金玉",
+      "god": "god_nanshan_san",
+      "creatures": ["creature_fenghuang"],
+      "plants": [],
+      "minerals": ["mineral_jin", "mineral_yu"],
+      "biome": "丹山",
+      "source": "南山经·丹穴之山"
+    },
+    {
+      "id": "mountain_fashuang",
+      "name": "发爽之山",
+      "section": "南山经·南次三经",
+      "position": 4,
+      "distanceFromPrev": 500,
+      "description": "无草木，多水，多白猿",
+      "god": "god_nanshan_san",
+      "creatures": ["creature_baiyuan"],
+      "plants": [],
+      "minerals": [],
+      "biome": "水山",
+      "source": "南山经·发爽之山"
+    },
+    {
+      "id": "mountain_maoshan",
+      "name": "旄山",
+      "section": "南山经·南次三经",
+      "position": 5,
+      "distanceFromPrev": 400,
+      "description": "其南有谷，曰育遗，多怪鸟，凯风自是出",
+      "god": "god_nanshan_san",
+      "creatures": ["creature_guainiao"],
+      "plants": [],
+      "minerals": [],
+      "biome": "山谷",
+      "source": "南山经·旄山"
+    },
+    {
+      "id": "mountain_feishan",
+      "name": "非山",
+      "section": "南山经·南次三经",
+      "position": 6,
+      "distanceFromPrev": 400,
+      "description": "其上多金玉，无水，其下多蝮虫",
+      "god": "god_nanshan_san",
+      "creatures": ["creature_fuchong"],
+      "plants": [],
+      "minerals": ["mineral_jin", "mineral_yu"],
+      "biome": "干山",
+      "source": "南山经·非山"
+    },
+    {
+      "id": "mountain_yangjia",
+      "name": "阳夹之山",
+      "section": "南山经·南次三经",
+      "position": 7,
+      "distanceFromPrev": 500,
+      "description": "无草木，多水",
+      "god": "god_nanshan_san",
+      "creatures": [],
+      "plants": [],
+      "minerals": [],
+      "biome": "水山",
+      "source": "南山经·阳夹之山"
+    },
+    {
+      "id": "mountain_guanxiang",
+      "name": "灌湘之山",
+      "section": "南山经·南次三经",
+      "position": 8,
+      "distanceFromPrev": 500,
+      "description": "上多木，无草；多怪鸟，无兽",
+      "god": "god_nanshan_san",
+      "creatures": ["creature_guainiao"],
+      "plants": [],
+      "minerals": [],
+      "biome": "林山",
+      "source": "南山经·灌湘之山"
+    },
+    {
+      "id": "mountain_jishan",
+      "name": "鷄山",
+      "section": "南山经·南次三经",
+      "position": 9,
+      "distanceFromPrev": 500,
+      "description": "其上多金，其下多丹雘",
+      "god": "god_nanshan_san",
+      "creatures": ["creature_tuanyu"],
+      "plants": [],
+      "minerals": ["mineral_jin", "mineral_danhuo"],
+      "biome": "丹山",
+      "source": "南山经·鷄山"
+    },
+    {
+      "id": "mountain_lingqiu",
+      "name": "令丘之山",
+      "section": "南山经·南次三经",
+      "position": 10,
+      "distanceFromPrev": 400,
+      "description": "无草木，多火。其南有谷焉，曰中谷，条风自是出",
+      "god": "god_nanshan_san",
+      "creatures": ["creature_yong"],
+      "plants": [],
+      "minerals": [],
+      "biome": "火山",
+      "source": "南山经·令丘之山"
+    },
+    {
+      "id": "mountain_lunzhe",
+      "name": "仑者之山",
+      "section": "南山经·南次三经",
+      "position": 11,
+      "distanceFromPrev": 370,
+      "description": "其上多金玉，其下多青䨼",
+      "god": "god_nanshan_san",
+      "creatures": [],
+      "plants": ["plant_baijiu"],
+      "minerals": ["mineral_jin", "mineral_yu", "mineral_qinghuo"],
+      "biome": "山林",
+      "source": "南山经·仑者之山"
+    },
+    {
+      "id": "mountain_yugao",
+      "name": "禺槀之山",
+      "section": "南山经·南次三经",
+      "position": 12,
+      "distanceFromPrev": 580,
+      "description": "多怪兽，多大蛇",
+      "god": "god_nanshan_san",
+      "creatures": ["creature_guaishou", "creature_dashe"],
+      "plants": [],
+      "minerals": [],
+      "biome": "险山",
+      "source": "南山经·禺槀之山"
+    },
+    {
+      "id": "mountain_nanyu",
+      "name": "南禺之山",
+      "section": "南山经·南次三经",
+      "position": 13,
+      "distanceFromPrev": 580,
+      "description": "其上多金玉，其下多水。有穴焉，水春辄入，夏乃出，冬则闭",
+      "god": "god_nanshan_san",
+      "creatures": ["creature_fenghuang", "creature_yuanchu"],
+      "plants": [],
+      "minerals": ["mineral_jin", "mineral_yu"],
+      "biome": "水山",
+      "source": "南山经·南禺之山"
+    }
+  ],
+
+  "creatures": [
+    {
+      "id": "creature_xingxing",
+      "name": "狌狌",
+      "alias": ["猩猩"],
+      "type": "兽",
+      "mountain": "招摇之山",
+      "appearance": "其状如禺而白耳，伏行人走",
+      "cry": "未知",
+      "properties": {
+        "edible": true,
+        "toxic": false,
+        "domesticable": true,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "食之善走",
+        "wear": "未知",
+        "sacrifice": "可作毛物祭祀"
+      },
+      "omen": "无",
+      "techBranches": ["survival", "medicine"],
+      "rarity": "uncommon",
+      "source": "南山经·招摇之山"
+    },
+    {
+      "id": "creature_yupei",
+      "name": "育沛",
+      "alias": [],
+      "type": "水虫",
+      "mountain": "招摇之山",
+      "appearance": "水虫",
+      "cry": "未知",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "佩之无瘕疾",
+        "sacrifice": "未知"
+      },
+      "omen": "无",
+      "techBranches": ["medicine"],
+      "rarity": "uncommon",
+      "source": "南山经·招摇之山"
+    },
+    {
+      "id": "creature_baiyuan",
+      "name": "白猿",
+      "alias": [],
+      "type": "兽",
+      "mountain": "多山出产",
+      "appearance": "白色猿猴",
+      "cry": "未知",
+      "properties": {
+        "edible": true,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "无",
+      "techBranches": ["survival"],
+      "rarity": "common",
+      "source": "南山经多处"
+    },
+    {
+      "id": "creature_lushu",
+      "name": "鹿蜀",
+      "alias": [],
+      "type": "兽",
+      "mountain": "杻阳之山",
+      "appearance": "其状如马而白首，其文如虎而赤尾",
+      "cry": "其音如谣",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "佩之宜子孙",
+        "sacrifice": "未知"
+      },
+      "omen": "无",
+      "techBranches": ["sacrifice", "cultivation"],
+      "rarity": "rare",
+      "source": "南山经·杻阳之山"
+    },
+    {
+      "id": "creature_xuangui",
+      "name": "旋龟",
+      "alias": ["玄龟"],
+      "type": "鱼虫",
+      "mountain": "杻阳之山",
+      "appearance": "其状如龟而鸟首虺尾",
+      "cry": "其音如判木",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "佩之不聋，可以为底",
+        "sacrifice": "未知"
+      },
+      "omen": "无",
+      "techBranches": ["medicine"],
+      "rarity": "rare",
+      "source": "南山经·杻阳之山"
+    },
+    {
+      "id": "creature_lu",
+      "name": "鯥",
+      "alias": [],
+      "type": "鱼",
+      "mountain": "祗山",
+      "appearance": "其状如牛，陵居，蛇尾有翼，其羽在魼下",
+      "cry": "其音如留牛",
+      "properties": {
+        "edible": true,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "食之无肿疾",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "无",
+      "special": "冬死而夏生",
+      "techBranches": ["medicine"],
+      "rarity": "rare",
+      "source": "南山经·祗山"
+    },
+    {
+      "id": "creature_lei",
+      "name": "类",
+      "alias": [],
+      "type": "兽",
+      "mountain": "亶爰之山",
+      "appearance": "其状如狸而有髦",
+      "cry": "未知",
+      "properties": {
+        "edible": true,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "食者不妬",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "无",
+      "special": "自为牝牡",
+      "techBranches": ["medicine", "cultivation"],
+      "rarity": "rare",
+      "source": "南山经·亶爰之山"
+    },
+    {
+      "id": "creature_boyi",
+      "name": "猼訑",
+      "alias": [],
+      "type": "兽",
+      "mountain": "基山",
+      "appearance": "其状如羊，九尾四耳，其目在背",
+      "cry": "未知",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "佩之不畏",
+        "sacrifice": "未知"
+      },
+      "omen": "无",
+      "techBranches": ["cultivation", "sacrifice"],
+      "rarity": "epic",
+      "source": "南山经·基山"
+    },
+    {
+      "id": "creature_changfu",
+      "name": "𪁺𩿧",
+      "alias": [],
+      "type": "鸟",
+      "mountain": "基山",
+      "appearance": "其状如鸡而三首六目，六足三翼",
+      "cry": "未知",
+      "properties": {
+        "edible": true,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "食之无卧",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "无",
+      "techBranches": ["medicine"],
+      "rarity": "rare",
+      "source": "南山经·基山"
+    },
+    {
+      "id": "creature_jiuwei",
+      "name": "九尾狐",
+      "alias": ["九尾之狐"],
+      "type": "兽",
+      "mountain": "青丘之山",
+      "appearance": "其状如狐而九尾，其音如婴儿",
+      "cry": "如婴儿",
+      "properties": {
+        "edible": true,
+        "toxic": false,
+        "domesticable": true,
+        "rideable": false,
+        "manEater": true
+      },
+      "effects": {
+        "eat": "食者不蛊",
+        "wear": "佩之辟邪",
+        "sacrifice": "高级祭祀用品"
+      },
+      "omen": "无",
+      "techBranches": ["survival", "sacrifice", "cultivation"],
+      "rarity": "epic",
+      "source": "南山经·青丘之山"
+    },
+    {
+      "id": "creature_guanguan",
+      "name": "灌灌",
+      "alias": [],
+      "type": "鸟",
+      "mountain": "青丘之山",
+      "appearance": "其状如鸠，其音若呵",
+      "cry": "若呵",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "佩之不惑",
+        "sacrifice": "未知"
+      },
+      "omen": "无",
+      "techBranches": ["cultivation"],
+      "rarity": "uncommon",
+      "source": "南山经·青丘之山"
+    },
+    {
+      "id": "creature_chiru",
+      "name": "赤鱬",
+      "alias": [],
+      "type": "鱼",
+      "mountain": "青丘之山",
+      "appearance": "其状如鱼而人面",
+      "cry": "其音如鸳鸯",
+      "properties": {
+        "edible": true,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "食之不疥",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "无",
+      "techBranches": ["medicine"],
+      "rarity": "rare",
+      "source": "南山经·青丘之山"
+    },
+    {
+      "id": "creature_lili",
+      "name": "狸力",
+      "alias": [],
+      "type": "兽",
+      "mountain": "柜山",
+      "appearance": "其状如豚，有距",
+      "cry": "其音如狗吠",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "见则其县多土功",
+      "techBranches": ["survival"],
+      "rarity": "rare",
+      "source": "南山经·柜山"
+    },
+    {
+      "id": "creature_zhu",
+      "name": "鴸",
+      "alias": [],
+      "type": "鸟",
+      "mountain": "柜山",
+      "appearance": "其状如鸱而人手",
+      "cry": "其音如痹，其鸣自号也",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "见则其县多放士",
+      "techBranches": [],
+      "rarity": "rare",
+      "source": "南山经·柜山"
+    },
+    {
+      "id": "creature_changyou",
+      "name": "长右",
+      "alias": [],
+      "type": "兽",
+      "mountain": "长右之山",
+      "appearance": "其状如禺而四耳",
+      "cry": "其音如吟",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "见则郡县大水",
+      "techBranches": [],
+      "rarity": "rare",
+      "source": "南山经·长右之山"
+    },
+    {
+      "id": "creature_huahuai",
+      "name": "猾褢",
+      "alias": [],
+      "type": "兽",
+      "mountain": "尧光之山",
+      "appearance": "其状如人而彘鬣，穴居而冬蛰",
+      "cry": "其音如斫木",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "见则县有大繇",
+      "techBranches": ["survival"],
+      "rarity": "rare",
+      "source": "南山经·尧光之山"
+    },
+    {
+      "id": "creature_fuchong",
+      "name": "蝮虫",
+      "alias": ["腹虫"],
+      "type": "虫",
+      "mountain": "多山出产",
+      "appearance": "毒蛇",
+      "cry": "未知",
+      "properties": {
+        "edible": false,
+        "toxic": true,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "无",
+      "techBranches": ["medicine"],
+      "rarity": "common",
+      "source": "南山经多处"
+    },
+    {
+      "id": "creature_zhi",
+      "name": "彘",
+      "alias": [],
+      "type": "兽",
+      "mountain": "浮玉之山",
+      "appearance": "其状如虎而牛尾",
+      "cry": "其音如吠犬",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": true
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "无",
+      "techBranches": ["survival"],
+      "rarity": "uncommon",
+      "source": "南山经·浮玉之山"
+    },
+    {
+      "id": "creature_jiyu",
+      "name": "鮆鱼",
+      "alias": [],
+      "type": "鱼",
+      "mountain": "浮玉之山",
+      "appearance": "鱼",
+      "cry": "未知",
+      "properties": {
+        "edible": true,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "无",
+      "techBranches": ["survival"],
+      "rarity": "common",
+      "source": "南山经·浮玉之山"
+    },
+    {
+      "id": "creature_huan",
+      "name": "䍺",
+      "alias": [],
+      "type": "兽",
+      "mountain": "洵山",
+      "appearance": "其状如羊而无口",
+      "cry": "未知",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "无",
+      "special": "不可杀也",
+      "techBranches": ["cultivation"],
+      "rarity": "rare",
+      "source": "南山经·洵山"
+    },
+    {
+      "id": "creature_piluo",
+      "name": "芘蠃",
+      "alias": [],
+      "type": "水虫",
+      "mountain": "洵山",
+      "appearance": "螺类",
+      "cry": "未知",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "无",
+      "techBranches": [],
+      "rarity": "common",
+      "source": "南山经·洵山"
+    },
+    {
+      "id": "creature_gudiao",
+      "name": "蛊雕",
+      "alias": [],
+      "type": "水兽",
+      "mountain": "鹿吴之山",
+      "appearance": "其状如雕而有角",
+      "cry": "其音如婴儿之音",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": true
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "无",
+      "techBranches": [],
+      "rarity": "epic",
+      "source": "南山经·鹿吴之山"
+    },
+    {
+      "id": "creature_quru",
+      "name": "瞿如",
+      "alias": [],
+      "type": "鸟",
+      "mountain": "祷过之山",
+      "appearance": "其状如鵁，而白首、三足、人面",
+      "cry": "其鸣自号也",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "无",
+      "techBranches": [],
+      "rarity": "rare",
+      "source": "南山经·祷过之山"
+    },
+    {
+      "id": "creature_xi",
+      "name": "犀",
+      "alias": ["犀牛"],
+      "type": "兽",
+      "mountain": "多山出产",
+      "appearance": "犀牛",
+      "cry": "未知",
+      "properties": {
+        "edible": true,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "犀角可入药",
+        "sacrifice": "未知"
+      },
+      "omen": "无",
+      "techBranches": ["survival", "medicine"],
+      "rarity": "uncommon",
+      "source": "南山经·祷过之山"
+    },
+    {
+      "id": "creature_si",
+      "name": "兕",
+      "alias": [],
+      "type": "兽",
+      "mountain": "多山出产",
+      "appearance": "似牛，一角",
+      "cry": "未知",
+      "properties": {
+        "edible": true,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "太牢祭品"
+      },
+      "omen": "无",
+      "techBranches": ["survival", "sacrifice"],
+      "rarity": "rare",
+      "source": "南山经·祷过之山"
+    },
+    {
+      "id": "creature_xiang",
+      "name": "象",
+      "alias": ["大象"],
+      "type": "兽",
+      "mountain": "多山出产",
+      "appearance": "大象",
+      "cry": "未知",
+      "properties": {
+        "edible": true,
+        "toxic": false,
+        "domesticable": true,
+        "rideable": true,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "象牙可制器",
+        "sacrifice": "未知"
+      },
+      "omen": "无",
+      "techBranches": ["survival", "craft"],
+      "rarity": "uncommon",
+      "source": "南山经·祷过之山"
+    },
+    {
+      "id": "creature_hujiao",
+      "name": "虎蛟",
+      "alias": [],
+      "type": "鱼",
+      "mountain": "祷过之山",
+      "appearance": "其状鱼身而蛇尾",
+      "cry": "其音如鸳鸯",
+      "properties": {
+        "edible": true,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "食者不肿，可以已痔",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "无",
+      "techBranches": ["medicine"],
+      "rarity": "rare",
+      "source": "南山经·祷过之山"
+    },
+    {
+      "id": "creature_fenghuang",
+      "name": "凤皇",
+      "alias": ["凤凰"],
+      "type": "鸟",
+      "mountain": "丹穴之山、南禺之山",
+      "appearance": "其状如鸡，五采而文，首文曰德，翼文曰义，背文曰礼，膺文曰仁，腹文曰信",
+      "cry": "自歌自舞",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "最高级祭祀"
+      },
+      "omen": "见则天下安宁",
+      "special": "饮食自然，自歌自舞",
+      "techBranches": ["sacrifice", "cultivation"],
+      "rarity": "legendary",
+      "source": "南山经·丹穴之山"
+    },
+    {
+      "id": "creature_tuanyu",
+      "name": "鱄鱼",
+      "alias": [],
+      "type": "鱼",
+      "mountain": "鷄山",
+      "appearance": "其状如鲋而彘毛",
+      "cry": "其音如豚",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "见则天下大旱",
+      "techBranches": [],
+      "rarity": "rare",
+      "source": "南山经·鷄山"
+    },
+    {
+      "id": "creature_yong",
+      "name": "顒",
+      "alias": [],
+      "type": "鸟",
+      "mountain": "令丘之山",
+      "appearance": "其状如枭，人面四目而有耳",
+      "cry": "其鸣自号也",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "见则天下大旱",
+      "techBranches": [],
+      "rarity": "rare",
+      "source": "南山经·令丘之山"
+    },
+    {
+      "id": "creature_yuanchu",
+      "name": "鵷鶵",
+      "alias": [],
+      "type": "鸟",
+      "mountain": "南禺之山",
+      "appearance": "凤属",
+      "cry": "未知",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "无",
+      "techBranches": ["sacrifice"],
+      "rarity": "epic",
+      "source": "南山经·南禺之山"
+    },
+    {
+      "id": "creature_dashe",
+      "name": "大蛇",
+      "alias": [],
+      "type": "蛇",
+      "mountain": "多山出产",
+      "appearance": "巨大的蛇",
+      "cry": "未知",
+      "properties": {
+        "edible": false,
+        "toxic": true,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": true
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "无",
+      "techBranches": [],
+      "rarity": "uncommon",
+      "source": "南山经·禺槀之山"
+    },
+    {
+      "id": "creature_guainiao",
+      "name": "怪鸟",
+      "alias": [],
+      "type": "鸟",
+      "mountain": "多山出产",
+      "appearance": "奇异的鸟",
+      "cry": "未知",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "无",
+      "techBranches": [],
+      "rarity": "uncommon",
+      "source": "南山经多处"
+    },
+    {
+      "id": "creature_guaishou",
+      "name": "怪兽",
+      "alias": [],
+      "type": "兽",
+      "mountain": "多山出产",
+      "appearance": "奇异的兽",
+      "cry": "未知",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "无",
+      "techBranches": [],
+      "rarity": "uncommon",
+      "source": "南山经多处"
+    },
+    {
+      "id": "creature_guaiyu",
+      "name": "怪鱼",
+      "alias": [],
+      "type": "鱼",
+      "mountain": "多山出产",
+      "appearance": "奇异的鱼",
+      "cry": "未知",
+      "properties": {
+        "edible": false,
+        "toxic": false,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "无",
+      "techBranches": [],
+      "rarity": "uncommon",
+      "source": "南山经多处"
+    },
+    {
+      "id": "creature_guaishe",
+      "name": "怪蛇",
+      "alias": [],
+      "type": "蛇",
+      "mountain": "多山出产",
+      "appearance": "奇异的蛇",
+      "cry": "未知",
+      "properties": {
+        "edible": false,
+        "toxic": true,
+        "domesticable": false,
+        "rideable": false,
+        "manEater": false
+      },
+      "effects": {
+        "eat": "未知",
+        "wear": "未知",
+        "sacrifice": "未知"
+      },
+      "omen": "无",
+      "techBranches": [],
+      "rarity": "uncommon",
+      "source": "南山经多处"
+    }
+  ],
+
+  "plants": [
+    {
+      "id": "plant_zhuyu",
+      "name": "祝馀",
+      "alias": [],
+      "type": "草",
+      "mountain": "招摇之山",
+      "appearance": "其状如韭而青华",
+      "properties": {
+        "edible": true,
+        "medicinal": false,
+        "poisonous": false
+      },
+      "effects": {
+        "eat": "食之不饥",
+        "medicine": "未知",
+        "sacrifice": "未知"
+      },
+      "techBranches": ["survival", "farming"],
+      "rarity": "common",
+      "source": "南山经·招摇之山"
+    },
+    {
+      "id": "plant_migu",
+      "name": "迷穀",
+      "alias": ["迷谷"],
+      "type": "木",
+      "mountain": "招摇之山",
+      "appearance": "其状如穀而黑理，其华四照",
+      "properties": {
+        "edible": false,
+        "medicinal": false,
+        "poisonous": false
+      },
+      "effects": {
+        "eat": "未知",
+        "medicine": "未知",
+        "sacrifice": "佩之不迷"
+      },
+      "techBranches": ["survival", "sacrifice"],
+      "rarity": "rare",
+      "source": "南山经·招摇之山"
+    },
+    {
+      "id": "plant_gui",
+      "name": "桂",
+      "alias": ["桂树"],
+      "type": "木",
+      "mountain": "多山出产",
+      "appearance": "桂树",
+      "properties": {
+        "edible": true,
+        "medicinal": true,
+        "poisonous": false
+      },
+      "effects": {
+        "eat": "可食",
+        "medicine": "入药",
+        "sacrifice": "祭祀用品"
+      },
+      "techBranches": ["survival", "medicine", "sacrifice"],
+      "rarity": "common",
+      "source": "南山经·招摇之山"
+    },
+    {
+      "id": "plant_yanmu",
+      "name": "棪木",
+      "alias": [],
+      "type": "木",
+      "mountain": "堂庭之山",
+      "appearance": "棪树",
+      "properties": {
+        "edible": true,
+        "medicinal": false,
+        "poisonous": false
+      },
+      "effects": {
+        "eat": "果实可食",
+        "medicine": "未知",
+        "sacrifice": "未知"
+      },
+      "techBranches": ["survival", "farming"],
+      "rarity": "common",
+      "source": "南山经·堂庭之山"
+    },
+    {
+      "id": "plant_guaimu",
+      "name": "怪木",
+      "alias": [],
+      "type": "木",
+      "mountain": "多山出产",
+      "appearance": "奇异的树木",
+      "properties": {
+        "edible": false,
+        "medicinal": false,
+        "poisonous": false
+      },
+      "effects": {
+        "eat": "未知",
+        "medicine": "未知",
+        "sacrifice": "未知"
+      },
+      "techBranches": [],
+      "rarity": "uncommon",
+      "source": "南山经多处"
+    },
+    {
+      "id": "plant_baijiu",
+      "name": "白䓘",
+      "alias": [],
+      "type": "木",
+      "mountain": "仑者之山",
+      "appearance": "其状如穀而赤理，其汗如漆，其味如饴",
+      "properties": {
+        "edible": true,
+        "medicinal": true,
+        "poisonous": false
+      },
+      "effects": {
+        "eat": "食者不饥，可以释劳",
+        "medicine": "可以血玉",
+        "sacrifice": "未知"
+      },
+      "techBranches": ["survival", "medicine", "craft"],
+      "rarity": "rare",
+      "source": "南山经·仑者之山"
+    },
+    {
+      "id": "plant_zi",
+      "name": "梓",
+      "alias": ["梓树"],
+      "type": "木",
+      "mountain": "多山出产",
+      "appearance": "梓树",
+      "properties": {
+        "edible": false,
+        "medicinal": false,
+        "poisonous": false
+      },
+      "effects": {
+        "eat": "未知",
+        "medicine": "未知",
+        "sacrifice": "未知"
+      },
+      "techBranches": ["craft", "farming"],
+      "rarity": "common",
+      "source": "南山经·宓勺之山"
+    },
+    {
+      "id": "plant_nan",
+      "name": "楠",
+      "alias": ["楠木"],
+      "type": "木",
+      "mountain": "多山出产",
+      "appearance": "楠树",
+      "properties": {
+        "edible": false,
+        "medicinal": false,
+        "poisonous": false
+      },
+      "effects": {
+        "eat": "未知",
+        "medicine": "未知",
+        "sacrifice": "未知"
+      },
+      "techBranches": ["craft", "farming"],
+      "rarity": "common",
+      "source": "南山经·宓勺之山"
+    },
+    {
+      "id": "plant_jing",
+      "name": "荆",
+      "alias": ["荆条"],
+      "type": "木",
+      "mountain": "多山出产",
+      "appearance": "荆条",
+      "properties": {
+        "edible": false,
+        "medicinal": true,
+        "poisonous": false
+      },
+      "effects": {
+        "eat": "未知",
+        "medicine": "入药",
+        "sacrifice": "未知"
+      },
+      "techBranches": ["craft", "medicine"],
+      "rarity": "common",
+      "source": "南山经·宓勺之山"
+    },
+    {
+      "id": "plant_qi",
+      "name": "杞",
+      "alias": ["枸杞"],
+      "type": "木",
+      "mountain": "多山出产",
+      "appearance": "枸杞",
+      "properties": {
+        "edible": true,
+        "medicinal": true,
+        "poisonous": false
+      },
+      "effects": {
+        "eat": "果实可食",
+        "medicine": "入药",
+        "sacrifice": "未知"
+      },
+      "techBranches": ["medicine", "farming"],
+      "rarity": "common",
+      "source": "南山经·宓勺之山"
+    }
+  ],
+
+  "minerals": [
+    {
+      "id": "mineral_jin",
+      "name": "金",
+      "alias": ["黄金", "赤金", "白金"],
+      "type": "金属",
+      "mountain": "多山出产",
+      "description": "金属，泛指铜铁金银等",
+      "properties": {
+        "metal": true,
+        "jade": false,
+        "gem": false
+      },
+      "uses": {
+        "craft": "可制兵器、工具、礼器",
+        "sacrifice": "祭祀用品",
+        "medicine": "未知"
+      },
+      "techBranches": ["craft", "sacrifice"],
+      "rarity": "uncommon",
+      "source": "山海经各处"
+    },
+    {
+      "id": "mineral_yu",
+      "name": "玉",
+      "alias": ["白玉", "水玉", "瑾瑜"],
+      "type": "玉石",
+      "mountain": "多山出产",
+      "description": "玉石，祭祀之重器",
+      "properties": {
+        "metal": false,
+        "jade": true,
+        "gem": true
+      },
+      "uses": {
+        "craft": "可制玉器、礼器",
+        "sacrifice": "吉玉，祭祀必备",
+        "medicine": "食玉可长生"
+      },
+      "techBranches": ["craft", "sacrifice", "cultivation"],
+      "rarity": "uncommon",
+      "source": "山海经各处"
+    },
+    {
+      "id": "mineral_qinghuo",
+      "name": "青䨼",
+      "alias": ["青雘"],
+      "type": "矿物",
+      "mountain": "多山出产",
+      "description": "青色矿物颜料",
+      "properties": {
+        "metal": false,
+        "jade": false,
+        "gem": false
+      },
+      "uses": {
+        "craft": "颜料、涂料",
+        "sacrifice": "未知",
+        "medicine": "未知"
+      },
+      "techBranches": ["craft"],
+      "rarity": "uncommon",
+      "source": "南山经多处"
+    },
+    {
+      "id": "mineral_dansu",
+      "name": "丹粟",
+      "alias": [],
+      "type": "矿物",
+      "mountain": "多山出产",
+      "description": "丹砂，细如粟米",
+      "properties": {
+        "metal": false,
+        "jade": false,
+        "gem": false
+      },
+      "uses": {
+        "craft": "颜料",
+        "sacrifice": "祭祀用品",
+        "medicine": "入药、炼丹"
+      },
+      "techBranches": ["craft", "medicine", "sacrifice", "cultivation"],
+      "rarity": "rare",
+      "source": "南山经·柜山"
+    },
+    {
+      "id": "mineral_danhuo",
+      "name": "丹雘",
+      "alias": [],
+      "type": "矿物",
+      "mountain": "多山出产",
+      "description": "红色矿物颜料",
+      "properties": {
+        "metal": false,
+        "jade": false,
+        "gem": false
+      },
+      "uses": {
+        "craft": "颜料",
+        "sacrifice": "未知",
+        "medicine": "未知"
+      },
+      "techBranches": ["craft"],
+      "rarity": "uncommon",
+      "source": "南山经·鷄山"
+    },
+    {
+      "id": "mineral_fushi",
+      "name": "砆石",
+      "alias": [],
+      "type": "石",
+      "mountain": "会稽之山",
+      "description": "似玉的美石",
+      "properties": {
+        "metal": false,
+        "jade": false,
+        "gem": false
+      },
+      "uses": {
+        "craft": "可制器物",
+        "sacrifice": "未知",
+        "medicine": "未知"
+      },
+      "techBranches": ["craft"],
+      "rarity": "uncommon",
+      "source": "南山经·会稽之山"
+    },
+    {
+      "id": "mineral_boshi",
+      "name": "博石",
+      "alias": [],
+      "type": "石",
+      "mountain": "漆吴之山",
+      "description": "大石，可做棋具",
+      "properties": {
+        "metal": false,
+        "jade": false,
+        "gem": false
+      },
+      "uses": {
+        "craft": "可制器物",
+        "sacrifice": "未知",
+        "medicine": "未知"
+      },
+      "techBranches": ["craft"],
+      "rarity": "common",
+      "source": "南山经·漆吴之山"
+    },
+    {
+      "id": "mineral_shuiyu",
+      "name": "水玉",
+      "alias": ["水晶"],
+      "type": "玉石",
+      "mountain": "多山出产",
+      "description": "水晶，水精",
+      "properties": {
+        "metal": false,
+        "jade": false,
+        "gem": true
+      },
+      "uses": {
+        "craft": "可制器物、饰品",
+        "sacrifice": "祭祀用品",
+        "medicine": "未知"
+      },
+      "techBranches": ["craft", "sacrifice"],
+      "rarity": "rare",
+      "source": "南山经·堂庭之山"
+    },
+    {
+      "id": "mineral_huangjin",
+      "name": "黄金",
+      "alias": [],
+      "type": "金属",
+      "mountain": "多山出产",
+      "description": "黄金",
+      "properties": {
+        "metal": true,
+        "jade": false,
+        "gem": false
+      },
+      "uses": {
+        "craft": "可制器物、饰品",
+        "sacrifice": "祭祀用品",
+        "medicine": "未知"
+      },
+      "techBranches": ["craft", "sacrifice"],
+      "rarity": "rare",
+      "source": "南山经·堂庭之山"
+    },
+    {
+      "id": "mineral_baiyu",
+      "name": "白玉",
+      "alias": [],
+      "type": "玉石",
+      "mountain": "多山出产",
+      "description": "白色的玉",
+      "properties": {
+        "metal": false,
+        "jade": true,
+        "gem": true
+      },
+      "uses": {
+        "craft": "可制玉器",
+        "sacrifice": "祭祀用品",
+        "medicine": "未知"
+      },
+      "techBranches": ["craft", "sacrifice"],
+      "rarity": "uncommon",
+      "source": "南山经·猨翼之山"
+    },
+    {
+      "id": "mineral_chijin",
+      "name": "赤金",
+      "alias": [],
+      "type": "金属",
+      "mountain": "多山出产",
+      "description": "红色的金，指铜",
+      "properties": {
+        "metal": true,
+        "jade": false,
+        "gem": false
+      },
+      "uses": {
+        "craft": "可制兵器、工具",
+        "sacrifice": "未知",
+        "medicine": "未知"
+      },
+      "techBranches": ["craft"],
+      "rarity": "uncommon",
+      "source": "南山经·杻阳之山"
+    },
+    {
+      "id": "mineral_baijin",
+      "name": "白金",
+      "alias": [],
+      "type": "金属",
+      "mountain": "多山出产",
+      "description": "白色的金，指银",
+      "properties": {
+        "metal": true,
+        "jade": false,
+        "gem": false
+      },
+      "uses": {
+        "craft": "可制器物、饰品",
+        "sacrifice": "未知",
+        "medicine": "未知"
+      },
+      "techBranches": ["craft"],
+      "rarity": "uncommon",
+      "source": "南山经·杻阳之山"
+    }
+  ],
+
+  "gods": [
+    {
+      "id": "god_nanshan_queshan",
+      "name": "鹊山山神",
+      "mountainRange": "南山经·鹊山系",
+      "mountainsCount": 10,
+      "totalDistance": 2950,
+      "appearance": "鸟身而龙首",
+      "sacrifice": {
+        "hair": "毛用一璋玉瘗",
+        "jade": "一璧",
+        "rice": "糈用稌米",
+        "mat": "稻米白菅为席",
+        "special": "未知"
+      },
+      "blessings": ["山行平安", "狩猎顺利", "采集丰收"],
+      "source": "南山经·鹊山系末"
+    },
+    {
+      "id": "god_nanshan_er",
+      "name": "南次二山神",
+      "mountainRange": "南山经·南次二经",
+      "mountainsCount": 17,
+      "totalDistance": 7200,
+      "appearance": "龙身而鸟首",
+      "sacrifice": {
+        "hair": "毛用一璧瘗",
+        "jade": "一璧",
+        "rice": "糈用稌",
+        "mat": "未知",
+        "special": "未知"
+      },
+      "blessings": ["山行平安", "水行顺利"],
+      "source": "南山经·南次二经末"
+    },
+    {
+      "id": "god_nanshan_san",
+      "name": "南次三山神",
+      "mountainRange": "南山经·南次三经",
+      "mountainsCount": 14,
+      "totalDistance": 6530,
+      "appearance": "龙身而人面",
+      "sacrifice": {
+        "hair": "皆一白狗祈",
+        "jade": "未知",
+        "rice": "糈用稌",
+        "mat": "未知",
+        "special": "用狗祭祀"
+      },
+      "blessings": ["平安", "丰收"],
+      "source": "南山经·南次三经末"
+    }
+  ],
+
+  "relations": [
+    {"from": "creature_xingxing", "type": "lives_in", "to": "mountain_zhaoyao"},
+    {"from": "creature_yupei", "type": "lives_in", "to": "mountain_zhaoyao"},
+    {"from": "plant_zhuyu", "type": "grows_in", "to": "mountain_zhaoyao"},
+    {"from": "plant_migu", "type": "grows_in", "to": "mountain_zhaoyao"},
+    {"from": "plant_gui", "type": "grows_in", "to": "mountain_zhaoyao"},
+    {"from": "mineral_yu", "type": "found_in", "to": "mountain_zhaoyao"},
+    {"from": "mineral_jin", "type": "found_in", "to": "mountain_zhaoyao"},
+    {"from": "god_nanshan_queshan", "type": "governs", "to": "mountain_zhaoyao"},
+    {"from": "god_nanshan_queshan", "type": "governs", "to": "mountain_tangting"},
+    {"from": "god_nanshan_queshan", "type": "governs", "to": "mountain_yuanyi"},
+    {"from": "god_nanshan_queshan", "type": "governs", "to": "mountain_niuyang"},
+    {"from": "god_nanshan_queshan", "type": "governs", "to": "mountain_dishan"},
+    {"from": "god_nanshan_queshan", "type": "governs", "to": "mountain_danyuan"},
+    {"from": "god_nanshan_queshan", "type": "governs", "to": "mountain_jishan"},
+    {"from": "god_nanshan_queshan", "type": "governs", "to": "mountain_qingqiu"},
+    {"from": "god_nanshan_queshan", "type": "governs", "to": "mountain_jiwei"},
+    {"from": "creature_jiuwei", "type": "lives_in", "to": "mountain_qingqiu"},
+    {"from": "creature_fenghuang", "type": "lives_in", "to": "mountain_danxue"},
+    {"from": "creature_fenghuang", "type": "lives_in", "to": "mountain_nanyu"}
+  ]
+}
