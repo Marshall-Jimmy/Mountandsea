@@ -3,7 +3,6 @@
 > **一款基于《山海经》神话体系的 2D 开放世界 RPG。**
 > 从随机降生的一片蛮荒开始，采集、狩猎、祭祀、修仙、炼丹、农耕、锻造——在先秦神话世界中走出你自己的文明之路。
 
-**作者**：杨泽宇  
 **项目启动**：2022 年 2 月 17 日  
 **仓库**：[Marshall-Jimmy/Mountandsea](https://github.com/Marshall-Jimmy/Mountandsea)
 
