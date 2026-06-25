@@ -9,7 +9,7 @@ Snowhuman Framework 是一个可复用的 Godot 游戏框架 addon。
 - `GameCore`
 - `DataRegistry`
 - `EventBus`
-- `SaveService`
+- `SaveService`：支持 provider 保存 / 读取。
 - `InventoryService`
 - `InteractionService` 和 `BestiaryService` 的服务骨架
 
@@ -24,6 +24,17 @@ Snowhuman Framework 是一个可复用的 Godot 游戏框架 addon。
 `InventoryService` 提供基础的、按 `owner_id` 区分的 `item_id`/`count` 管理能力。
 
 它通过 `DataRegistry` 校验 `item_id`，从 item 数据读取 `stack_size`，并在指定 owner 的背包发生成功变更后发出 `EventBus.inventory_changed`。
+
+## SaveService
+
+`SaveService` 提供通用 provider 持久化能力。provider 必须提供：
+
+```gdscript
+get_save_data() -> Dictionary
+load_save_data(data: Dictionary) -> bool
+```
+
+详细设计见 `rfcs/0003-save-service.md`。
 
 ## 重要限制
 
