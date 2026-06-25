@@ -17,27 +17,52 @@ func load_all() -> bool:
 
 	_items_by_id = items_result["entries"]
 	_creatures_by_id = creatures_result["entries"]
+	_emit_data_loaded()
 	return true
+
+
+func reload_all() -> bool:
+	clear()
+	return load_all()
 
 
 func get_item(id: String) -> Dictionary:
 	if not has_item(id):
 		return {}
-	return _items_by_id[id]
+	return _items_by_id[id].duplicate(true)
 
 
 func has_item(id: String) -> bool:
 	return _items_by_id.has(id)
 
 
+func get_all_items() -> Array:
+	var items := []
+	for item in _items_by_id.values():
+		items.append(item.duplicate(true))
+	return items
+
+
 func get_creature(id: String) -> Dictionary:
 	if not has_creature(id):
 		return {}
-	return _creatures_by_id[id]
+	return _creatures_by_id[id].duplicate(true)
 
 
 func has_creature(id: String) -> bool:
 	return _creatures_by_id.has(id)
+
+
+func get_all_creatures() -> Array:
+	var creatures := []
+	for creature in _creatures_by_id.values():
+		creatures.append(creature.duplicate(true))
+	return creatures
+
+
+func clear() -> void:
+	_items_by_id.clear()
+	_creatures_by_id.clear()
 
 
 func _load_collection(path: String, root_key: String, required_fields: Array[String]) -> Dictionary:
@@ -91,7 +116,24 @@ func _load_collection(path: String, root_key: String, required_fields: Array[Str
 		if entries.has(record_id):
 			push_error("%s: duplicate id '%s' in '%s'." % [path, record_id, root_key])
 			return {"ok": false, "entries": {}}
+		if root_key == "items" and not _is_positive_integer(record["stack_size"]):
+			push_error("%s: %s[%d] field 'stack_size' must be a positive integer." % [path, root_key, index])
+			return {"ok": false, "entries": {}}
 
-		entries[record_id] = record
+		entries[record_id] = record.duplicate(true)
 
 	return {"ok": true, "entries": entries}
+
+
+func _is_positive_integer(value: Variant) -> bool:
+	if value is int:
+		return value > 0
+	if value is float:
+		return value > 0.0 and floor(value) == value
+	return false
+
+
+func _emit_data_loaded() -> void:
+	var event_bus = get_node_or_null("/root/EventBus")
+	if event_bus != null and event_bus.has_signal("data_loaded"):
+		event_bus.data_loaded.emit()

@@ -12,10 +12,6 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def display_path(path: Path) -> str:
-    return path.relative_to(ROOT).as_posix()
-
-
 def load_json(relative_path: str, errors: list[str]) -> Any:
     path = ROOT / relative_path
     try:
@@ -34,6 +30,7 @@ def validate_collection(
     data: Any,
     relative_path: str,
     collection_key: str,
+    record_label: str,
     required_fields: list[str],
     errors: list[str],
 ) -> None:
@@ -41,49 +38,54 @@ def validate_collection(
         return
 
     if not isinstance(data, dict):
-        errors.append(f"{relative_path}: root: expected object")
+        errors.append(f"{relative_path}: top-level JSON value must be object")
         return
 
     if collection_key not in data:
-        errors.append(f"{relative_path}: field={collection_key}: missing required top-level field")
+        errors.append(f"{relative_path}: missing top-level field: {collection_key}")
         return
 
     records = data[collection_key]
     if not isinstance(records, list):
-        errors.append(f"{relative_path}: field={collection_key}: expected array")
+        errors.append(f"{relative_path}: field {collection_key} must be array")
         return
 
     seen_ids: set[str] = set()
     for index, record in enumerate(records):
-        location = f"{collection_key}[{index}]"
+        location = f"{record_label}[{index}]"
         if not isinstance(record, dict):
-            errors.append(f"{relative_path}: {location}: expected object")
+            errors.append(f"{relative_path}: {location} must be object")
             continue
 
-        record_id = record.get("id", "<missing>")
         for field in required_fields:
             if field not in record:
-                errors.append(
-                    f"{relative_path}: {location}: id={record_id}: field={field}: missing required field"
-                )
+                errors.append(f"{relative_path}: {location} missing required field: {field}")
+
+        if record_label == "item" and "stack_size" in record:
+            validate_stack_size(record["stack_size"], relative_path, location, errors)
 
         if "id" not in record:
             continue
 
         if not isinstance(record["id"], str):
-            errors.append(f"{relative_path}: {location}: field=id: expected string")
+            errors.append(f"{relative_path}: {location} field id must be non-empty string")
             continue
 
         record_id = record["id"]
         if record_id == "":
-            errors.append(f"{relative_path}: {location}: field=id: must not be empty")
+            errors.append(f"{relative_path}: {location} field id must be non-empty string")
             continue
 
         if record_id in seen_ids:
-            errors.append(f"{relative_path}: {location}: id={record_id}: duplicate id")
+            errors.append(f"{relative_path}: duplicate {record_label} id: {record_id}")
             continue
 
         seen_ids.add(record_id)
+
+
+def validate_stack_size(value: Any, relative_path: str, location: str, errors: list[str]) -> None:
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        errors.append(f"{relative_path}: {location} field stack_size must be a positive integer")
 
 
 def main() -> int:
@@ -95,12 +97,12 @@ def main() -> int:
     items_data = load_json(items_path, errors)
     creatures_data = load_json(creatures_path, errors)
 
-    validate_collection(items_data, items_path, "items", ["id", "name", "type", "stack_size"], errors)
-    validate_collection(creatures_data, creatures_path, "creatures", ["id", "name", "type"], errors)
+    validate_collection(items_data, items_path, "items", "item", ["id", "name", "type", "stack_size"], errors)
+    validate_collection(creatures_data, creatures_path, "creatures", "creature", ["id", "name", "type"], errors)
 
     if errors:
         for error in errors:
-            print(error, file=sys.stderr)
+            print(f"ERROR: {error}", file=sys.stderr)
         return 1
 
     print("validation passed")
