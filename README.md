@@ -172,6 +172,35 @@ Mountandsea/
 
 ---
 
+## Manual test scenes / 手动测试场景
+
+`player_interaction_room` 是开发用手动验收场景，不是正式 gameplay。开发者可以在 Godot 中打开：
+
+```text
+game/tests/player_interaction_room/player_interaction_room.tscn
+```
+
+该场景用于验证核心服务闭环：
+
+```text
+DataRegistry → InteractionService → InventoryService → BestiaryService → SaveService
+```
+
+手动验收流程：
+
+- WASD / 方向键移动玩家
+- 靠近祝余叶并按 E 采集
+- 确认背包增加 `zhuyu_leaf`
+- 确认图鉴 items 发现 `zhuyu_leaf`
+- 靠近狌狌并按 E 观察
+- 确认图鉴 creatures 发现 `shensheng`
+- 点击“保存 Slot 0”
+- 点击“清空状态”
+- 点击“读取 Slot 0”
+- 确认背包、items、creatures 和测试房间状态恢复
+
+---
+
 ## 参与贡献
 
 本项目目前处于设计文档阶段，欢迎以下方面的贡献：
