@@ -2,10 +2,10 @@
 extends EditorPlugin
 
 const AUTOLOADS := {
-	"GameCore": "res://addons/mo_game_core/autoload/game_core.gd",
-	"DataRegistry": "res://addons/mo_game_core/autoload/data_registry.gd",
-	"EventBus": "res://addons/mo_game_core/autoload/event_bus.gd",
-	"SaveService": "res://addons/mo_game_core/autoload/save_service.gd",
+	"GameCore": "res://addons/snowhuman_framework/autoload/game_core.gd",
+	"DataRegistry": "res://addons/snowhuman_framework/autoload/data_registry.gd",
+	"EventBus": "res://addons/snowhuman_framework/autoload/event_bus.gd",
+	"SaveService": "res://addons/snowhuman_framework/autoload/save_service.gd",
 }
 
 func _enter_tree() -> void:

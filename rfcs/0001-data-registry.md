@@ -6,7 +6,7 @@ Draft
 
 ## Goal
 
-DataRegistry provides a single place to load JSON data and expose runtime lookup APIs. Core code must not hard-code project content. Content data comes from `game/data/`.
+DataRegistry provides a single place to load JSON data and expose runtime lookup APIs. Snowhuman Framework code must not hard-code project content. Content data comes from `game/data/`.
 
 ## Non-goals
 
@@ -82,7 +82,7 @@ Runtime loading returns `false` on failure and logs an error with `push_error()`
 
 ## Relationship With Other Modules
 
-DataRegistry is an autoload singleton registered by the addon. Other systems may query it at runtime, but content definitions remain outside the addon.
+DataRegistry is an autoload singleton registered by Snowhuman Framework. Other systems may query it at runtime, but content definitions remain outside the addon.
 
 ## Validation Criteria
 
@@ -90,7 +90,7 @@ DataRegistry is an autoload singleton registered by the addon. Other systems may
 - It can query `test_item`.
 - Duplicate ids produce an error.
 - Missing fields are detected by the validation script.
-- Core contains no project-specific content.
+- Snowhuman Framework contains no project-specific content.
 
 ## Notes
 

@@ -1,6 +1,6 @@
-# Mo Game Core
+# Snowhuman Framework
 
-Mo Game Core is a reusable Godot game-core addon.
+Snowhuman Framework is a reusable Godot game framework addon.
 
 Current status: early skeleton.
 
