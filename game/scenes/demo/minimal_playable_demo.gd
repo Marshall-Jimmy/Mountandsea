@@ -5,12 +5,23 @@ const ITEM_ID := "zhuyu_leaf"
 const CREATURE_ID := "shensheng"
 const ZHUYU_INTERACTABLE_ID := "pickup_zhuyu_leaf"
 const SHENSHENG_INTERACTABLE_ID := "observe_shensheng"
+const STONE_INTERACTABLE_ID := "activate_guidance_stone"
+
+enum DemoStep {
+	COLLECT_ZHUYU,
+	ACTIVATE_STONE,
+	OBSERVE_SHENSHENG,
+	COMPLETE
+}
 
 @onready var player: Polygon2D = %Player
 @onready var zhuyu_pickup: Polygon2D = %ZhuyuPickup
 @onready var zhuyu_label: Label = %ZhuyuLabel
+@onready var guidance_stone: Polygon2D = %GuidanceStone
+@onready var guidance_stone_label: Label = $WorldRoot/GuidanceStoneLabel
 @onready var shensheng_creature: Polygon2D = %ShenshengCreature
 @onready var shensheng_label: Label = %ShenshengLabel
+@onready var objective_label: Label = %ObjectiveLabel
 @onready var prompt_label: Label = %PromptLabel
 @onready var status_label: Label = %StatusLabel
 @onready var log_label: RichTextLabel = %LogLabel
@@ -22,10 +33,13 @@ var inventory_service: InventoryService
 var bestiary_service: BestiaryService
 var interaction_service: InteractionService
 
+var current_step := DemoStep.COLLECT_ZHUYU
 var initialized := false
 var zhuyu_collected := false
+var stone_activated := false
 var shensheng_discovered := false
 var was_near_zhuyu := false
+var was_near_stone := false
 var was_near_shensheng := false
 var was_interact_key_pressed := false
 
@@ -33,6 +47,7 @@ var was_interact_key_pressed := false
 func _ready() -> void:
 	prompt_label.visible = false
 	_refresh_status()
+	_update_objective_ui()
 	_log("山海经 Demo 场景启动")
 	_initialize_services()
 
@@ -102,6 +117,18 @@ func _register_interactables() -> bool:
 		_log_error("InteractionService 注册失败：%s" % SHENSHENG_INTERACTABLE_ID)
 		return false
 
+	var stone_registered := interaction_service.register_interactable(STONE_INTERACTABLE_ID, {
+		"type": "activate",
+		"metadata": {
+			"target": "guidance_stone"
+		},
+		"callback_target": self,
+		"callback_method": "_on_guidance_stone_interacted"
+	})
+	if not stone_registered:
+		_log_error("InteractionService 注册失败：%s" % STONE_INTERACTABLE_ID)
+		return false
+
 	_log_ok("InteractionService 注册成功")
 	return true
 
@@ -124,23 +151,48 @@ func _move_player(delta: float) -> void:
 
 func _update_prompt() -> void:
 	var near_zhuyu := _is_near_zhuyu()
+	var near_stone := _is_near_stone()
 	var near_shensheng := _is_near_shensheng()
 
-	if near_zhuyu:
-		prompt_label.text = "按 E 采集祝余叶"
-		prompt_label.visible = true
-	elif near_shensheng:
-		prompt_label.text = "按 E 观察狌狌"
-		prompt_label.visible = true
-	else:
-		prompt_label.visible = false
+	match current_step:
+		DemoStep.COLLECT_ZHUYU:
+			if near_zhuyu:
+				_show_prompt("按 E 采集祝余叶")
+			elif near_stone:
+				_show_prompt("先采集祝余叶")
+			elif near_shensheng:
+				_show_prompt("先完成前置目标")
+			else:
+				prompt_label.visible = false
+		DemoStep.ACTIVATE_STONE:
+			if near_stone:
+				_show_prompt("按 E 激活山海石碑")
+			elif near_shensheng:
+				_show_prompt("先激活山海石碑")
+			else:
+				prompt_label.visible = false
+		DemoStep.OBSERVE_SHENSHENG:
+			if near_shensheng:
+				_show_prompt("按 E 观察狌狌")
+			elif near_stone:
+				_show_prompt("山海石碑已激活")
+			else:
+				prompt_label.visible = false
+		DemoStep.COMPLETE:
+			if near_zhuyu or near_stone or near_shensheng:
+				_show_prompt("Demo 已完成")
+			else:
+				prompt_label.visible = false
 
 	if near_zhuyu and not was_near_zhuyu:
 		_log("靠近祝余叶")
+	if near_stone and not was_near_stone:
+		_log("靠近山海石碑")
 	if near_shensheng and not was_near_shensheng:
 		_log("靠近狌狌")
 
 	was_near_zhuyu = near_zhuyu
+	was_near_stone = near_stone
 	was_near_shensheng = near_shensheng
 
 
@@ -155,19 +207,36 @@ func _handle_interaction_input() -> void:
 
 
 func _try_interact() -> void:
-	if _is_near_zhuyu():
-		var zhuyu_interacted := interaction_service.interact(OWNER_ID, ZHUYU_INTERACTABLE_ID)
-		if not zhuyu_interacted:
-			_log_error("InteractionService 交互失败：%s" % ZHUYU_INTERACTABLE_ID)
+	if current_step == DemoStep.COMPLETE:
+		_log("Demo 已完成。")
 		return
 
-	if _is_near_shensheng():
-		var shensheng_interacted := interaction_service.interact(OWNER_ID, SHENSHENG_INTERACTABLE_ID)
-		if not shensheng_interacted:
-			_log_error("InteractionService 交互失败：%s" % SHENSHENG_INTERACTABLE_ID)
+	if not _is_near_zhuyu() and not _is_near_stone() and not _is_near_shensheng():
+		_log("附近没有可交互对象。")
 		return
 
-	_log("附近没有可交互对象。")
+	match current_step:
+		DemoStep.COLLECT_ZHUYU:
+			if _is_near_zhuyu():
+				var zhuyu_interacted := interaction_service.interact(OWNER_ID, ZHUYU_INTERACTABLE_ID)
+				if not zhuyu_interacted:
+					_log_error("InteractionService 交互失败：%s" % ZHUYU_INTERACTABLE_ID)
+				return
+			_log("请先前往当前目标。")
+		DemoStep.ACTIVATE_STONE:
+			if _is_near_stone():
+				var stone_interacted := interaction_service.interact(OWNER_ID, STONE_INTERACTABLE_ID)
+				if not stone_interacted:
+					_log_error("InteractionService 交互失败：%s" % STONE_INTERACTABLE_ID)
+				return
+			_log("请先前往当前目标。")
+		DemoStep.OBSERVE_SHENSHENG:
+			if _is_near_shensheng():
+				var shensheng_interacted := interaction_service.interact(OWNER_ID, SHENSHENG_INTERACTABLE_ID)
+				if not shensheng_interacted:
+					_log_error("InteractionService 交互失败：%s" % SHENSHENG_INTERACTABLE_ID)
+				return
+			_log("请先前往当前目标。")
 
 
 func _on_zhuyu_interacted(actor_id: String, interactable_id: String, metadata: Dictionary) -> bool:
@@ -176,6 +245,9 @@ func _on_zhuyu_interacted(actor_id: String, interactable_id: String, metadata: D
 		return false
 	if interactable_id != ZHUYU_INTERACTABLE_ID:
 		_log_error("采集失败：interactable_id 不匹配。")
+		return false
+	if current_step != DemoStep.COLLECT_ZHUYU:
+		_log("祝余叶不是当前目标。")
 		return false
 
 	var item_id_value: Variant = metadata.get("item_id", "")
@@ -200,8 +272,33 @@ func _on_zhuyu_interacted(actor_id: String, interactable_id: String, metadata: D
 	zhuyu_pickup.visible = false
 	zhuyu_label.visible = false
 	prompt_label.visible = false
+	current_step = DemoStep.ACTIVATE_STONE
 	_log_ok("采集祝余叶成功")
+	_log("当前目标：前往山海石碑")
 	_refresh_status()
+	_update_objective_ui()
+	return true
+
+
+func _on_guidance_stone_interacted(actor_id: String, interactable_id: String, _metadata: Dictionary) -> bool:
+	if actor_id.is_empty():
+		_log_error("激活失败：actor_id 为空。")
+		return false
+	if interactable_id != STONE_INTERACTABLE_ID:
+		_log_error("激活失败：interactable_id 不匹配。")
+		return false
+	if current_step != DemoStep.ACTIVATE_STONE:
+		_log_error("山海石碑还不是当前目标。")
+		return false
+
+	stone_activated = true
+	current_step = DemoStep.OBSERVE_SHENSHENG
+	guidance_stone.modulate.a = 0.55
+	guidance_stone_label.text = "山海石碑（已激活）"
+	prompt_label.visible = false
+	_log_ok("山海石碑已激活")
+	_log("当前目标：观察狌狌")
+	_update_objective_ui()
 	return true
 
 
@@ -211,6 +308,12 @@ func _on_shensheng_interacted(actor_id: String, interactable_id: String, metadat
 		return false
 	if interactable_id != SHENSHENG_INTERACTABLE_ID:
 		_log_error("观察失败：interactable_id 不匹配。")
+		return false
+	if current_step != DemoStep.OBSERVE_SHENSHENG:
+		if not stone_activated:
+			_log("需要先激活山海石碑。")
+		else:
+			_log("狌狌不是当前目标。")
 		return false
 	if shensheng_discovered:
 		_log("狌狌已经被发现。")
@@ -227,11 +330,14 @@ func _on_shensheng_interacted(actor_id: String, interactable_id: String, metadat
 		return false
 
 	shensheng_discovered = true
+	current_step = DemoStep.COMPLETE
 	shensheng_creature.modulate.a = 0.45
 	shensheng_label.text = "狌狌（已发现）"
 	prompt_label.visible = false
 	_log_ok("观察狌狌成功")
+	_log("Demo 完成")
 	_refresh_status()
+	_update_objective_ui()
 	return true
 
 
@@ -257,6 +363,12 @@ func _is_near_zhuyu() -> bool:
 	if zhuyu_collected or zhuyu_pickup == null or not zhuyu_pickup.visible:
 		return false
 	return player.global_position.distance_to(zhuyu_pickup.global_position) <= interaction_distance
+
+
+func _is_near_stone() -> bool:
+	if guidance_stone == null or not guidance_stone.visible:
+		return false
+	return player.global_position.distance_to(guidance_stone.global_position) <= interaction_distance
 
 
 func _is_near_shensheng() -> bool:
@@ -289,6 +401,23 @@ func _refresh_status() -> void:
 		_format_ids(discovered_items),
 		_format_ids(discovered_creatures)
 	]
+
+
+func _update_objective_ui() -> void:
+	match current_step:
+		DemoStep.COLLECT_ZHUYU:
+			objective_label.text = "当前目标：采集祝余叶"
+		DemoStep.ACTIVATE_STONE:
+			objective_label.text = "当前目标：前往山海石碑"
+		DemoStep.OBSERVE_SHENSHENG:
+			objective_label.text = "当前目标：观察狌狌"
+		DemoStep.COMPLETE:
+			objective_label.text = "当前目标：Demo 完成"
+
+
+func _show_prompt(message: String) -> void:
+	prompt_label.text = message
+	prompt_label.visible = true
 
 
 func _format_ids(ids: Array) -> String:
