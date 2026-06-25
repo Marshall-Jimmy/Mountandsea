@@ -3,10 +3,14 @@ extends Node2D
 const OWNER_ID := "player"
 const ITEM_ID := "zhuyu_leaf"
 const INTERACTABLE_ID := "pickup_zhuyu_leaf"
+const CREATURE_ID := "shensheng"
+const CREATURE_INTERACTABLE_ID := "observe_shensheng"
 
 @onready var player: Polygon2D = %Player
 @onready var pickup: Polygon2D = %Pickup
 @onready var pickup_label: Label = $PickupLabel
+@onready var creature: Polygon2D = %Creature
+@onready var creature_label: Label = $CreatureLabel
 @onready var prompt_label: Label = %PromptLabel
 @onready var status_label: Label = %StatusLabel
 @onready var log_label: RichTextLabel = %LogLabel
@@ -20,7 +24,9 @@ var interaction_service: InteractionService
 
 var initialized := false
 var pickup_collected := false
+var creature_discovered := false
 var was_near_pickup := false
+var was_near_creature := false
 var was_interact_key_pressed := false
 
 
@@ -57,12 +63,14 @@ func _initialize_core_services() -> void:
 
 	if not _verify_test_item(data_registry):
 		return
+	if not _verify_test_creature(data_registry):
+		return
 
 	inventory_service = InventoryService.new()
 	bestiary_service = BestiaryService.new()
 	interaction_service = InteractionService.new()
 
-	var registered := interaction_service.register_interactable(INTERACTABLE_ID, {
+	var pickup_registered := interaction_service.register_interactable(INTERACTABLE_ID, {
 		"type": "pickup",
 		"metadata": {
 			"item_id": ITEM_ID,
@@ -71,12 +79,25 @@ func _initialize_core_services() -> void:
 		"callback_target": self,
 		"callback_method": "_on_pickup_interacted"
 	})
-	if not registered:
+	if not pickup_registered:
 		_log_error("InteractionService 注册失败：%s" % INTERACTABLE_ID)
+		return
+
+	var creature_registered := interaction_service.register_interactable(CREATURE_INTERACTABLE_ID, {
+		"type": "observe",
+		"metadata": {
+			"creature_id": CREATURE_ID
+		},
+		"callback_target": self,
+		"callback_method": "_on_creature_interacted"
+	})
+	if not creature_registered:
+		_log_error("InteractionService 注册失败：%s" % CREATURE_INTERACTABLE_ID)
 		return
 
 	initialized = true
 	_log_ok("InteractionService 注册成功：%s" % INTERACTABLE_ID)
+	_log_ok("InteractionService 注册成功：%s" % CREATURE_INTERACTABLE_ID)
 	_refresh_ui()
 
 
@@ -98,11 +119,23 @@ func _move_player(delta: float) -> void:
 
 func _update_interaction_prompt() -> void:
 	var near_pickup := _is_near_pickup()
-	prompt_label.visible = near_pickup
+	var near_creature := _is_near_creature()
+
+	if near_pickup:
+		prompt_label.text = "按 E 采集祝余叶"
+		prompt_label.visible = true
+	elif near_creature:
+		prompt_label.text = "按 E 观察狌狌"
+		prompt_label.visible = true
+	else:
+		prompt_label.visible = false
 
 	if near_pickup and not was_near_pickup:
 		_log("玩家靠近采集物")
+	if near_creature and not was_near_creature:
+		_log("玩家靠近狌狌")
 	was_near_pickup = near_pickup
+	was_near_creature = near_creature
 
 
 func _handle_interaction_input() -> void:
@@ -116,17 +149,21 @@ func _handle_interaction_input() -> void:
 
 
 func _try_interact() -> void:
-	if pickup_collected:
-		_log("祝余叶已经被采集。")
-		return
-	if not _is_near_pickup():
-		_log("距离太远，无法采集祝余叶。")
+	if _is_near_pickup():
+		var pickup_interacted := interaction_service.interact(OWNER_ID, INTERACTABLE_ID)
+		if not pickup_interacted:
+			_log_error("InteractionService 交互失败：%s" % INTERACTABLE_ID)
+		_refresh_ui()
 		return
 
-	var interacted := interaction_service.interact(OWNER_ID, INTERACTABLE_ID)
-	if not interacted:
-		_log_error("InteractionService 交互失败：%s" % INTERACTABLE_ID)
-	_refresh_ui()
+	if _is_near_creature():
+		var creature_interacted := interaction_service.interact(OWNER_ID, CREATURE_INTERACTABLE_ID)
+		if not creature_interacted:
+			_log_error("InteractionService 交互失败：%s" % CREATURE_INTERACTABLE_ID)
+		_refresh_ui()
+		return
+
+	_log("附近没有可交互对象。")
 
 
 func _on_pickup_interacted(actor_id: String, interactable_id: String, metadata: Dictionary) -> bool:
@@ -169,6 +206,38 @@ func _on_pickup_interacted(actor_id: String, interactable_id: String, metadata: 
 	return true
 
 
+func _on_creature_interacted(actor_id: String, interactable_id: String, metadata: Dictionary) -> bool:
+	if actor_id.is_empty():
+		_log_error("观察失败：actor_id 为空。")
+		return false
+	if interactable_id != CREATURE_INTERACTABLE_ID:
+		_log_error("观察失败：interactable_id 不匹配：%s。" % interactable_id)
+		return false
+	if creature_discovered:
+		_log("狌狌已经被发现。")
+		return true
+
+	var creature_id_value: Variant = metadata.get("creature_id", "")
+	if not (creature_id_value is String) or creature_id_value.is_empty():
+		_log_error("观察失败：metadata.creature_id 无效。")
+		return false
+	var creature_id: String = creature_id_value
+
+	var discovered := bestiary_service.discover_creature(actor_id, creature_id)
+	if not discovered:
+		_log_error("图鉴发现 %s 失败。" % creature_id)
+		return false
+
+	creature_discovered = true
+	creature.modulate.a = 0.45
+	creature_label.text = "狌狌（已发现）"
+	prompt_label.visible = false
+	_log_ok("图鉴发现 %s" % creature_id)
+	_log_ok("观察狌狌成功")
+	_refresh_ui()
+	return true
+
+
 func _verify_test_item(data_registry: Variant) -> bool:
 	if not data_registry.has_method("has_item"):
 		_log_error("DataRegistry 缺少 has_item()，无法验证测试物品。")
@@ -179,10 +248,26 @@ func _verify_test_item(data_registry: Variant) -> bool:
 	return true
 
 
+func _verify_test_creature(data_registry: Variant) -> bool:
+	if not data_registry.has_method("has_creature"):
+		_log_error("DataRegistry 缺少 has_creature()，无法验证测试生物。")
+		return false
+	if data_registry.call("has_creature", CREATURE_ID) != true:
+		_log_error("测试生物不存在：%s。" % CREATURE_ID)
+		return false
+	return true
+
+
 func _is_near_pickup() -> bool:
 	if pickup_collected or pickup == null or not pickup.visible:
 		return false
 	return player.global_position.distance_to(pickup.global_position) <= interaction_distance
+
+
+func _is_near_creature() -> bool:
+	if creature == null or not creature.visible:
+		return false
+	return player.global_position.distance_to(creature.global_position) <= interaction_distance
 
 
 func _get_autoload(node_name: String) -> Node:
@@ -195,16 +280,19 @@ func _get_autoload(node_name: String) -> Node:
 func _refresh_ui() -> void:
 	var item_count := 0
 	var discovered_items: Array = []
+	var discovered_creatures: Array = []
 
 	if inventory_service != null:
 		item_count = inventory_service.get_item_count(OWNER_ID, ITEM_ID)
 	if bestiary_service != null:
 		discovered_items = bestiary_service.get_discovered_items(OWNER_ID)
+		discovered_creatures = bestiary_service.get_discovered_creatures(OWNER_ID)
 
-	status_label.text = "背包：%s x%d\n图鉴 items=%s" % [
+	status_label.text = "背包：%s x%d\n图鉴 items=%s\n图鉴 creatures=%s" % [
 		ITEM_ID,
 		item_count,
-		_format_ids(discovered_items)
+		_format_ids(discovered_items),
+		_format_ids(discovered_creatures)
 	]
 
 
