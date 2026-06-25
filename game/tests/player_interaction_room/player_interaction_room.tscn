@@ -58,6 +58,30 @@ text = "背包：zhuyu_leaf x0
 图鉴 items=[]
 图鉴 creatures=[]"
 
+[node name="SaveButton" type="Button" parent="CanvasLayer"]
+unique_name_in_owner = true
+offset_left = 380.0
+offset_top = 56.0
+offset_right = 500.0
+offset_bottom = 88.0
+text = "保存 Slot 0"
+
+[node name="ClearButton" type="Button" parent="CanvasLayer"]
+unique_name_in_owner = true
+offset_left = 510.0
+offset_top = 56.0
+offset_right = 630.0
+offset_bottom = 88.0
+text = "清空状态"
+
+[node name="LoadButton" type="Button" parent="CanvasLayer"]
+unique_name_in_owner = true
+offset_left = 640.0
+offset_top = 56.0
+offset_right = 760.0
+offset_bottom = 88.0
+text = "读取 Slot 0"
+
 [node name="LogLabel" type="RichTextLabel" parent="CanvasLayer" unique_id=364527574]
 unique_name_in_owner = true
 offset_left = 24.0

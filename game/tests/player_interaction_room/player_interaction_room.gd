@@ -5,6 +5,8 @@ const ITEM_ID := "zhuyu_leaf"
 const INTERACTABLE_ID := "pickup_zhuyu_leaf"
 const CREATURE_ID := "shensheng"
 const CREATURE_INTERACTABLE_ID := "observe_shensheng"
+const SAVE_PROVIDER_ID := "player_interaction_room"
+const TEST_SAVE_SLOT := 0
 
 @onready var player: Polygon2D = %Player
 @onready var pickup: Polygon2D = %Pickup
@@ -14,6 +16,9 @@ const CREATURE_INTERACTABLE_ID := "observe_shensheng"
 @onready var prompt_label: Label = %PromptLabel
 @onready var status_label: Label = %StatusLabel
 @onready var log_label: RichTextLabel = %LogLabel
+@onready var save_button: Button = %SaveButton
+@onready var clear_button: Button = %ClearButton
+@onready var load_button: Button = %LoadButton
 
 var player_speed := 220.0
 var interaction_distance := 80.0
@@ -21,20 +26,37 @@ var interaction_distance := 80.0
 var inventory_service: InventoryService
 var bestiary_service: BestiaryService
 var interaction_service: InteractionService
+var save_service: Node
 
 var initialized := false
 var pickup_collected := false
 var creature_discovered := false
+var save_provider_registered := false
 var was_near_pickup := false
 var was_near_creature := false
 var was_interact_key_pressed := false
 
 
 func _ready() -> void:
+	_connect_button_signals()
+
 	prompt_label.visible = false
 	_refresh_ui()
 	_log("场景启动成功")
 	_initialize_core_services()
+
+
+func _connect_button_signals() -> void:
+	var save_callable := Callable(self, "_on_save_button_pressed")
+	var clear_callable := Callable(self, "_on_clear_button_pressed")
+	var load_callable := Callable(self, "_on_load_button_pressed")
+
+	if not save_button.pressed.is_connected(save_callable):
+		save_button.pressed.connect(save_callable)
+	if not clear_button.pressed.is_connected(clear_callable):
+		clear_button.pressed.connect(clear_callable)
+	if not load_button.pressed.is_connected(load_callable):
+		load_button.pressed.connect(load_callable)
 
 
 func _process(delta: float) -> void:
@@ -69,7 +91,22 @@ func _initialize_core_services() -> void:
 	inventory_service = InventoryService.new()
 	bestiary_service = BestiaryService.new()
 	interaction_service = InteractionService.new()
+	save_service = _get_autoload("SaveService")
+	if save_service == null:
+		_log_error("找不到 SaveService autoload，停止后续逻辑。")
+		return
 
+	if not _register_interactables():
+		return
+	if not _register_save_provider():
+		return
+
+	initialized = true
+	_log_ok("核心服务初始化成功")
+	_refresh_ui()
+
+
+func _register_interactables() -> bool:
 	var pickup_registered := interaction_service.register_interactable(INTERACTABLE_ID, {
 		"type": "pickup",
 		"metadata": {
@@ -81,7 +118,7 @@ func _initialize_core_services() -> void:
 	})
 	if not pickup_registered:
 		_log_error("InteractionService 注册失败：%s" % INTERACTABLE_ID)
-		return
+		return false
 
 	var creature_registered := interaction_service.register_interactable(CREATURE_INTERACTABLE_ID, {
 		"type": "observe",
@@ -93,12 +130,11 @@ func _initialize_core_services() -> void:
 	})
 	if not creature_registered:
 		_log_error("InteractionService 注册失败：%s" % CREATURE_INTERACTABLE_ID)
-		return
+		return false
 
-	initialized = true
 	_log_ok("InteractionService 注册成功：%s" % INTERACTABLE_ID)
 	_log_ok("InteractionService 注册成功：%s" % CREATURE_INTERACTABLE_ID)
-	_refresh_ui()
+	return true
 
 
 func _move_player(delta: float) -> void:
@@ -238,6 +274,170 @@ func _on_creature_interacted(actor_id: String, interactable_id: String, metadata
 	return true
 
 
+func get_save_data() -> Dictionary:
+	return _build_save_state()
+
+
+func load_save_data(data: Dictionary) -> bool:
+	return _restore_save_state(data)
+
+
+func _on_save_button_pressed() -> void:
+	if not _ensure_services_ready("保存 Slot 0"):
+		return
+	if not _register_save_provider():
+		_log_error("保存 Slot 0 失败")
+		return
+
+	var save_state := _build_save_state()
+	if save_state.is_empty():
+		_log_error("保存 Slot 0 失败")
+		return
+
+	var saved: Variant = save_service.call("save_slot", TEST_SAVE_SLOT)
+	if saved == true:
+		_log_ok("保存 Slot 0 成功")
+	else:
+		_log_error("保存 Slot 0 失败")
+
+
+func _on_clear_button_pressed() -> void:
+	if inventory_service != null:
+		inventory_service.clear_inventory(OWNER_ID)
+	if bestiary_service != null:
+		bestiary_service.clear_owner(OWNER_ID)
+
+	pickup_collected = false
+	creature_discovered = false
+	_apply_world_state()
+	_refresh_ui()
+	_log_ok("已清空当前测试状态")
+
+
+func _on_load_button_pressed() -> void:
+	if not _ensure_services_ready("读取 Slot 0"):
+		return
+	if not _register_save_provider():
+		_log_error("读取 Slot 0 失败或存档不存在")
+		return
+
+	var loaded: Variant = save_service.call("load_slot", TEST_SAVE_SLOT)
+	if loaded == true:
+		_log_ok("读取 Slot 0 成功")
+	else:
+		_log_error("读取 Slot 0 失败或存档不存在")
+	_refresh_ui()
+
+
+func _build_save_state() -> Dictionary:
+	if inventory_service == null or bestiary_service == null:
+		return {}
+
+	return {
+		"owner_id": OWNER_ID,
+		"inventory": {
+			ITEM_ID: inventory_service.get_item_count(OWNER_ID, ITEM_ID)
+		},
+		"bestiary": {
+			"items": bestiary_service.get_discovered_items(OWNER_ID),
+			"creatures": bestiary_service.get_discovered_creatures(OWNER_ID)
+		},
+		"test_room": {
+			"pickup_collected": pickup_collected,
+			"creature_discovered": creature_discovered
+		}
+	}
+
+
+func _restore_save_state(data: Dictionary) -> bool:
+	if inventory_service == null or bestiary_service == null:
+		return false
+	if not (data is Dictionary):
+		return false
+
+	var saved_owner_id: Variant = data.get("owner_id", OWNER_ID)
+	if saved_owner_id != OWNER_ID:
+		return false
+
+	var inventory_data: Variant = data.get("inventory", {})
+	var bestiary_data: Variant = data.get("bestiary", {})
+	var test_room_data: Variant = data.get("test_room", {})
+	if not (inventory_data is Dictionary):
+		return false
+	if not (bestiary_data is Dictionary):
+		return false
+	if not (test_room_data is Dictionary):
+		return false
+
+	var item_count := _to_non_negative_int(inventory_data.get(ITEM_ID, 0))
+	if item_count < 0:
+		return false
+
+	inventory_service.clear_inventory(OWNER_ID)
+	bestiary_service.clear_owner(OWNER_ID)
+	if item_count > 0 and not inventory_service.add_item(OWNER_ID, ITEM_ID, item_count):
+		return false
+	if not bestiary_service.load_save_data_for_owner(OWNER_ID, bestiary_data):
+		return false
+
+	pickup_collected = test_room_data.get("pickup_collected", false) == true
+	creature_discovered = test_room_data.get("creature_discovered", false) == true
+	_apply_world_state()
+	_refresh_ui()
+	return true
+
+
+func _register_save_provider() -> bool:
+	if save_service == null:
+		save_service = _get_autoload("SaveService")
+	if save_service == null:
+		_log_error("找不到 SaveService autoload，无法注册测试 provider。")
+		return false
+
+	if save_service.has_method("has_provider") and save_service.call("has_provider", SAVE_PROVIDER_ID) == true:
+		if save_service.has_method("unregister_provider"):
+			save_service.call("unregister_provider", SAVE_PROVIDER_ID)
+
+	if not save_service.has_method("register_provider"):
+		_log_error("SaveService 缺少 register_provider()。")
+		return false
+
+	var registered: Variant = save_service.call("register_provider", SAVE_PROVIDER_ID, self)
+	save_provider_registered = registered == true
+	if save_provider_registered:
+		_log_ok("SaveService provider 已注册：%s。" % SAVE_PROVIDER_ID)
+	else:
+		_log_error("SaveService provider 注册失败：%s。" % SAVE_PROVIDER_ID)
+	return save_provider_registered
+
+
+func _ensure_services_ready(action_name: String) -> bool:
+	if not initialized:
+		_log_error("%s 失败：核心服务尚未初始化。" % action_name)
+		return false
+	if inventory_service == null or bestiary_service == null or interaction_service == null or save_service == null:
+		_log_error("%s 失败：核心服务不可用。" % action_name)
+		return false
+	return true
+
+
+func _apply_world_state() -> void:
+	pickup.visible = not pickup_collected
+	pickup_label.visible = not pickup_collected
+	pickup_label.text = "祝余叶"
+
+	if creature_discovered:
+		creature.modulate.a = 0.45
+		creature_label.text = "狌狌（已发现）"
+	else:
+		creature.modulate.a = 1.0
+		creature_label.text = "狌狌"
+
+	prompt_label.visible = false
+	was_near_pickup = false
+	was_near_creature = false
+
+
 func _verify_test_item(data_registry: Variant) -> bool:
 	if not data_registry.has_method("has_item"):
 		_log_error("DataRegistry 缺少 has_item()，无法验证测试物品。")
@@ -314,6 +514,14 @@ func _to_positive_int(value: Variant) -> int:
 	if value is float and floor(value) == value:
 		return int(value)
 	return 0
+
+
+func _to_non_negative_int(value: Variant) -> int:
+	if value is int:
+		return value
+	if value is float and floor(value) == value:
+		return int(value)
+	return -1
 
 
 func _log_ok(message: String) -> void:
