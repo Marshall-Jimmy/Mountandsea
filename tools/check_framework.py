@@ -59,6 +59,7 @@ REQUIRED_FILES = [
     "game/addons/snowhuman_framework/systems/inventory_service.gd",
     "rfcs/0001-data-registry.md",
     "rfcs/0002-inventory-service.md",
+    "rfcs/0003-save-service.md",
     "tools/validate_data.py",
 ]
 
@@ -71,6 +72,7 @@ FRAMEWORK_README_PATH = "game/addons/snowhuman_framework/README.md"
 RFC_FILES = [
     "rfcs/0001-data-registry.md",
     "rfcs/0002-inventory-service.md",
+    "rfcs/0003-save-service.md",
 ]
 
 CHINESE_CHAR_RE = re.compile(r"[\u4e00-\u9fff]")
