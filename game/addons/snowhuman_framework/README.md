@@ -11,7 +11,8 @@ Snowhuman Framework 是一个可复用的 Godot 游戏框架 addon。
 - `EventBus`
 - `SaveService`：支持 provider 保存 / 读取。
 - `InventoryService`
-- `InteractionService` 和 `BestiaryService` 的服务骨架
+- `BestiaryService`：支持 creature / item 发现记录。
+- `InteractionService` 的服务骨架
 
 ## 启用方式
 
@@ -35,6 +36,14 @@ load_save_data(data: Dictionary) -> bool
 ```
 
 详细设计见 `rfcs/0003-save-service.md`。
+
+## BestiaryService
+
+`BestiaryService` 提供通用发现记录能力，可按 `owner_id` 记录已发现的 creature 和 item。
+
+它依赖 `DataRegistry` 校验 `creature_id` 和 `item_id`，并提供 `SaveService` 适配辅助接口，但不会直接注册到 `SaveService`。
+
+详细设计见 `rfcs/0004-bestiary-service.md`。
 
 ## 重要限制
 
