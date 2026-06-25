@@ -1,0 +1,12 @@
+{
+  "version": "0.1.0",
+  "items": [
+    {
+      "id": "test_item",
+      "name": "Test Item",
+      "type": "debug",
+      "stack_size": 99,
+      "description": "A generic test item used to validate the data pipeline."
+    }
+  ]
+}
