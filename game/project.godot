@@ -11,4 +11,16 @@ config_version=5
 [application]
 
 config/name="Mountandsea"
+run/main_scene="res://tests/core_test_room/core_test_room.tscn"
 config/features=PackedStringArray("4.7")
+
+[autoload]
+
+GameCore="*uid://beuburl4y376w"
+DataRegistry="*uid://ba4qf03rrjfs6"
+EventBus="*uid://bku41sfhcvn2f"
+SaveService="*uid://b0ufsp8wpix2q"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/snowhuman_framework/plugin.cfg")

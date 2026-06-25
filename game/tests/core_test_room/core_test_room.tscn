@@ -1,8 +1,8 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://bo0rn5bknoplt"]
 
-[ext_resource type="Script" path="res://tests/core_test_room/core_test_room.gd" id="1_core_test_room"]
+[ext_resource type="Script" uid="uid://dpciejjk5e7ai" path="res://tests/core_test_room/core_test_room.gd" id="1_core_test_room"]
 
-[node name="CoreTestRoom" type="Control"]
+[node name="CoreTestRoom" type="Control" unique_id=22565119]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -11,7 +11,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_core_test_room")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="."]
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=1877939326]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -23,60 +23,58 @@ offset_bottom = -24.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="TitleLabel" type="Label" parent="VBoxContainer"]
+[node name="TitleLabel" type="Label" parent="VBoxContainer" unique_id=1540650005]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Snowhuman Framework Core Test Room"
 
-[node name="LoadDataButton" type="Button" parent="VBoxContainer"]
+[node name="LoadDataButton" type="Button" parent="VBoxContainer" unique_id=653419890]
 unique_name_in_owner = true
 layout_mode = 2
 text = "加载数据"
 
-[node name="RegisterInteractableButton" type="Button" parent="VBoxContainer"]
+[node name="RegisterInteractableButton" type="Button" parent="VBoxContainer" unique_id=935889380]
 unique_name_in_owner = true
 layout_mode = 2
 text = "注册交互对象"
 
-[node name="PickupItemButton" type="Button" parent="VBoxContainer"]
+[node name="PickupItemButton" type="Button" parent="VBoxContainer" unique_id=74041020]
 unique_name_in_owner = true
 layout_mode = 2
 text = "采集祝余叶"
 
-[node name="DiscoverCreatureButton" type="Button" parent="VBoxContainer"]
+[node name="DiscoverCreatureButton" type="Button" parent="VBoxContainer" unique_id=1401861315]
 unique_name_in_owner = true
 layout_mode = 2
 text = "发现狌狌"
 
-[node name="SaveSlotButton" type="Button" parent="VBoxContainer"]
+[node name="SaveSlotButton" type="Button" parent="VBoxContainer" unique_id=2124617463]
 unique_name_in_owner = true
 layout_mode = 2
 text = "保存 Slot 0"
 
-[node name="ClearStateButton" type="Button" parent="VBoxContainer"]
+[node name="ClearStateButton" type="Button" parent="VBoxContainer" unique_id=1837340905]
 unique_name_in_owner = true
 layout_mode = 2
 text = "清空状态"
 
-[node name="LoadSlotButton" type="Button" parent="VBoxContainer"]
+[node name="LoadSlotButton" type="Button" parent="VBoxContainer" unique_id=1694035534]
 unique_name_in_owner = true
 layout_mode = 2
 text = "读取 Slot 0"
 
-[node name="InventoryStatusLabel" type="Label" parent="VBoxContainer"]
+[node name="InventoryStatusLabel" type="Label" parent="VBoxContainer" unique_id=1987423994]
 unique_name_in_owner = true
 layout_mode = 2
 text = "背包状态：zhuyu_leaf x0"
 
-[node name="BestiaryStatusLabel" type="Label" parent="VBoxContainer"]
+[node name="BestiaryStatusLabel" type="Label" parent="VBoxContainer" unique_id=2043121918]
 unique_name_in_owner = true
 layout_mode = 2
 text = "图鉴状态：items=[] creatures=[]"
 
-[node name="LogOutput" type="RichTextLabel" parent="VBoxContainer"]
+[node name="LogOutput" type="RichTextLabel" parent="VBoxContainer" unique_id=487004046]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
-bbcode_enabled = false
 scroll_following = true
-text = ""
