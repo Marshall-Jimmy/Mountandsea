@@ -11,3 +11,9 @@
 7. 第三方依赖记录在 `docs/third-party.md`。
 8. 不要直接推送到主分支。
 9. 通过 issue、分支和 PR 协作。
+
+## CI 验证
+
+PR 提交前应通过 `tools/validate_data.py` 和 `tools/check_framework.py`。
+GitHub Actions 会在 PR 和 master push 时自动运行基础验证。
+Godot CLI 检查仍作为本地可选验证。
