@@ -12,7 +12,7 @@ Snowhuman Framework 是一个可复用的 Godot 游戏框架 addon。
 - `SaveService`：支持 provider 保存 / 读取。
 - `InventoryService`
 - `BestiaryService`：支持 creature / item 发现记录。
-- `InteractionService` 的服务骨架
+- `InteractionService`：支持通用 interactable 注册和交互回调。
 
 ## 启用方式
 
@@ -44,6 +44,14 @@ load_save_data(data: Dictionary) -> bool
 它依赖 `DataRegistry` 校验 `creature_id` 和 `item_id`，并提供 `SaveService` 适配辅助接口，但不会直接注册到 `SaveService`。
 
 详细设计见 `rfcs/0004-bestiary-service.md`。
+
+## InteractionService
+
+`InteractionService` 提供通用 interactable 注册、查询和交互回调能力。
+
+它不直接依赖 UI、地图、`InventoryService` 或 `BestiaryService`；项目层可以在 callback 中自行连接具体业务模块。
+
+详细设计见 `rfcs/0005-interaction-service.md`。
 
 ## 重要限制
 
