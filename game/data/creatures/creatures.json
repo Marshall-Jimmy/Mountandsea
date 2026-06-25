@@ -1,4 +1,17 @@
 {
   "version": "0.1.0",
-  "creatures": []
+  "creatures": [
+    {
+      "id": "shensheng",
+      "name": "狌狌",
+      "type": "beast",
+      "description": "山海经题材早期测试异兽，用于验证数据加载和图鉴发现流程。"
+    },
+    {
+      "id": "generic_beast",
+      "name": "普通野兽",
+      "type": "beast",
+      "description": "通用野兽素材，用于验证数据加载和图鉴发现流程。"
+    }
+  ]
 }
