@@ -7,6 +7,27 @@
       "type": "debug",
       "stack_size": 99,
       "description": "A generic test item used to validate the data pipeline."
+    },
+    {
+      "id": "zhuyu_leaf",
+      "name": "祝余叶",
+      "type": "material",
+      "stack_size": 99,
+      "description": "源自山海经题材的早期测试素材，用于验证数据加载、背包堆叠与图鉴记录。"
+    },
+    {
+      "id": "migu_branch",
+      "name": "迷谷枝",
+      "type": "material",
+      "stack_size": 50,
+      "description": "源自山海经题材的早期测试素材，用于验证数据加载与背包堆叠。"
+    },
+    {
+      "id": "basic_ore",
+      "name": "粗矿石",
+      "type": "material",
+      "stack_size": 100,
+      "description": "通用矿物素材，用于验证数据加载与背包堆叠。"
     }
   ]
 }
