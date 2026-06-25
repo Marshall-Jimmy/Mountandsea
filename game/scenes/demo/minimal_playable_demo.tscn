@@ -27,6 +27,19 @@ offset_right = 400.0
 offset_bottom = 296.0
 text = "祝余叶"
 
+[node name="GuidanceStone" type="Polygon2D" parent="WorldRoot"]
+unique_name_in_owner = true
+position = Vector2(540, 380)
+color = Color(0.6, 0.55, 0.9, 1)
+polygon = PackedVector2Array(-22, -32, 22, -32, 28, 28, -28, 28)
+
+[node name="GuidanceStoneLabel" type="Label" parent="WorldRoot"]
+offset_left = 500.0
+offset_top = 416.0
+offset_right = 500.0
+offset_bottom = 416.0
+text = "山海石碑"
+
 [node name="ShenshengCreature" type="Polygon2D" parent="WorldRoot"]
 unique_name_in_owner = true
 position = Vector2(650, 260)
@@ -63,17 +76,25 @@ text = "WASD / 方向键移动，靠近目标后按 E 交互"
 unique_name_in_owner = true
 visible = false
 offset_left = 24.0
-offset_top = 76.0
+offset_top = 104.0
 offset_right = 240.0
-offset_bottom = 100.0
+offset_bottom = 128.0
 text = "按 E 交互"
+
+[node name="ObjectiveLabel" type="Label" parent="CanvasLayer"]
+unique_name_in_owner = true
+offset_left = 24.0
+offset_top = 76.0
+offset_right = 300.0
+offset_bottom = 100.0
+text = "当前目标：采集祝余叶"
 
 [node name="StatusLabel" type="Label" parent="CanvasLayer"]
 unique_name_in_owner = true
 offset_left = 24.0
-offset_top = 108.0
+offset_top = 136.0
 offset_right = 420.0
-offset_bottom = 176.0
+offset_bottom = 204.0
 text = "背包：zhuyu_leaf x0
 图鉴 items=[]
 图鉴 creatures=[]"
@@ -81,7 +102,7 @@ text = "背包：zhuyu_leaf x0
 [node name="LogLabel" type="RichTextLabel" parent="CanvasLayer"]
 unique_name_in_owner = true
 offset_left = 24.0
-offset_top = 188.0
+offset_top = 216.0
 offset_right = 720.0
-offset_bottom = 360.0
+offset_bottom = 388.0
 scroll_following = true

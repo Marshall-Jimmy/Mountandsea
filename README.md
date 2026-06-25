@@ -199,6 +199,21 @@ DataRegistry → InteractionService → InventoryService → BestiaryService →
 - 点击“读取 Slot 0”
 - 确认背包、items、creatures 和测试房间状态恢复
 
+`minimal_playable_demo` 是正式 demo 雏形，不是测试房间。开发者可以在 Godot 中打开：
+
+```text
+game/scenes/demo/minimal_playable_demo.tscn
+```
+
+当前 demo 采用场景内局部引导流程：
+
+1. 采集祝余叶
+2. 激活山海石碑
+3. 观察狌狌
+4. Demo 完成
+
+该流程验证 `DataRegistry`、`InteractionService`、`InventoryService` 和 `BestiaryService` 的基础闭环。Guidance flow currently stays local to the demo scene and is not a general quest system.
+
 ---
 
 ## 参与贡献
