@@ -6,6 +6,7 @@ const INTERACTABLE_ID := "pickup_zhuyu_leaf"
 
 @onready var player: Polygon2D = %Player
 @onready var pickup: Polygon2D = %Pickup
+@onready var pickup_label: Label = $PickupLabel
 @onready var prompt_label: Label = %PromptLabel
 @onready var status_label: Label = %StatusLabel
 @onready var log_label: RichTextLabel = %LogLabel
@@ -161,6 +162,7 @@ func _on_pickup_interacted(actor_id: String, interactable_id: String, metadata: 
 
 	pickup_collected = true
 	pickup.visible = false
+	pickup_label.visible = false
 	prompt_label.visible = false
 	_log_ok("采集成功")
 	_refresh_ui()
