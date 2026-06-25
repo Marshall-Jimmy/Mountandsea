@@ -1,21 +1,21 @@
-# RFC 0000: Title
+# RFC 0000：标题
 
-## Status
+## 状态
 
-Draft
+草案
 
-## Goal
+## 目标
 
-## Non-goals
+## 非目标
 
 ## API
 
-## Data Format
+## 数据格式
 
-## Error Handling
+## 错误处理
 
-## Relationship With Other Modules
+## 与其他模块的关系
 
-## Validation Criteria
+## 验收标准
 
-## Notes
+## 备注

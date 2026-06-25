@@ -1,6 +1,6 @@
-# Third-party Dependencies
+# 第三方依赖
 
 当前暂无正式引入第三方插件。
 
-| Name | Source | Purpose | License | Directly Included | Version / Commit | Notes |
+| 名称 | 来源 | 用途 | 许可证 | 是否直接包含 | Version / Commit | 备注 |
 |------|--------|---------|---------|-------------------|------------------|-------|

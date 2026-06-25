@@ -1,22 +1,30 @@
 # Snowhuman Framework
 
-Snowhuman Framework is a reusable Godot game framework addon.
+Snowhuman Framework 是一个可复用的 Godot 游戏框架 addon。
 
-Current status: early skeleton.
+当前状态：早期框架骨架。
 
-It currently includes:
+当前包含：
 
 - `GameCore`
 - `DataRegistry`
 - `EventBus`
 - `SaveService`
 - `InventoryService`
-- service skeletons for interaction and bestiary-style catalogs
+- `InteractionService` 和 `BestiaryService` 的服务骨架
+
+## 启用方式
+
+将 addon 保持在 `game/addons/snowhuman_framework/`，并在 Godot 项目中启用 `Snowhuman Framework`。
+
+启用后，addon 会注册当前框架需要的 autoload。`InventoryService` 不是 autoload，需要由项目代码实例化，或后续由核心管理器统一管理。
 
 ## InventoryService
 
-`InventoryService` provides basic owner-scoped `item_id`/`count` inventory management. It is not an autoload; project code should instantiate it directly or route it through a future core manager.
+`InventoryService` 提供基础的、按 `owner_id` 区分的 `item_id`/`count` 管理能力。
 
-The service validates item ids through `DataRegistry`, reads stack sizes from item data, and emits `EventBus.inventory_changed` after successful owner inventory changes.
+它通过 `DataRegistry` 校验 `item_id`，从 item 数据读取 `stack_size`，并在指定 owner 的背包发生成功变更后发出 `EventBus.inventory_changed`。
 
-The addon does not include project-specific content. Content data should live in `game/data/` or project scripts outside this addon.
+## 重要限制
+
+Snowhuman Framework 不包含项目专属内容。内容数据应放在 `game/data/`，或放在 addon 外部的项目脚本中。
