@@ -164,11 +164,20 @@ func _is_valid_item_id(item_id: String) -> bool:
 
 
 func _item_exists(item_id: String) -> bool:
-	return DataRegistry.has_item(item_id)
+	var data_registry: Variant = _get_data_registry()
+	if data_registry == null:
+		return false
+
+	return data_registry.has_item(item_id)
 
 
 func _get_stack_size(item_id: String) -> int:
-	var item := DataRegistry.get_item(item_id)
+	var data_registry: Variant = _get_data_registry()
+	if data_registry == null:
+		push_error("InventoryService: DataRegistry is not available.")
+		return 0
+
+	var item: Dictionary = data_registry.get_item(item_id)
 	var stack_size: Variant = item.get("stack_size", 0)
 
 	if stack_size is int and stack_size > 0:
@@ -185,6 +194,19 @@ func _get_or_create_inventory(owner_id: String) -> Array:
 		_inventories_by_owner[owner_id] = []
 
 	return _inventories_by_owner[owner_id]
+
+
+func _get_data_registry() -> Variant:
+	var main_loop := Engine.get_main_loop()
+	if not (main_loop is SceneTree):
+		push_error("InventoryService: SceneTree is not available.")
+		return null
+
+	var data_registry := (main_loop as SceneTree).root.get_node_or_null("DataRegistry")
+	if data_registry == null:
+		push_error("InventoryService: DataRegistry is not available.")
+
+	return data_registry
 
 
 func _emit_inventory_changed(owner_id: String) -> void:
