@@ -484,7 +484,7 @@ func _assert_compact_progress_view_hides_detail_items() -> void:
 
 	toggle_button.emit_signal("pressed")
 	_assert_true(demo.get("optional_progress_detail_view") == false, "journal should switch to compact view")
-	_assert_true(toggle_button.text == "详细视图", "compact journal toggle should offer detail view")
+	_assert_true(toggle_button.text == "详细视图 [V]", "compact journal toggle should offer detail view")
 	_assert_journal_labels_separated()
 	_assert_journal_progress(0, _optional_total_count())
 	_assert_journal_section_progress("可选采集物", 0, _optional_collectible_count())
@@ -609,7 +609,7 @@ func _ensure_detail_journal_view() -> void:
 	if demo.get("optional_progress_detail_view") == false:
 		toggle_button.emit_signal("pressed")
 	_assert_true(demo.get("optional_progress_detail_view") == true, "journal should be in detail view")
-	_assert_true(toggle_button.text == "简洁视图", "detail journal toggle should offer compact view")
+	_assert_true(toggle_button.text == "简洁视图 [V]", "detail journal toggle should offer compact view")
 
 
 func _get_journal_label() -> Label:
@@ -682,9 +682,9 @@ func _assert_history_panel_visible(expected: bool) -> void:
 	_assert_true(history_panel.visible == expected, "interaction history panel visibility mismatch")
 	_assert_true(log_label.visible == expected, "log label visibility mismatch")
 	_assert_true(toggle_button.visible == true, "interaction history toggle button should remain visible")
-	var expected_button_text := "隐藏日志"
+	var expected_button_text := "隐藏日志 [H]"
 	if not expected:
-		expected_button_text = "显示日志"
+		expected_button_text = "显示日志 [H]"
 	_assert_true(toggle_button.text == expected_button_text, "interaction history toggle text mismatch")
 
 

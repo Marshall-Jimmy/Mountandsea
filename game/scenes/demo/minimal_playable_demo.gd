@@ -89,6 +89,8 @@ var was_near_stone := false
 var was_near_shensheng := false
 var was_interact_key_pressed := false
 var was_menu_toggle_key_pressed := false
+var was_log_toggle_key_pressed := false
+var was_view_toggle_key_pressed := false
 
 
 func _ready() -> void:
@@ -268,6 +270,7 @@ func _create_optional_label(label_name: String, label_position: Vector2, text: S
 
 func _process(delta: float) -> void:
 	_handle_menu_toggle_input()
+	_handle_journal_shortcut_input()
 
 	if not initialized:
 		return
@@ -375,9 +378,9 @@ func _update_optional_progress_view_toggle_text() -> void:
 	if optional_progress_view_toggle_button == null:
 		return
 	if optional_progress_detail_view:
-		optional_progress_view_toggle_button.text = "简洁视图"
+		optional_progress_view_toggle_button.text = "简洁视图 [V]"
 	else:
-		optional_progress_view_toggle_button.text = "详细视图"
+		optional_progress_view_toggle_button.text = "详细视图 [V]"
 
 
 func _on_interaction_history_toggle_pressed() -> void:
@@ -397,9 +400,9 @@ func _update_interaction_history_toggle_text() -> void:
 	if interaction_history_toggle_button == null:
 		return
 	if interaction_history_panel_visible:
-		interaction_history_toggle_button.text = "隐藏日志"
+		interaction_history_toggle_button.text = "隐藏日志 [H]"
 	else:
-		interaction_history_toggle_button.text = "显示日志"
+		interaction_history_toggle_button.text = "显示日志 [H]"
 
 
 func _initialize_services() -> void:
@@ -562,6 +565,23 @@ func _handle_menu_toggle_input() -> void:
 			_open_demo_menu()
 
 	was_menu_toggle_key_pressed = menu_toggle_key_pressed
+
+
+func _handle_journal_shortcut_input() -> void:
+	if _is_ui_blocking_gameplay():
+		was_log_toggle_key_pressed = Input.is_key_pressed(KEY_H)
+		was_view_toggle_key_pressed = Input.is_key_pressed(KEY_V)
+		return
+
+	var log_toggle_key_pressed := Input.is_key_pressed(KEY_H)
+	if log_toggle_key_pressed and not was_log_toggle_key_pressed:
+		_on_interaction_history_toggle_pressed()
+	was_log_toggle_key_pressed = log_toggle_key_pressed
+
+	var view_toggle_key_pressed := Input.is_key_pressed(KEY_V)
+	if view_toggle_key_pressed and not was_view_toggle_key_pressed:
+		_on_optional_progress_view_toggle_pressed()
+	was_view_toggle_key_pressed = view_toggle_key_pressed
 
 
 func _is_ui_blocking_gameplay() -> bool:
@@ -1225,6 +1245,8 @@ func _apply_world_visual_state() -> void:
 	was_near_shensheng = false
 	_reset_optional_near_state()
 	was_interact_key_pressed = false
+	was_log_toggle_key_pressed = false
+	was_view_toggle_key_pressed = false
 
 
 func _show_completion_panel() -> void:
