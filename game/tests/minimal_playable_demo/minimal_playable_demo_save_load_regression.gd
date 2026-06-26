@@ -117,6 +117,7 @@ func _run_test() -> void:
 	_assert_optional_state_complete()
 	_assert_journal_recent("普通野兽")
 	_assert_journal_save_fields_absent()
+	_assert_history_ui_recent_limit_preserves_internal_history()
 	_assert_history_contains("采集迷穀枝")
 	_assert_history_contains("采集粗矿石")
 	_assert_history_contains("发现鹿蜀")
@@ -433,6 +434,7 @@ func _assert_journal_status(display_name: String, expected_status: String) -> vo
 
 func _assert_initial_journal_state() -> void:
 	_ensure_detail_journal_view()
+	_assert_journal_labels_separated()
 	_assert_journal_progress(0, _optional_total_count())
 	_assert_journal_section_progress("可选采集物", 0, _optional_collectible_count())
 	_assert_journal_section_progress("可选生物 / 互动", 0, _optional_creature_count())
@@ -483,6 +485,7 @@ func _assert_compact_progress_view_hides_detail_items() -> void:
 	toggle_button.emit_signal("pressed")
 	_assert_true(demo.get("optional_progress_detail_view") == false, "journal should switch to compact view")
 	_assert_true(toggle_button.text == "详细视图", "compact journal toggle should offer detail view")
+	_assert_journal_labels_separated()
 	_assert_journal_progress(0, _optional_total_count())
 	_assert_journal_section_progress("可选采集物", 0, _optional_collectible_count())
 	_assert_journal_section_progress("可选生物 / 互动", 0, _optional_creature_count())
@@ -533,6 +536,45 @@ func _assert_repeated_optional_completion_preserves_history_and_recent() -> void
 	var history_after: Variant = demo.get("interaction_history")
 	_assert_true(history_after is Array and history_after.size() == history_size_before, "repeated optional completion should not append history")
 	_assert_journal_recent("迷穀枝")
+
+
+func _assert_history_ui_recent_limit_preserves_internal_history() -> void:
+	var history: Variant = demo.get("interaction_history")
+	_assert_true(history is Array, "interaction_history should be an Array")
+	if not (history is Array):
+		return
+	_assert_true(history.size() > 5, "internal history should keep more entries than the UI recent limit")
+
+	var history_label := demo.get_node_or_null("CanvasLayer/InteractionHistoryPanel/InteractionHistoryLabel") as Label
+	_assert_true(history_label != null, "interaction history label must exist")
+	if history_label == null:
+		return
+
+	_assert_true(history_label.text.contains("历史记录（最近 5 条）"), "history UI should disclose the recent-entry limit")
+	_assert_true(_count_visible_history_entries(history_label.text) == 5, "history UI should show only the latest 5 entries")
+	_assert_true(history_label.max_lines_visible == 6, "history label should reserve one header line plus 5 entries")
+	for index in range(history.size() - 5, history.size()):
+		_assert_true(history_label.text.contains(str(history[index])), "history UI should show recent entry %s" % str(history[index]))
+
+
+func _count_visible_history_entries(history_text: String) -> int:
+	var entry_count := 0
+	for line in history_text.split("\n"):
+		if line.begins_with("- "):
+			entry_count += 1
+	return entry_count
+
+
+func _assert_journal_labels_separated() -> void:
+	var journal_label := _get_journal_label()
+	var history_label := demo.get_node_or_null("CanvasLayer/InteractionHistoryPanel/InteractionHistoryLabel") as Label
+	_assert_true(history_label != null, "interaction history label must exist")
+	if journal_label == null or history_label == null:
+		return
+
+	_assert_true(journal_label.offset_bottom <= history_label.offset_top, "journal label should end before history label starts")
+	_assert_true(journal_label.clip_text == true, "journal label should clip text inside its fixed area")
+	_assert_true(history_label.clip_text == true, "history label should clip text inside its fixed area")
 
 
 func _assert_journal_save_fields_absent() -> void:

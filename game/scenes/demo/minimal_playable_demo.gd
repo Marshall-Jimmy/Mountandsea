@@ -18,6 +18,9 @@ const SAVE_PROVIDER_ID := "minimal_playable_demo"
 const DEMO_SAVE_SLOT := 0
 const PLAYER_START_POSITION := Vector2(220, 260)
 const MAX_HISTORY_EVENTS := 8
+const HISTORY_UI_RECENT_LIMIT := 5
+const OPTIONAL_PROGRESS_DETAIL_LINE_LIMIT := 10
+const OPTIONAL_PROGRESS_COMPACT_LINE_LIMIT := 6
 
 enum DemoStep {
 	COLLECT_ZHUYU,
@@ -313,7 +316,7 @@ func _configure_interaction_history_panel() -> void:
 	if interaction_history_panel == null:
 		return
 
-	interaction_history_panel.offset_top = 272.0
+	interaction_history_panel.offset_top = 248.0
 	interaction_history_panel.offset_bottom = 600.0
 	var title_label := interaction_history_panel.get_node_or_null("InteractionHistoryTitleLabel") as Label
 	if title_label != null:
@@ -325,6 +328,7 @@ func _configure_interaction_history_panel() -> void:
 		optional_progress_journal_label.name = "OptionalProgressJournalLabel"
 		optional_progress_journal_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		interaction_history_panel.add_child(optional_progress_journal_label)
+	optional_progress_journal_label.clip_text = true
 
 	if optional_progress_view_toggle_button == null:
 		optional_progress_view_toggle_button = Button.new()
@@ -342,18 +346,21 @@ func _configure_interaction_history_panel() -> void:
 	optional_progress_journal_label.offset_left = 16.0
 	optional_progress_journal_label.offset_top = 44.0
 	optional_progress_journal_label.offset_right = 250.0
-	optional_progress_journal_label.offset_bottom = 228.0
+	optional_progress_journal_label.offset_bottom = 218.0
 
 	if interaction_history_label != null:
-		interaction_history_label.offset_top = 244.0
+		interaction_history_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		interaction_history_label.clip_text = true
+		interaction_history_label.max_lines_visible = HISTORY_UI_RECENT_LIMIT + 1
+		interaction_history_label.offset_top = 234.0
 		interaction_history_label.offset_bottom = 340.0
 
 	if interaction_history_toggle_button == null:
 		return
 	interaction_history_toggle_button.offset_left = 884.0
-	interaction_history_toggle_button.offset_top = 232.0
+	interaction_history_toggle_button.offset_top = 208.0
 	interaction_history_toggle_button.offset_right = 1010.0
-	interaction_history_toggle_button.offset_bottom = 264.0
+	interaction_history_toggle_button.offset_bottom = 240.0
 	interaction_history_toggle_button.visible = true
 	_update_interaction_history_toggle_text()
 
@@ -1251,6 +1258,10 @@ func _format_optional_completion_summary() -> String:
 func _update_optional_progress_journal() -> void:
 	if optional_progress_journal_label == null:
 		return
+	if optional_progress_detail_view:
+		optional_progress_journal_label.max_lines_visible = OPTIONAL_PROGRESS_DETAIL_LINE_LIMIT
+	else:
+		optional_progress_journal_label.max_lines_visible = OPTIONAL_PROGRESS_COMPACT_LINE_LIMIT
 	optional_progress_journal_label.text = _format_optional_progress_journal()
 
 
@@ -1332,11 +1343,12 @@ func _update_history_ui() -> void:
 	if interaction_history_label == null:
 		return
 	if interaction_history.is_empty():
-		interaction_history_label.text = "历史记录\n尚无记录"
+		interaction_history_label.text = "历史记录（最近 %d 条）\n尚无记录" % HISTORY_UI_RECENT_LIMIT
 		return
 
-	var formatted := "历史记录"
-	for index in range(interaction_history.size()):
+	var formatted := "历史记录（最近 %d 条）" % HISTORY_UI_RECENT_LIMIT
+	var first_visible_index: int = max(0, interaction_history.size() - HISTORY_UI_RECENT_LIMIT)
+	for index in range(first_visible_index, interaction_history.size()):
 		formatted += "\n- %s" % interaction_history[index]
 	interaction_history_label.text = formatted
 

@@ -66,7 +66,7 @@
 ## 当前开放 PR
 
 ### PR #36: game: improve optional journal usability
-- **状态：** Draft PR opened / 待用户 Godot GUI 手动测试
+- **状态：** Draft PR opened / 已根据用户 GUI 手测反馈追加 layout 修复，待用户复测
 - **Branch：** `game/optional-journal-usability-bundle`
 - **链接：** https://github.com/Marshall-Jimmy/Mountandsea/pull/36
 - 增强 `minimal_playable_demo` 的 optional progress journal usability。
@@ -76,9 +76,11 @@
 - 改善 journal 与历史记录文本层次和 readability。
 - 保持 `隐藏日志` / `显示日志` 折叠右侧 panel 和左侧 live log 的行为不变。
 - 扩展 `minimal_playable_demo_save_load_regression.gd`，覆盖 progress counters、compact/detail toggle、recent completion、history preservation、reset、legacy optional load 和不新增 save fields。
+- 用户 GUI 手测发现右侧 journal UI 文本重叠：optional progress、recent completion、section title / item list 和 history records 挤在一起。
+- 本次追加修复将 optional progress label 和 history label 固定在分离区域，启用 text clipping，并将右侧 history UI 限制为最近 5 条；内部 `interaction_history` 数据仍保留。
 - 验证已通过：`python tools/validate_data.py`、`python tools/check_framework.py`、`python tools/validate_minimal_demo.py`、`git diff --check`、`git diff --stat`，以及显式 Snowhuman Framework keyword scan。
 - `git diff --check` 和 `git diff --stat` 仅提示 Windows line-ending warning。
-- Godot GUI manual test reserved for user；本 PR 不允许自动合并。
+- Godot GUI manual test reserved for user；本 PR 不允许自动合并，仍需用户复测 layout。
 
 ---
 
@@ -91,6 +93,7 @@
 - Journal 会显示 optional collectible 和 optional creature / interaction 完成状态。
 - 显式 `InteractionHistoryToggleButton` 可折叠 / 展开右侧 journal/history panel 和左侧 live log，并保留 text/history。
 - PR #36 正在增强 journal usability：progress counters、compact/detail view toggle、recent completion hint，以及 readability / layout polish。
+- PR #36 已根据用户 GUI 手测反馈追加修复 journal layout overlap：progress 与 history 分区显示，history UI 只显示最近 5 条但不截断内部 history 数据。
 - PR #36 不改变 optional state 核心结构、不新增 save fields、不改变 data-driven optional content 设计。
 - Snowhuman Framework 保持通用；addon 内没有项目专用内容。
 
@@ -135,7 +138,7 @@ git diff --stat
 - 不改变 optional state、save fields 或 data-driven content。
 - 不移动 demo-specific 内容到 Snowhuman Framework。
 
-**状态：** Draft PR 已打开，等待用户完成 Godot GUI 手动测试；不要自动合并。
+**状态：** Draft PR 已打开；用户 GUI 手测发现 journal UI 重叠，本次已追加 layout 修复，等待用户复测；不要自动合并。
 
 **验证：**
 - `python tools/validate_data.py` passed
@@ -146,7 +149,7 @@ git diff --stat
 - 显式 Snowhuman Framework keyword scan for `zhuyu|shensheng|zaoyaoshan|祝余|狌狌|招摇山`：no matches
 
 **下一步：**
-- 用户进行 Godot GUI manual test。
+- 用户重新进行 Godot GUI manual test，重点检查右侧 optional journal / history panel 是否仍有重叠。
 - GUI 手测通过后，由用户决定是否将 draft 标为 ready、merge 或继续反馈修改。
 
 ---
