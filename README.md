@@ -212,7 +212,7 @@ game/scenes/demo/minimal_playable_demo.tscn
 3. 观察狌狌
 4. Demo 完成
 
-该流程验证 `DataRegistry`、`InteractionService`、`InventoryService` 和 `BestiaryService` 的基础闭环。Guidance flow currently stays local to the demo scene and is not a general quest system.
+该流程验证 `DataRegistry`、`InteractionService`、`InventoryService` 和 `BestiaryService` 的基础闭环。`minimal_playable_demo` 现在包含当前目标显示、目标高亮和距离提示。The objective guidance is local to the demo scene and is not a general quest system.
 
 ---
 

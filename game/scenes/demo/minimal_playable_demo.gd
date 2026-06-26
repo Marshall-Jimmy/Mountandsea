@@ -22,6 +22,7 @@ enum DemoStep {
 @onready var shensheng_creature: Polygon2D = %ShenshengCreature
 @onready var shensheng_label: Label = %ShenshengLabel
 @onready var objective_label: Label = %ObjectiveLabel
+@onready var target_hint_label: Label = %TargetHintLabel
 @onready var prompt_label: Label = %PromptLabel
 @onready var status_label: Label = %StatusLabel
 @onready var log_label: RichTextLabel = %LogLabel
@@ -48,6 +49,7 @@ func _ready() -> void:
 	prompt_label.visible = false
 	_refresh_status()
 	_update_objective_ui()
+	_update_objective_guidance()
 	_log("山海经 Demo 场景启动")
 	_initialize_services()
 
@@ -59,6 +61,7 @@ func _process(delta: float) -> void:
 	_move_player(delta)
 	_update_prompt()
 	_handle_interaction_input()
+	_update_objective_guidance()
 
 
 func _initialize_services() -> void:
@@ -277,6 +280,7 @@ func _on_zhuyu_interacted(actor_id: String, interactable_id: String, metadata: D
 	_log("当前目标：前往山海石碑")
 	_refresh_status()
 	_update_objective_ui()
+	_update_objective_guidance()
 	return true
 
 
@@ -299,6 +303,7 @@ func _on_guidance_stone_interacted(actor_id: String, interactable_id: String, _m
 	_log_ok("山海石碑已激活")
 	_log("当前目标：观察狌狌")
 	_update_objective_ui()
+	_update_objective_guidance()
 	return true
 
 
@@ -338,6 +343,7 @@ func _on_shensheng_interacted(actor_id: String, interactable_id: String, metadat
 	_log("Demo 完成")
 	_refresh_status()
 	_update_objective_ui()
+	_update_objective_guidance()
 	return true
 
 
@@ -413,6 +419,60 @@ func _update_objective_ui() -> void:
 			objective_label.text = "当前目标：观察狌狌"
 		DemoStep.COMPLETE:
 			objective_label.text = "当前目标：Demo 完成"
+
+
+func _get_active_target_node() -> Node2D:
+	match current_step:
+		DemoStep.COLLECT_ZHUYU:
+			return zhuyu_pickup
+		DemoStep.ACTIVATE_STONE:
+			return guidance_stone
+		DemoStep.OBSERVE_SHENSHENG:
+			return shensheng_creature
+		DemoStep.COMPLETE:
+			return null
+	return null
+
+
+func _update_objective_guidance() -> void:
+	_reset_guidance_visuals()
+	var active_target := _get_active_target_node()
+
+	match current_step:
+		DemoStep.COLLECT_ZHUYU:
+			if zhuyu_pickup.visible:
+				zhuyu_pickup.modulate.a = 1.0
+				zhuyu_pickup.scale = Vector2(1.15, 1.15)
+			guidance_stone.modulate.a = 0.35
+			shensheng_creature.modulate.a = 0.35
+			target_hint_label.text = _format_target_hint("祝余叶", "按 E 采集", active_target)
+		DemoStep.ACTIVATE_STONE:
+			guidance_stone.modulate.a = 1.0
+			guidance_stone.scale = Vector2(1.15, 1.15)
+			shensheng_creature.modulate.a = 0.35
+			target_hint_label.text = _format_target_hint("山海石碑", "按 E 激活", active_target)
+		DemoStep.OBSERVE_SHENSHENG:
+			guidance_stone.modulate.a = 0.55
+			shensheng_creature.modulate.a = 1.0
+			shensheng_creature.scale = Vector2(1.15, 1.15)
+			target_hint_label.text = _format_target_hint("狌狌", "按 E 观察", active_target)
+		DemoStep.COMPLETE:
+			guidance_stone.modulate.a = 0.55
+			shensheng_creature.modulate.a = 0.45
+			target_hint_label.text = "目标提示：Demo 已完成"
+
+
+func _reset_guidance_visuals() -> void:
+	zhuyu_pickup.scale = Vector2.ONE
+	guidance_stone.scale = Vector2.ONE
+	shensheng_creature.scale = Vector2.ONE
+
+
+func _format_target_hint(target_name: String, action_text: String, active_target: Node2D) -> String:
+	if active_target != null:
+		var distance := int(player.global_position.distance_to(active_target.global_position))
+		return "目标提示：%s距离 %d，%s" % [target_name, distance, action_text]
+	return "目标提示：靠近%s，%s" % [target_name, action_text]
 
 
 func _show_prompt(message: String) -> void:
