@@ -17,10 +17,10 @@
     },
     {
       "id": "migu_branch",
-      "name": "迷谷枝",
+      "name": "迷穀枝",
       "type": "material",
-      "stack_size": 50,
-      "description": "源自山海经题材的早期测试素材，用于验证数据加载与背包堆叠。"
+      "stack_size": 99,
+      "description": "取自迷穀之木的枝条，传说可辨方向，适合作为 Demo 中的第二个采集物。"
     },
     {
       "id": "basic_ore",

@@ -54,6 +54,34 @@ offset_right = 620.0
 offset_bottom = 296.0
 text = "狌狌"
 
+[node name="MiguBranch" type="Polygon2D" parent="WorldRoot"]
+unique_name_in_owner = true
+position = Vector2(720, 300)
+color = Color(0.2, 0.85, 0.75, 1)
+polygon = PackedVector2Array(-8, -30, 8, -30, 8, -4, 28, -12, 32, 4, 8, 12, 8, 30, -8, 30, -8, 12, -32, 4, -28, -12, -8, -4)
+
+[node name="MiguBranchLabel" type="Label" parent="WorldRoot"]
+unique_name_in_owner = true
+offset_left = 680.0
+offset_top = 336.0
+offset_right = 680.0
+offset_bottom = 336.0
+text = "迷穀枝"
+
+[node name="LushuCreature" type="Polygon2D" parent="WorldRoot"]
+unique_name_in_owner = true
+position = Vector2(760, 520)
+color = Color(0.85, 0.68, 0.28, 1)
+polygon = PackedVector2Array(-32, -12, -12, -28, 12, -28, 34, -10, 24, 20, -18, 24, -34, 8)
+
+[node name="LushuLabel" type="Label" parent="WorldRoot"]
+unique_name_in_owner = true
+offset_left = 730.0
+offset_top = 560.0
+offset_right = 730.0
+offset_bottom = 560.0
+text = "鹿蜀"
+
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
 [node name="TitleLabel" type="Label" parent="CanvasLayer"]
@@ -103,7 +131,7 @@ offset_left = 24.0
 offset_top = 136.0
 offset_right = 420.0
 offset_bottom = 204.0
-text = "背包：zhuyu_leaf x0
+text = "背包：zhuyu_leaf x0, migu_branch x0
 图鉴 items=[]
 图鉴 creatures=[]"
 

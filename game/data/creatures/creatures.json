@@ -8,6 +8,12 @@
       "description": "山海经题材早期测试异兽，用于验证数据加载和图鉴发现流程。"
     },
     {
+      "id": "lushu",
+      "name": "鹿蜀",
+      "type": "beast",
+      "description": "山海经异兽，形如马而文如虎，适合作为 Demo 中的第二个可观察生物。"
+    },
+    {
       "id": "generic_beast",
       "name": "普通野兽",
       "type": "beast",

@@ -216,6 +216,11 @@ game/scenes/demo/minimal_playable_demo.tscn
 
 `minimal_playable_demo` 支持 demo-local 菜单：保存 Demo、读取 Demo、重置 Demo、完成总结和重新开始 Demo。Save/load is local to the demo scene and is not a general production save system.
 
+Demo 完成后解锁 optional content：
+
+- `migu_branch` / 迷穀枝
+- `lushu` / 鹿蜀
+
 ### Minimal playable demo local validation
 
 Run the full local validation stack for the minimal playable demo:
@@ -245,6 +250,8 @@ GODOT_BIN=/path/to/godot python tools/validate_minimal_demo.py
 | Save/load state restore | `minimal_playable_demo_save_load_regression.gd` | Yes | No |
 | Player position restore | `minimal_playable_demo_save_load_regression.gd` | Yes | No |
 | Interaction history restore | `minimal_playable_demo_save_load_regression.gd` | Yes | No |
+| Optional demo content | Demo regression + manual run | Partial | Yes |
+| Optional content save/load | `minimal_playable_demo_save_load_regression.gd` | Yes | No |
 | Reset/restart | `minimal_playable_demo_save_load_regression.gd` + manual run | Partial | Yes |
 | Completion panel | Manual demo run | No | Yes |
 
