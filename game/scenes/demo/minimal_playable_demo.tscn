@@ -162,13 +162,35 @@ offset_right = 250.0
 offset_bottom = 200.0
 text = "关闭菜单"
 
+[node name="InteractionHistoryPanel" type="Panel" parent="CanvasLayer"]
+unique_name_in_owner = true
+offset_left = 744.0
+offset_top = 240.0
+offset_right = 1010.0
+offset_bottom = 456.0
+
+[node name="InteractionHistoryTitleLabel" type="Label" parent="CanvasLayer/InteractionHistoryPanel"]
+offset_left = 16.0
+offset_top = 12.0
+offset_right = 236.0
+offset_bottom = 36.0
+text = "历史记录"
+
+[node name="InteractionHistoryLabel" type="Label" parent="CanvasLayer/InteractionHistoryPanel"]
+unique_name_in_owner = true
+offset_left = 16.0
+offset_top = 44.0
+offset_right = 250.0
+offset_bottom = 200.0
+text = "尚无记录"
+
 [node name="CompletionPanel" type="Panel" parent="CanvasLayer"]
 unique_name_in_owner = true
 visible = false
 offset_left = 244.0
 offset_top = 96.0
 offset_right = 660.0
-offset_bottom = 380.0
+offset_bottom = 520.0
 
 [node name="CompletionTitleLabel" type="Label" parent="CanvasLayer/CompletionPanel"]
 offset_left = 20.0
@@ -182,20 +204,20 @@ unique_name_in_owner = true
 offset_left = 20.0
 offset_top = 52.0
 offset_right = 396.0
-offset_bottom = 204.0
+offset_bottom = 408.0
 
 [node name="RestartDemoButton" type="Button" parent="CanvasLayer/CompletionPanel"]
 unique_name_in_owner = true
 offset_left = 20.0
-offset_top = 228.0
+offset_top = 432.0
 offset_right = 196.0
-offset_bottom = 264.0
+offset_bottom = 468.0
 text = "重新开始 Demo"
 
 [node name="CloseCompletionButton" type="Button" parent="CanvasLayer/CompletionPanel"]
 unique_name_in_owner = true
 offset_left = 216.0
-offset_top = 228.0
+offset_top = 432.0
 offset_right = 396.0
-offset_bottom = 264.0
+offset_bottom = 468.0
 text = "关闭总结"

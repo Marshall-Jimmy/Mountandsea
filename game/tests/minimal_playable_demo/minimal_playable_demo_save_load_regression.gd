@@ -46,38 +46,57 @@ func _run_test() -> void:
 	var saved_position := initial_position + Vector2(120.0, 80.0)
 	_force_state_after_stone_activation()
 	_assert_state_after_stone_activation()
+	_assert_history_contains("采集祝余叶")
+	_assert_history_contains("激活山海石碑")
 	player.position = saved_position
 
 	demo.call("_on_save_demo_pressed")
+	_assert_history_contains("保存 Demo")
 
 	player.position = initial_position + Vector2(300.0, 200.0)
 	demo.call("_reset_demo_state")
 	_assert_vec2_near(player.position, initial_position, "reset should return player to initial position")
 	_assert_true(demo.get("current_step") == STEP_COLLECT_ZHUYU, "reset should restore initial step")
+	_assert_history_contains("Demo 已重置")
+	_assert_history_not_contains("采集祝余叶")
 
 	demo.call("_on_load_demo_pressed")
 	_assert_vec2_near(player.position, saved_position, "load should restore saved player position")
 	_assert_state_after_stone_activation()
+	_assert_history_contains("采集祝余叶")
+	_assert_history_contains("激活山海石碑")
+	_assert_history_contains("保存 Demo")
+	_assert_history_contains("读取 Demo")
 
 	_force_state_complete()
 	_assert_state_complete()
+	_assert_history_contains("发现狌狌")
+	_assert_history_contains("Demo 完成")
 
 	var complete_position := initial_position + Vector2(220.0, 160.0)
 	player.position = complete_position
 	demo.call("_on_save_demo_pressed")
+	_assert_history_contains("保存 Demo")
 
 	player.position = initial_position + Vector2(400.0, 240.0)
 	demo.call("_reset_demo_state")
 	_assert_vec2_near(player.position, initial_position, "reset before complete-state load should return player to initial position")
+	_assert_history_contains("Demo 已重置")
+	_assert_history_not_contains("发现狌狌")
 
 	demo.call("_on_load_demo_pressed")
 	_assert_vec2_near(player.position, complete_position, "load should restore saved complete-state player position")
 	_assert_state_complete()
+	_assert_history_contains("发现狌狌")
+	_assert_history_contains("Demo 完成")
+	_assert_history_contains("读取 Demo")
 
 	player.position = initial_position + Vector2(500.0, 260.0)
 	demo.call("_on_restart_demo_pressed")
 	_assert_vec2_near(player.position, initial_position, "restart should return player to initial position")
 	_assert_true(demo.get("current_step") == STEP_COLLECT_ZHUYU, "restart should restore initial step")
+	_assert_history_contains("重新开始 Demo")
+	_assert_history_not_contains("发现狌狌")
 
 	if failed:
 		return
@@ -141,10 +160,12 @@ func _assert_state_complete() -> void:
 	var shensheng_label := demo.get_node_or_null("WorldRoot/ShenshengLabel")
 	var status_label := demo.get_node_or_null("CanvasLayer/StatusLabel")
 	var target_hint_label := demo.get_node_or_null("CanvasLayer/TargetHintLabel")
+	var completion_summary_label := demo.get_node_or_null("CanvasLayer/CompletionPanel/CompletionSummaryLabel")
 
 	_assert_true(shensheng_label != null and shensheng_label.text.contains("已发现"), "ShenshengLabel should show discovered state")
 	_assert_true(status_label != null and status_label.text.contains(CREATURE_ID), "StatusLabel should include shensheng creature")
 	_assert_true(target_hint_label != null and target_hint_label.text.contains("Demo 已完成"), "TargetHintLabel should show completion")
+	_assert_true(completion_summary_label != null and completion_summary_label.text.contains("历史记录"), "Completion summary should include history")
 
 	_assert_inventory_count(1)
 	_assert_bestiary_has_item(true)
@@ -175,6 +196,25 @@ func _assert_bestiary_has_creature(expected: bool) -> void:
 	var discovered_creatures: Variant = bestiary_service.call("get_discovered_creatures", OWNER_ID)
 	_assert_true(discovered_creatures is Array, "discovered creatures should be an Array")
 	_assert_true(discovered_creatures.has(CREATURE_ID) == expected, "bestiary creature state mismatch for %s" % CREATURE_ID)
+
+
+func _assert_history_contains(expected: String) -> void:
+	_assert_true(_history_contains(expected), "history should contain %s, actual=%s" % [expected, str(demo.get("interaction_history"))])
+
+
+func _assert_history_not_contains(unexpected: String) -> void:
+	_assert_true(not _history_contains(unexpected), "history should not contain %s, actual=%s" % [unexpected, str(demo.get("interaction_history"))])
+
+
+func _history_contains(expected: String) -> bool:
+	var history: Variant = demo.get("interaction_history")
+	if not (history is Array):
+		return false
+
+	for entry in history:
+		if entry is String and entry.contains(expected):
+			return true
+	return false
 
 
 func _assert_true(condition: bool, message: String) -> void:
