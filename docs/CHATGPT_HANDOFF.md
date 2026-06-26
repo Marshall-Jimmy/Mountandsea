@@ -38,11 +38,28 @@ This file is the repository-local handoff for continuing web ChatGPT conversatio
 
 ---
 
+## Current Open PRs
+
+### PR #33: game: add collapsible optional progress journal
+- **Status:** PR opened / pending review (draft)
+- **Branch:** `game/collapsible-optional-progress-journal`
+- **Link:** https://github.com/Marshall-Jimmy/Mountandsea/pull/33
+- Adds a collapsible optional progress journal to `minimal_playable_demo`.
+- Shows data-driven optional collectible and creature/interaction completion state from existing optional state.
+- Adds a show/hide toggle for the existing interaction history panel while preserving history when collapsed.
+- After user feedback that the log could not be collapsed, the PR now uses an explicit scene button node and the toggle hides both the right-side journal/history panel and the left-side live log while preserving their text.
+- Extends the minimal demo save/load regression to cover journal state after save/load, reset, legacy optional loads, and the toggle preserving history.
+- Regression coverage now emits the toggle button's `pressed` signal instead of directly calling the handler.
+- GUI manual test is reserved for user.
+
+---
+
 ## Current Demo State
 
 - Minimal playable demo has data-driven optional content.
 - There are three optional content pairs.
 - Optional content supports prompt, interaction, history, completion summary, save/load, and reset.
+- PR #33 adds an optional progress journal and history panel toggle, but it is not merged yet.
 - Snowhuman Framework remains generic (no project-specific content inside the addon).
 
 ---
@@ -76,7 +93,7 @@ Plus: framework addon keyword scan for project-specific content (handled by `too
 
 ## Current Suggested Next Feature
 
-**Candidate next feature:** `game: add collapsible optional progress journal`
+**Current active feature:** `game: add collapsible optional progress journal`
 
 **Goal:**
 - Add optional content progress journal to minimal playable demo
@@ -85,7 +102,15 @@ Plus: framework addon keyword scan for project-specific content (handled by `too
 - Preserve history while collapsed
 - Keep GUI manual test reserved for user
 
-**Status:** This feature is not yet confirmed as implemented unless a later update says so.
+**Status:** PR #33 opened / pending review (draft). This feature is not merged yet.
+
+**Validation run for PR #33:**
+- `python tools/validate_data.py` passed
+- `python tools/check_framework.py` passed
+- `python tools/validate_minimal_demo.py` passed
+- `git diff --check` passed with exit code 0; Windows line-ending warnings only
+- `git diff --stat` ran
+- Explicit Snowhuman Framework keyword scan for `zhuyu`, `shensheng`, `zaoyaoshan`, `祝余`, `狌狌`, `招摇山` found no matches
 
 ---
 

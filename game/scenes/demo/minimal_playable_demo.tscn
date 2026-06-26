@@ -212,6 +212,14 @@ offset_right = 250.0
 offset_bottom = 200.0
 text = "尚无记录"
 
+[node name="InteractionHistoryToggleButton" type="Button" parent="CanvasLayer"]
+unique_name_in_owner = true
+offset_left = 884.0
+offset_top = 232.0
+offset_right = 1010.0
+offset_bottom = 264.0
+text = "隐藏日志"
+
 [node name="CompletionPanel" type="Panel" parent="CanvasLayer"]
 unique_name_in_owner = true
 visible = false

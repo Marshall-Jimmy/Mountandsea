@@ -46,6 +46,7 @@ func _run_test() -> void:
 	player = demo.get_node_or_null("WorldRoot/Player")
 	_assert_true(player != null, "Player node must exist")
 	_assert_true(demo.get("initialized") == true, "Demo must initialize services")
+	_assert_history_panel_visible(true)
 	if failed:
 		return
 
@@ -108,6 +109,7 @@ func _run_test() -> void:
 	_assert_history_contains("采集粗矿石")
 	_assert_history_contains("发现鹿蜀")
 	_assert_history_contains("发现普通野兽")
+	_assert_history_panel_toggle_preserves_history("发现普通野兽")
 
 	demo.call("_on_save_demo_pressed")
 	_assert_history_contains("保存 Demo")
@@ -256,6 +258,7 @@ func _assert_optional_state_pending() -> void:
 	_assert_optional_done(BASIC_ORE_ITEM_ID, false)
 	_assert_optional_done(LUSHU_CREATURE_ID, false)
 	_assert_optional_done(GENERIC_BEAST_CREATURE_ID, false)
+	_assert_journal_optional_state_pending()
 
 	var migu_label := demo.get_node_or_null("WorldRoot/MiguBranchLabel")
 	var basic_ore_label := demo.get_node_or_null("WorldRoot/BasicOreLabel")
@@ -280,6 +283,7 @@ func _assert_optional_state_complete() -> void:
 	_assert_optional_done(BASIC_ORE_ITEM_ID, true)
 	_assert_optional_done(LUSHU_CREATURE_ID, true)
 	_assert_optional_done(GENERIC_BEAST_CREATURE_ID, true)
+	_assert_journal_optional_state_complete()
 
 	var migu_label := demo.get_node_or_null("WorldRoot/MiguBranchLabel")
 	var basic_ore_label := demo.get_node_or_null("WorldRoot/BasicOreLabel")
@@ -358,12 +362,87 @@ func _assert_legacy_optional_save_compatibility() -> void:
 	_assert_optional_done(LUSHU_CREATURE_ID, true)
 	_assert_optional_done(BASIC_ORE_ITEM_ID, false)
 	_assert_optional_done(GENERIC_BEAST_CREATURE_ID, false)
+	_assert_journal_status("迷穀枝", "已完成")
+	_assert_journal_status("粗矿石", "未完成")
+	_assert_journal_status("鹿蜀", "已完成")
+	_assert_journal_status("普通野兽", "未完成")
 	_assert_inventory_item_count(MIGU_BRANCH_ITEM_ID, 1)
 	_assert_inventory_item_count(BASIC_ORE_ITEM_ID, 0)
 	_assert_bestiary_has_item_id(MIGU_BRANCH_ITEM_ID, true)
 	_assert_bestiary_has_item_id(BASIC_ORE_ITEM_ID, false)
 	_assert_bestiary_has_creature_id(LUSHU_CREATURE_ID, true)
 	_assert_bestiary_has_creature_id(GENERIC_BEAST_CREATURE_ID, false)
+
+
+func _assert_journal_optional_state_pending() -> void:
+	_assert_journal_status("迷穀枝", "未完成")
+	_assert_journal_status("粗矿石", "未完成")
+	_assert_journal_status("鹿蜀", "未完成")
+	_assert_journal_status("普通野兽", "未完成")
+
+
+func _assert_journal_optional_state_complete() -> void:
+	_assert_journal_status("迷穀枝", "已完成")
+	_assert_journal_status("粗矿石", "已完成")
+	_assert_journal_status("鹿蜀", "已完成")
+	_assert_journal_status("普通野兽", "已完成")
+
+
+func _assert_journal_status(display_name: String, expected_status: String) -> void:
+	var journal_label := demo.get_node_or_null("CanvasLayer/InteractionHistoryPanel/OptionalProgressJournalLabel")
+	_assert_true(journal_label != null, "optional progress journal label must exist")
+	if journal_label == null:
+		return
+
+	var expected_text := "%s：%s" % [display_name, expected_status]
+	_assert_true(journal_label.text.contains(expected_text), "journal should contain %s, actual=%s" % [expected_text, journal_label.text])
+
+
+func _assert_history_panel_toggle_preserves_history(expected_entry: String) -> void:
+	var history_label := demo.get_node_or_null("CanvasLayer/InteractionHistoryPanel/InteractionHistoryLabel")
+	var log_label := demo.get_node_or_null("CanvasLayer/LogLabel")
+	var toggle_button := demo.get_node_or_null("CanvasLayer/InteractionHistoryToggleButton")
+	_assert_true(history_label != null, "interaction history label must exist")
+	_assert_true(log_label != null, "log label must exist")
+	_assert_true(toggle_button != null, "interaction history toggle button must exist")
+	if history_label == null or log_label == null or toggle_button == null:
+		return
+
+	_assert_history_panel_visible(true)
+	_assert_true(history_label.text.contains(expected_entry), "history label should contain %s before collapse" % expected_entry)
+	_assert_true(not log_label.text.is_empty(), "log label should contain entries before collapse")
+	var history_text_before_collapse: String = history_label.text
+	var log_text_before_collapse: String = log_label.text
+
+	toggle_button.emit_signal("pressed")
+	_assert_history_panel_visible(false)
+	_assert_true(history_label.text.contains(expected_entry), "history label should preserve %s while collapsed" % expected_entry)
+	_assert_true(history_label.text == history_text_before_collapse, "history label text should not change when collapsed")
+	_assert_true(log_label.text == log_text_before_collapse, "log label text should not change when collapsed")
+
+	toggle_button.emit_signal("pressed")
+	_assert_history_panel_visible(true)
+	_assert_true(history_label.text.contains(expected_entry), "history label should still contain %s after expand" % expected_entry)
+	_assert_true(log_label.text == log_text_before_collapse, "log label text should still be preserved after expand")
+
+
+func _assert_history_panel_visible(expected: bool) -> void:
+	var history_panel := demo.get_node_or_null("CanvasLayer/InteractionHistoryPanel")
+	var log_label := demo.get_node_or_null("CanvasLayer/LogLabel")
+	var toggle_button := demo.get_node_or_null("CanvasLayer/InteractionHistoryToggleButton")
+	_assert_true(history_panel != null, "interaction history panel must exist")
+	_assert_true(log_label != null, "log label must exist")
+	_assert_true(toggle_button != null, "interaction history toggle button must exist")
+	if history_panel == null or log_label == null or toggle_button == null:
+		return
+
+	_assert_true(history_panel.visible == expected, "interaction history panel visibility mismatch")
+	_assert_true(log_label.visible == expected, "log label visibility mismatch")
+	_assert_true(toggle_button.visible == true, "interaction history toggle button should remain visible")
+	var expected_button_text := "隐藏日志"
+	if not expected:
+		expected_button_text = "显示日志"
+	_assert_true(toggle_button.text == expected_button_text, "interaction history toggle text mismatch")
 
 
 func _assert_optional_done(content_id: String, expected: bool) -> void:
