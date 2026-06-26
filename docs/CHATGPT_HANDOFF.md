@@ -56,12 +56,7 @@
 
 ## 当前开放 PR
 
-### PR #34: docs: finalize PR33 handoff state
-- **状态：** open draft
-- **Branch：** `docs/finalize-pr33-handoff`
-- **链接：** https://github.com/Marshall-Jimmy/Mountandsea/pull/34
-- 这是较早打开的 docs-only handoff 同步 PR。
-- 当前本地化文档 PR 会覆盖同一份交接状态；不要将 PR #34 记录为已合并，除非它实际合并。
+- None.
 
 ---
 
