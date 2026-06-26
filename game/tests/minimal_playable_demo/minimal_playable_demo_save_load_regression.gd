@@ -49,6 +49,8 @@ func _run_test() -> void:
 	_assert_history_panel_visible(true)
 	_assert_initial_journal_state()
 	_assert_progress_view_toggle_preserves_history("Demo 开始")
+	_assert_journal_shortcut_handlers_preserve_text("Demo 开始")
+	_assert_reset_preserves_compact_journal_view()
 	if failed:
 		return
 
@@ -434,6 +436,7 @@ func _assert_journal_status(display_name: String, expected_status: String) -> vo
 
 func _assert_initial_journal_state() -> void:
 	_ensure_detail_journal_view()
+	_assert_shortcut_hint_label()
 	_assert_journal_labels_separated()
 	_assert_journal_progress(0, _optional_total_count())
 	_assert_journal_section_progress("可选采集物", 0, _optional_collectible_count())
@@ -520,6 +523,55 @@ func _assert_progress_view_toggle_preserves_history(expected_entry: String) -> v
 	_assert_true(history_label.text.contains(expected_entry), "history label should preserve %s after detail journal view returns" % expected_entry)
 
 
+func _assert_journal_shortcut_handlers_preserve_text(expected_entry: String) -> void:
+	_ensure_detail_journal_view()
+	var history_label := demo.get_node_or_null("CanvasLayer/InteractionHistoryPanel/InteractionHistoryLabel")
+	var journal_label := _get_journal_label()
+	var log_label := demo.get_node_or_null("CanvasLayer/LogLabel")
+	_assert_true(history_label != null, "interaction history label must exist")
+	_assert_true(log_label != null, "log label must exist")
+	if history_label == null or journal_label == null or log_label == null:
+		return
+
+	var history_text_before_toggle: String = history_label.text
+	var journal_text_before_toggle: String = journal_label.text
+	var log_text_before_toggle: String = log_label.text
+
+	demo.call("_on_interaction_history_toggle_pressed")
+	_assert_history_panel_visible(false)
+	_assert_true(history_label.text == history_text_before_toggle, "J shortcut handler should preserve history text while hidden")
+	_assert_true(journal_label.text == journal_text_before_toggle, "J shortcut handler should preserve journal text while hidden")
+	_assert_true(log_label.text == log_text_before_toggle, "J shortcut handler should preserve live log text while hidden")
+
+	demo.call("_on_interaction_history_toggle_pressed")
+	_assert_history_panel_visible(true)
+	_assert_true(history_label.text.contains(expected_entry), "J shortcut handler should preserve %s after showing journal" % expected_entry)
+	_assert_true(log_label.text == log_text_before_toggle, "J shortcut handler should preserve live log text after showing journal")
+
+	demo.call("_on_optional_progress_view_toggle_pressed")
+	_assert_true(demo.get("optional_progress_detail_view") == false, "V shortcut handler should switch to compact view")
+	_assert_true(history_label.text == history_text_before_toggle, "V shortcut handler should not clear history")
+	_assert_true(history_label.text.contains(expected_entry), "V shortcut handler should preserve %s in compact view" % expected_entry)
+
+	demo.call("_on_optional_progress_view_toggle_pressed")
+	_assert_true(demo.get("optional_progress_detail_view") == true, "V shortcut handler should switch back to detail view")
+	_assert_true(history_label.text == history_text_before_toggle, "V shortcut handler should preserve history after returning to detail view")
+
+
+func _assert_reset_preserves_compact_journal_view() -> void:
+	_ensure_detail_journal_view()
+	demo.call("_on_optional_progress_view_toggle_pressed")
+	_assert_true(demo.get("optional_progress_detail_view") == false, "journal should be compact before reset")
+
+	demo.call("_reset_demo_state")
+	_assert_true(demo.get("optional_progress_detail_view") == false, "reset should preserve runtime journal view mode")
+	_assert_journal_progress(0, _optional_total_count())
+	_assert_journal_recent("无")
+	_assert_history_contains("Demo 已重置")
+	_assert_journal_save_fields_absent()
+	_ensure_detail_journal_view()
+
+
 func _assert_repeated_optional_completion_preserves_history_and_recent() -> void:
 	var history: Variant = demo.get("interaction_history")
 	_assert_true(history is Array, "interaction_history should be an Array")
@@ -568,13 +620,28 @@ func _count_visible_history_entries(history_text: String) -> int:
 func _assert_journal_labels_separated() -> void:
 	var journal_label := _get_journal_label()
 	var history_label := demo.get_node_or_null("CanvasLayer/InteractionHistoryPanel/InteractionHistoryLabel") as Label
+	var hint_label := demo.get_node_or_null("CanvasLayer/InteractionHistoryPanel/OptionalProgressShortcutHintLabel") as Label
 	_assert_true(history_label != null, "interaction history label must exist")
-	if journal_label == null or history_label == null:
+	_assert_true(hint_label != null, "optional progress shortcut hint label must exist")
+	if journal_label == null or history_label == null or hint_label == null:
 		return
 
+	_assert_true(hint_label.offset_bottom <= journal_label.offset_top, "shortcut hint should end before journal label starts")
 	_assert_true(journal_label.offset_bottom <= history_label.offset_top, "journal label should end before history label starts")
+	_assert_true(hint_label.clip_text == true, "shortcut hint label should clip text inside its fixed area")
 	_assert_true(journal_label.clip_text == true, "journal label should clip text inside its fixed area")
 	_assert_true(history_label.clip_text == true, "history label should clip text inside its fixed area")
+
+
+func _assert_shortcut_hint_label() -> void:
+	var hint_label := demo.get_node_or_null("CanvasLayer/InteractionHistoryPanel/OptionalProgressShortcutHintLabel") as Label
+	_assert_true(hint_label != null, "optional progress shortcut hint label must exist")
+	if hint_label == null:
+		return
+
+	_assert_true(hint_label.text.contains("快捷键"), "shortcut hint should explain keyboard controls")
+	_assert_true(hint_label.text.contains("J"), "shortcut hint should mention J")
+	_assert_true(hint_label.text.contains("V"), "shortcut hint should mention V")
 
 
 func _assert_journal_save_fields_absent() -> void:
