@@ -533,6 +533,12 @@ func _build_demo_save_state() -> Dictionary:
 			"stone_activated": stone_activated,
 			"creature_discovered": shensheng_discovered
 		},
+		"player": {
+			"position": {
+				"x": player.position.x,
+				"y": player.position.y
+			}
+		},
 		"inventory": {
 			ITEM_ID: inventory_service.get_item_count(OWNER_ID, ITEM_ID)
 		},
@@ -586,6 +592,7 @@ func _apply_demo_save_state(state: Dictionary) -> bool:
 	if current_step == DemoStep.COMPLETE:
 		shensheng_discovered = true
 
+	_restore_saved_player_position(state)
 	_apply_world_visual_state()
 	completion_panel.visible = false
 	if current_step == DemoStep.COMPLETE:
@@ -594,6 +601,23 @@ func _apply_demo_save_state(state: Dictionary) -> bool:
 	_update_objective_ui()
 	_update_objective_guidance()
 	return true
+
+
+func _restore_saved_player_position(state: Dictionary) -> void:
+	var player_data: Variant = state.get("player", {})
+	if not (player_data is Dictionary):
+		return
+
+	var position_data: Variant = player_data.get("position", {})
+	if not (position_data is Dictionary):
+		return
+	if not position_data.has("x") or not position_data.has("y"):
+		return
+
+	player.position = Vector2(
+		_to_float_or_default(position_data.get("x"), player.position.x),
+		_to_float_or_default(position_data.get("y"), player.position.y)
+	)
 
 
 func _has_demo_save_in_slot(slot: int) -> bool:
@@ -854,6 +878,12 @@ func _to_non_negative_int(value: Variant) -> int:
 	if value is float and floor(value) == value:
 		return int(value)
 	return -1
+
+
+func _to_float_or_default(value: Variant, default_value: float) -> float:
+	if value is int or value is float:
+		return float(value)
+	return default_value
 
 
 func _log_ok(message: String) -> void:
