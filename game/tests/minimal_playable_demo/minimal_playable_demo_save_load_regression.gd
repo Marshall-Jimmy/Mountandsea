@@ -6,12 +6,16 @@ const OWNER_ID := "player"
 const ITEM_ID := "zhuyu_leaf"
 const CREATURE_ID := "shensheng"
 const MIGU_BRANCH_ITEM_ID := "migu_branch"
+const BASIC_ORE_ITEM_ID := "basic_ore"
 const LUSHU_CREATURE_ID := "lushu"
+const GENERIC_BEAST_CREATURE_ID := "generic_beast"
 const ZHUYU_INTERACTABLE_ID := "pickup_zhuyu_leaf"
 const STONE_INTERACTABLE_ID := "activate_guidance_stone"
 const SHENSHENG_INTERACTABLE_ID := "observe_shensheng"
 const MIGU_BRANCH_INTERACTABLE_ID := "collect_migu_branch"
+const BASIC_ORE_INTERACTABLE_ID := "collect_basic_ore"
 const LUSHU_INTERACTABLE_ID := "observe_lushu"
+const GENERIC_BEAST_INTERACTABLE_ID := "observe_generic_beast"
 const STEP_COLLECT_ZHUYU := 0
 const STEP_OBSERVE_SHENSHENG := 2
 const STEP_COMPLETE := 3
@@ -101,7 +105,9 @@ func _run_test() -> void:
 	_force_optional_complete()
 	_assert_optional_state_complete()
 	_assert_history_contains("采集迷穀枝")
+	_assert_history_contains("采集粗矿石")
 	_assert_history_contains("发现鹿蜀")
+	_assert_history_contains("发现普通野兽")
 
 	demo.call("_on_save_demo_pressed")
 	_assert_history_contains("保存 Demo")
@@ -112,15 +118,21 @@ func _run_test() -> void:
 	_assert_optional_state_pending()
 	_assert_history_contains("Demo 已重置")
 	_assert_history_not_contains("采集迷穀枝")
+	_assert_history_not_contains("采集粗矿石")
 	_assert_history_not_contains("发现鹿蜀")
+	_assert_history_not_contains("发现普通野兽")
 
 	demo.call("_on_load_demo_pressed")
 	_assert_vec2_near(player.position, optional_position, "load should restore saved optional-state player position")
 	_assert_state_complete()
 	_assert_optional_state_complete()
 	_assert_history_contains("采集迷穀枝")
+	_assert_history_contains("采集粗矿石")
 	_assert_history_contains("发现鹿蜀")
+	_assert_history_contains("发现普通野兽")
 	_assert_history_contains("读取 Demo")
+
+	_assert_legacy_optional_save_compatibility()
 
 	player.position = initial_position + Vector2(500.0, 260.0)
 	demo.call("_on_restart_demo_pressed")
@@ -130,7 +142,9 @@ func _run_test() -> void:
 	_assert_history_contains("重新开始 Demo")
 	_assert_history_not_contains("发现狌狌")
 	_assert_history_not_contains("采集迷穀枝")
+	_assert_history_not_contains("采集粗矿石")
 	_assert_history_not_contains("发现鹿蜀")
+	_assert_history_not_contains("发现普通野兽")
 
 	if failed:
 		return
@@ -174,10 +188,21 @@ func _force_optional_complete() -> void:
 	})
 	_assert_true(migu_result == true, "migu branch interaction should succeed")
 
+	var basic_ore_result: Variant = demo.call("_on_optional_collectible_interacted", OWNER_ID, BASIC_ORE_INTERACTABLE_ID, {
+		"item_id": BASIC_ORE_ITEM_ID,
+		"count": 1
+	})
+	_assert_true(basic_ore_result == true, "basic ore interaction should succeed")
+
 	var lushu_result: Variant = demo.call("_on_optional_creature_interacted", OWNER_ID, LUSHU_INTERACTABLE_ID, {
 		"creature_id": LUSHU_CREATURE_ID
 	})
 	_assert_true(lushu_result == true, "lushu interaction should succeed")
+
+	var generic_beast_result: Variant = demo.call("_on_optional_creature_interacted", OWNER_ID, GENERIC_BEAST_INTERACTABLE_ID, {
+		"creature_id": GENERIC_BEAST_CREATURE_ID
+	})
+	_assert_true(generic_beast_result == true, "generic beast interaction should succeed")
 
 
 func _assert_state_after_stone_activation() -> void:
@@ -228,40 +253,117 @@ func _assert_state_complete() -> void:
 
 func _assert_optional_state_pending() -> void:
 	_assert_optional_done(MIGU_BRANCH_ITEM_ID, false)
+	_assert_optional_done(BASIC_ORE_ITEM_ID, false)
 	_assert_optional_done(LUSHU_CREATURE_ID, false)
+	_assert_optional_done(GENERIC_BEAST_CREATURE_ID, false)
 
 	var migu_label := demo.get_node_or_null("WorldRoot/MiguBranchLabel")
+	var basic_ore_label := demo.get_node_or_null("WorldRoot/BasicOreLabel")
 	var lushu_label := demo.get_node_or_null("WorldRoot/LushuLabel")
+	var generic_beast_label := demo.get_node_or_null("WorldRoot/GenericBeastLabel")
 
 	_assert_true(migu_label != null and migu_label.text == "迷穀枝", "MiguBranchLabel should show initial state")
+	_assert_true(basic_ore_label != null and basic_ore_label.text == "粗矿石", "BasicOreLabel should show initial state")
 	_assert_true(lushu_label != null and lushu_label.text == "鹿蜀", "LushuLabel should show initial state")
+	_assert_true(generic_beast_label != null and generic_beast_label.text == "普通野兽", "GenericBeastLabel should show initial state")
 
 	_assert_inventory_item_count(MIGU_BRANCH_ITEM_ID, 0)
+	_assert_inventory_item_count(BASIC_ORE_ITEM_ID, 0)
 	_assert_bestiary_has_item_id(MIGU_BRANCH_ITEM_ID, false)
+	_assert_bestiary_has_item_id(BASIC_ORE_ITEM_ID, false)
 	_assert_bestiary_has_creature_id(LUSHU_CREATURE_ID, false)
+	_assert_bestiary_has_creature_id(GENERIC_BEAST_CREATURE_ID, false)
 
 
 func _assert_optional_state_complete() -> void:
 	_assert_optional_done(MIGU_BRANCH_ITEM_ID, true)
+	_assert_optional_done(BASIC_ORE_ITEM_ID, true)
 	_assert_optional_done(LUSHU_CREATURE_ID, true)
+	_assert_optional_done(GENERIC_BEAST_CREATURE_ID, true)
 
 	var migu_label := demo.get_node_or_null("WorldRoot/MiguBranchLabel")
+	var basic_ore_label := demo.get_node_or_null("WorldRoot/BasicOreLabel")
 	var lushu_label := demo.get_node_or_null("WorldRoot/LushuLabel")
+	var generic_beast_label := demo.get_node_or_null("WorldRoot/GenericBeastLabel")
 	var status_label := demo.get_node_or_null("CanvasLayer/StatusLabel")
 	var target_hint_label := demo.get_node_or_null("CanvasLayer/TargetHintLabel")
 	var completion_summary_label := demo.get_node_or_null("CanvasLayer/CompletionPanel/CompletionSummaryLabel")
 
 	_assert_true(migu_label != null and migu_label.text.contains("已采集"), "MiguBranchLabel should show collected state")
+	_assert_true(basic_ore_label != null and basic_ore_label.text.contains("已采集"), "BasicOreLabel should show collected state")
 	_assert_true(lushu_label != null and lushu_label.text.contains("已发现"), "LushuLabel should show discovered state")
+	_assert_true(generic_beast_label != null and generic_beast_label.text.contains("已发现"), "GenericBeastLabel should show discovered state")
 	_assert_true(status_label != null and status_label.text.contains(MIGU_BRANCH_ITEM_ID), "StatusLabel should include migu item")
+	_assert_true(status_label != null and status_label.text.contains(BASIC_ORE_ITEM_ID), "StatusLabel should include basic ore item")
 	_assert_true(status_label != null and status_label.text.contains(LUSHU_CREATURE_ID), "StatusLabel should include lushu creature")
+	_assert_true(status_label != null and status_label.text.contains(GENERIC_BEAST_CREATURE_ID), "StatusLabel should include generic beast creature")
 	_assert_true(target_hint_label != null and target_hint_label.text.contains("所有 Demo 内容已完成"), "TargetHintLabel should show optional completion")
 	_assert_true(completion_summary_label != null and completion_summary_label.text.contains("已采集：迷穀枝"), "Completion summary should include migu")
+	_assert_true(completion_summary_label != null and completion_summary_label.text.contains("已采集：粗矿石"), "Completion summary should include basic ore")
 	_assert_true(completion_summary_label != null and completion_summary_label.text.contains("已发现：鹿蜀"), "Completion summary should include lushu")
+	_assert_true(completion_summary_label != null and completion_summary_label.text.contains("已发现：普通野兽"), "Completion summary should include generic beast")
 
 	_assert_inventory_item_count(MIGU_BRANCH_ITEM_ID, 1)
+	_assert_inventory_item_count(BASIC_ORE_ITEM_ID, 1)
 	_assert_bestiary_has_item_id(MIGU_BRANCH_ITEM_ID, true)
+	_assert_bestiary_has_item_id(BASIC_ORE_ITEM_ID, true)
 	_assert_bestiary_has_creature_id(LUSHU_CREATURE_ID, true)
+	_assert_bestiary_has_creature_id(GENERIC_BEAST_CREATURE_ID, true)
+
+
+func _assert_legacy_optional_save_compatibility() -> void:
+	demo.call("_reset_demo_state")
+
+	var legacy_position := initial_position + Vector2(180.0, 140.0)
+	var legacy_state := {
+		"version": 1,
+		"owner_id": OWNER_ID,
+		"current_step": STEP_COMPLETE,
+		"world": {
+			"pickup_collected": true,
+			"stone_activated": true,
+			"creature_discovered": true,
+			"migu_collected": true,
+			"lushu_discovered": true
+		},
+		"player": {
+			"position": {
+				"x": legacy_position.x,
+				"y": legacy_position.y
+			}
+		},
+		"inventory": {
+			ITEM_ID: 1,
+			MIGU_BRANCH_ITEM_ID: 1
+		},
+		"bestiary": {
+			"items": [
+				ITEM_ID,
+				MIGU_BRANCH_ITEM_ID
+			],
+			"creatures": [
+				CREATURE_ID,
+				LUSHU_CREATURE_ID
+			]
+		},
+		"history": [
+			"legacy optional save"
+		]
+	}
+
+	var legacy_result: Variant = demo.call("_apply_demo_save_state", legacy_state)
+	_assert_true(legacy_result == true, "legacy optional save state should load")
+	_assert_vec2_near(player.position, legacy_position, "legacy optional save should restore player position")
+	_assert_optional_done(MIGU_BRANCH_ITEM_ID, true)
+	_assert_optional_done(LUSHU_CREATURE_ID, true)
+	_assert_optional_done(BASIC_ORE_ITEM_ID, false)
+	_assert_optional_done(GENERIC_BEAST_CREATURE_ID, false)
+	_assert_inventory_item_count(MIGU_BRANCH_ITEM_ID, 1)
+	_assert_inventory_item_count(BASIC_ORE_ITEM_ID, 0)
+	_assert_bestiary_has_item_id(MIGU_BRANCH_ITEM_ID, true)
+	_assert_bestiary_has_item_id(BASIC_ORE_ITEM_ID, false)
+	_assert_bestiary_has_creature_id(LUSHU_CREATURE_ID, true)
+	_assert_bestiary_has_creature_id(GENERIC_BEAST_CREATURE_ID, false)
 
 
 func _assert_optional_done(content_id: String, expected: bool) -> void:
