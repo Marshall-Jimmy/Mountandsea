@@ -47,6 +47,8 @@ func _run_test() -> void:
 	_assert_true(player != null, "Player node must exist")
 	_assert_true(demo.get("initialized") == true, "Demo must initialize services")
 	_assert_history_panel_visible(true)
+	_assert_initial_journal_state()
+	_assert_progress_view_toggle_preserves_history("Demo 开始")
 	if failed:
 		return
 
@@ -103,8 +105,18 @@ func _run_test() -> void:
 
 	var optional_position := initial_position + Vector2(320.0, 220.0)
 	player.position = optional_position
+	_force_one_optional_collectible_complete()
+	_assert_journal_progress(1, _optional_total_count())
+	_assert_journal_section_progress("可选采集物", 1, _optional_collectible_count())
+	_assert_journal_section_progress("可选生物 / 互动", 0, _optional_creature_count())
+	_assert_journal_recent("迷穀枝")
+	_assert_journal_status("迷穀枝", "已完成")
+	_assert_journal_status("粗矿石", "未完成")
+	_assert_repeated_optional_completion_preserves_history_and_recent()
 	_force_optional_complete()
 	_assert_optional_state_complete()
+	_assert_journal_recent("普通野兽")
+	_assert_journal_save_fields_absent()
 	_assert_history_contains("采集迷穀枝")
 	_assert_history_contains("采集粗矿石")
 	_assert_history_contains("发现鹿蜀")
@@ -128,6 +140,7 @@ func _run_test() -> void:
 	_assert_vec2_near(player.position, optional_position, "load should restore saved optional-state player position")
 	_assert_state_complete()
 	_assert_optional_state_complete()
+	_assert_journal_recent("无")
 	_assert_history_contains("采集迷穀枝")
 	_assert_history_contains("采集粗矿石")
 	_assert_history_contains("发现鹿蜀")
@@ -207,6 +220,17 @@ func _force_optional_complete() -> void:
 	_assert_true(generic_beast_result == true, "generic beast interaction should succeed")
 
 
+func _force_one_optional_collectible_complete() -> void:
+	if demo.get("current_step") != STEP_COMPLETE:
+		_force_state_complete()
+
+	var migu_result: Variant = demo.call("_on_optional_collectible_interacted", OWNER_ID, MIGU_BRANCH_INTERACTABLE_ID, {
+		"item_id": MIGU_BRANCH_ITEM_ID,
+		"count": 1
+	})
+	_assert_true(migu_result == true, "migu branch interaction should succeed")
+
+
 func _assert_state_after_stone_activation() -> void:
 	_assert_true(demo.get("current_step") == STEP_OBSERVE_SHENSHENG, "current_step should restore OBSERVE_SHENSHENG")
 	_assert_true(demo.get("zhuyu_collected") == true, "zhuyu should be collected")
@@ -258,6 +282,7 @@ func _assert_optional_state_pending() -> void:
 	_assert_optional_done(BASIC_ORE_ITEM_ID, false)
 	_assert_optional_done(LUSHU_CREATURE_ID, false)
 	_assert_optional_done(GENERIC_BEAST_CREATURE_ID, false)
+	_assert_journal_recent("无")
 	_assert_journal_optional_state_pending()
 
 	var migu_label := demo.get_node_or_null("WorldRoot/MiguBranchLabel")
@@ -375,17 +400,25 @@ func _assert_legacy_optional_save_compatibility() -> void:
 
 
 func _assert_journal_optional_state_pending() -> void:
+	_ensure_detail_journal_view()
 	_assert_journal_status("迷穀枝", "未完成")
 	_assert_journal_status("粗矿石", "未完成")
 	_assert_journal_status("鹿蜀", "未完成")
 	_assert_journal_status("普通野兽", "未完成")
+	_assert_journal_progress(0, _optional_total_count())
+	_assert_journal_section_progress("可选采集物", 0, _optional_collectible_count())
+	_assert_journal_section_progress("可选生物 / 互动", 0, _optional_creature_count())
 
 
 func _assert_journal_optional_state_complete() -> void:
+	_ensure_detail_journal_view()
 	_assert_journal_status("迷穀枝", "已完成")
 	_assert_journal_status("粗矿石", "已完成")
 	_assert_journal_status("鹿蜀", "已完成")
 	_assert_journal_status("普通野兽", "已完成")
+	_assert_journal_progress(_optional_total_count(), _optional_total_count())
+	_assert_journal_section_progress("可选采集物", _optional_collectible_count(), _optional_collectible_count())
+	_assert_journal_section_progress("可选生物 / 互动", _optional_creature_count(), _optional_creature_count())
 
 
 func _assert_journal_status(display_name: String, expected_status: String) -> void:
@@ -398,31 +431,199 @@ func _assert_journal_status(display_name: String, expected_status: String) -> vo
 	_assert_true(journal_label.text.contains(expected_text), "journal should contain %s, actual=%s" % [expected_text, journal_label.text])
 
 
+func _assert_initial_journal_state() -> void:
+	_ensure_detail_journal_view()
+	_assert_journal_progress(0, _optional_total_count())
+	_assert_journal_section_progress("可选采集物", 0, _optional_collectible_count())
+	_assert_journal_section_progress("可选生物 / 互动", 0, _optional_creature_count())
+	_assert_journal_recent("无")
+	_assert_journal_status("迷穀枝", "未完成")
+	_assert_journal_status("粗矿石", "未完成")
+	_assert_journal_status("鹿蜀", "未完成")
+	_assert_journal_status("普通野兽", "未完成")
+	_assert_compact_progress_view_hides_detail_items()
+	_ensure_detail_journal_view()
+	_assert_journal_save_fields_absent()
+
+
+func _assert_journal_progress(completed_count: int, total_count: int) -> void:
+	var journal_label := _get_journal_label()
+	if journal_label == null:
+		return
+
+	var expected_text := "可选进度：%d / %d" % [completed_count, total_count]
+	_assert_true(journal_label.text.contains(expected_text), "journal should contain %s, actual=%s" % [expected_text, journal_label.text])
+
+
+func _assert_journal_section_progress(section_title: String, completed_count: int, total_count: int) -> void:
+	var journal_label := _get_journal_label()
+	if journal_label == null:
+		return
+
+	var expected_text := "%s：%d / %d" % [section_title, completed_count, total_count]
+	_assert_true(journal_label.text.contains(expected_text), "journal should contain %s, actual=%s" % [expected_text, journal_label.text])
+
+
+func _assert_journal_recent(expected_name: String) -> void:
+	var journal_label := _get_journal_label()
+	if journal_label == null:
+		return
+
+	var expected_text := "最近完成：%s" % expected_name
+	_assert_true(journal_label.text.contains(expected_text), "journal should contain %s, actual=%s" % [expected_text, journal_label.text])
+
+
+func _assert_compact_progress_view_hides_detail_items() -> void:
+	_ensure_detail_journal_view()
+	var toggle_button := demo.get_node_or_null("CanvasLayer/InteractionHistoryPanel/OptionalProgressViewToggleButton")
+	_assert_true(toggle_button != null, "optional progress view toggle button must exist")
+	if toggle_button == null:
+		return
+
+	toggle_button.emit_signal("pressed")
+	_assert_true(demo.get("optional_progress_detail_view") == false, "journal should switch to compact view")
+	_assert_true(toggle_button.text == "详细视图", "compact journal toggle should offer detail view")
+	_assert_journal_progress(0, _optional_total_count())
+	_assert_journal_section_progress("可选采集物", 0, _optional_collectible_count())
+	_assert_journal_section_progress("可选生物 / 互动", 0, _optional_creature_count())
+
+	var journal_label := _get_journal_label()
+	if journal_label == null:
+		return
+	_assert_true(not journal_label.text.contains("- 迷穀枝："), "compact journal should not list migu item details")
+	_assert_true(not journal_label.text.contains("- 粗矿石："), "compact journal should not list basic ore item details")
+	_assert_true(not journal_label.text.contains("- 鹿蜀："), "compact journal should not list lushu details")
+	_assert_true(not journal_label.text.contains("- 普通野兽："), "compact journal should not list generic beast details")
+
+
+func _assert_progress_view_toggle_preserves_history(expected_entry: String) -> void:
+	_ensure_detail_journal_view()
+	var history_label := demo.get_node_or_null("CanvasLayer/InteractionHistoryPanel/InteractionHistoryLabel")
+	var toggle_button := demo.get_node_or_null("CanvasLayer/InteractionHistoryPanel/OptionalProgressViewToggleButton")
+	_assert_true(history_label != null, "interaction history label must exist")
+	_assert_true(toggle_button != null, "optional progress view toggle button must exist")
+	if history_label == null or toggle_button == null:
+		return
+
+	_assert_true(history_label.text.contains(expected_entry), "history label should contain %s before view toggle" % expected_entry)
+	var history_text_before_toggle: String = history_label.text
+
+	toggle_button.emit_signal("pressed")
+	_assert_true(history_label.text == history_text_before_toggle, "history label text should not change in compact journal view")
+	_assert_true(history_label.text.contains(expected_entry), "history label should preserve %s in compact journal view" % expected_entry)
+
+	toggle_button.emit_signal("pressed")
+	_assert_true(history_label.text == history_text_before_toggle, "history label text should not change after returning to detail journal view")
+	_assert_true(history_label.text.contains(expected_entry), "history label should preserve %s after detail journal view returns" % expected_entry)
+
+
+func _assert_repeated_optional_completion_preserves_history_and_recent() -> void:
+	var history: Variant = demo.get("interaction_history")
+	_assert_true(history is Array, "interaction_history should be an Array")
+	if not (history is Array):
+		return
+
+	var history_size_before: int = history.size()
+	var repeated_result: Variant = demo.call("_on_optional_collectible_interacted", OWNER_ID, MIGU_BRANCH_INTERACTABLE_ID, {
+		"item_id": MIGU_BRANCH_ITEM_ID,
+		"count": 1
+	})
+	_assert_true(repeated_result == true, "repeated migu branch interaction should return true")
+
+	var history_after: Variant = demo.get("interaction_history")
+	_assert_true(history_after is Array and history_after.size() == history_size_before, "repeated optional completion should not append history")
+	_assert_journal_recent("迷穀枝")
+
+
+func _assert_journal_save_fields_absent() -> void:
+	var save_data: Variant = demo.call("get_save_data")
+	_assert_true(save_data is Dictionary, "save data should be a Dictionary")
+	if not (save_data is Dictionary):
+		return
+
+	_assert_true(not save_data.has("recent_optional_completion_name"), "save data should not persist recent optional completion")
+	_assert_true(not save_data.has("optional_progress_detail_view"), "save data should not persist optional progress view mode")
+
+	var world_data: Variant = save_data.get("world", {})
+	_assert_true(world_data is Dictionary, "save world data should be a Dictionary")
+	if not (world_data is Dictionary):
+		return
+	_assert_true(not world_data.has("recent_optional_completion_name"), "world save data should not persist recent optional completion")
+	_assert_true(not world_data.has("optional_progress_detail_view"), "world save data should not persist optional progress view mode")
+
+	var optional_data: Variant = world_data.get("optional", {})
+	_assert_true(optional_data is Dictionary, "optional save data should be a Dictionary")
+	if not (optional_data is Dictionary):
+		return
+	_assert_true(optional_data.size() == _optional_total_count(), "optional save data should only contain configured optional content states")
+
+
+func _ensure_detail_journal_view() -> void:
+	var toggle_button := demo.get_node_or_null("CanvasLayer/InteractionHistoryPanel/OptionalProgressViewToggleButton")
+	_assert_true(toggle_button != null, "optional progress view toggle button must exist")
+	if toggle_button == null:
+		return
+
+	if demo.get("optional_progress_detail_view") == false:
+		toggle_button.emit_signal("pressed")
+	_assert_true(demo.get("optional_progress_detail_view") == true, "journal should be in detail view")
+	_assert_true(toggle_button.text == "简洁视图", "detail journal toggle should offer compact view")
+
+
+func _get_journal_label() -> Label:
+	var journal_label := demo.get_node_or_null("CanvasLayer/InteractionHistoryPanel/OptionalProgressJournalLabel") as Label
+	_assert_true(journal_label != null, "optional progress journal label must exist")
+	return journal_label
+
+
+func _optional_total_count() -> int:
+	return _optional_collectible_count() + _optional_creature_count()
+
+
+func _optional_collectible_count() -> int:
+	var configs: Variant = demo.get("optional_collectibles")
+	if configs is Array:
+		return configs.size()
+	return 0
+
+
+func _optional_creature_count() -> int:
+	var configs: Variant = demo.get("optional_creatures")
+	if configs is Array:
+		return configs.size()
+	return 0
+
+
 func _assert_history_panel_toggle_preserves_history(expected_entry: String) -> void:
 	var history_label := demo.get_node_or_null("CanvasLayer/InteractionHistoryPanel/InteractionHistoryLabel")
+	var journal_label := demo.get_node_or_null("CanvasLayer/InteractionHistoryPanel/OptionalProgressJournalLabel")
 	var log_label := demo.get_node_or_null("CanvasLayer/LogLabel")
 	var toggle_button := demo.get_node_or_null("CanvasLayer/InteractionHistoryToggleButton")
 	_assert_true(history_label != null, "interaction history label must exist")
+	_assert_true(journal_label != null, "optional progress journal label must exist")
 	_assert_true(log_label != null, "log label must exist")
 	_assert_true(toggle_button != null, "interaction history toggle button must exist")
-	if history_label == null or log_label == null or toggle_button == null:
+	if history_label == null or journal_label == null or log_label == null or toggle_button == null:
 		return
 
 	_assert_history_panel_visible(true)
 	_assert_true(history_label.text.contains(expected_entry), "history label should contain %s before collapse" % expected_entry)
 	_assert_true(not log_label.text.is_empty(), "log label should contain entries before collapse")
 	var history_text_before_collapse: String = history_label.text
+	var journal_text_before_collapse: String = journal_label.text
 	var log_text_before_collapse: String = log_label.text
 
 	toggle_button.emit_signal("pressed")
 	_assert_history_panel_visible(false)
 	_assert_true(history_label.text.contains(expected_entry), "history label should preserve %s while collapsed" % expected_entry)
 	_assert_true(history_label.text == history_text_before_collapse, "history label text should not change when collapsed")
+	_assert_true(journal_label.text == journal_text_before_collapse, "journal text should not change when collapsed")
 	_assert_true(log_label.text == log_text_before_collapse, "log label text should not change when collapsed")
 
 	toggle_button.emit_signal("pressed")
 	_assert_history_panel_visible(true)
 	_assert_true(history_label.text.contains(expected_entry), "history label should still contain %s after expand" % expected_entry)
+	_assert_true(journal_label.text == journal_text_before_collapse, "journal text should still be preserved after expand")
 	_assert_true(log_label.text == log_text_before_collapse, "log label text should still be preserved after expand")
 
 
