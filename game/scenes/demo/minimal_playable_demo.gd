@@ -4,11 +4,15 @@ const OWNER_ID := "player"
 const ITEM_ID := "zhuyu_leaf"
 const CREATURE_ID := "shensheng"
 const MIGU_BRANCH_ITEM_ID := "migu_branch"
+const BASIC_ORE_ITEM_ID := "basic_ore"
 const LUSHU_CREATURE_ID := "lushu"
+const GENERIC_BEAST_CREATURE_ID := "generic_beast"
 const ZHUYU_INTERACTABLE_ID := "pickup_zhuyu_leaf"
 const SHENSHENG_INTERACTABLE_ID := "observe_shensheng"
 const MIGU_BRANCH_INTERACTABLE_ID := "collect_migu_branch"
+const BASIC_ORE_INTERACTABLE_ID := "collect_basic_ore"
 const LUSHU_INTERACTABLE_ID := "observe_lushu"
+const GENERIC_BEAST_INTERACTABLE_ID := "observe_generic_beast"
 const STONE_INTERACTABLE_ID := "activate_guidance_stone"
 const SAVE_PROVIDER_ID := "minimal_playable_demo"
 const DEMO_SAVE_SLOT := 0
@@ -22,6 +26,7 @@ enum DemoStep {
 	COMPLETE
 }
 
+@onready var world_root: Node2D = $WorldRoot
 @onready var player: Polygon2D = %Player
 @onready var zhuyu_pickup: Polygon2D = %ZhuyuPickup
 @onready var zhuyu_label: Label = %ZhuyuLabel
@@ -117,6 +122,44 @@ func _init_optional_content_config() -> void:
 			"locked_alpha": 0.3,
 			"ready_alpha": 1.0,
 			"done_alpha": 0.35
+		},
+		{
+			"id": BASIC_ORE_ITEM_ID,
+			"interactable_id": BASIC_ORE_INTERACTABLE_ID,
+			"display_name": "粗矿石",
+			"content_type": "collectible",
+			"interaction_type": "pickup",
+			"node": _create_optional_polygon(
+				"BasicOrePickup",
+				Vector2(840, 360),
+				Color(0.5, 0.54, 0.58, 1),
+				PackedVector2Array([
+					Vector2(-26, -14),
+					Vector2(-6, -28),
+					Vector2(18, -22),
+					Vector2(30, 2),
+					Vector2(16, 24),
+					Vector2(-18, 20),
+					Vector2(-32, 0)
+				])
+			),
+			"label": _create_optional_label("BasicOreLabel", Vector2(800, 396), "粗矿石"),
+			"label_default": "粗矿石",
+			"label_done": "粗矿石（已采集）",
+			"history": "采集粗矿石",
+			"prompt_locked": "完成主流程后解锁粗矿石",
+			"prompt_ready": "按 E 采集粗矿石",
+			"prompt_done": "粗矿石已采集",
+			"locked_log": "完成主流程后解锁粗矿石。",
+			"already_done_log": "粗矿石已经采集。",
+			"success_log": "采集粗矿石成功",
+			"error_prefix": "采集失败",
+			"completion_done_prefix": "已采集",
+			"metadata_key": "item_id",
+			"count": 1,
+			"locked_alpha": 0.3,
+			"ready_alpha": 1.0,
+			"done_alpha": 0.35
 		}
 	]
 
@@ -144,6 +187,43 @@ func _init_optional_content_config() -> void:
 			"locked_alpha": 0.3,
 			"ready_alpha": 1.0,
 			"done_alpha": 0.45
+		},
+		{
+			"id": GENERIC_BEAST_CREATURE_ID,
+			"interactable_id": GENERIC_BEAST_INTERACTABLE_ID,
+			"display_name": "普通野兽",
+			"content_type": "creature",
+			"interaction_type": "observe",
+			"node": _create_optional_polygon(
+				"GenericBeastCreature",
+				Vector2(900, 500),
+				Color(0.66, 0.48, 0.34, 1),
+				PackedVector2Array([
+					Vector2(-34, -8),
+					Vector2(-14, -26),
+					Vector2(14, -24),
+					Vector2(36, -6),
+					Vector2(28, 18),
+					Vector2(-8, 28),
+					Vector2(-32, 12)
+				])
+			),
+			"label": _create_optional_label("GenericBeastLabel", Vector2(856, 540), "普通野兽"),
+			"label_default": "普通野兽",
+			"label_done": "普通野兽（已发现）",
+			"history": "发现普通野兽",
+			"prompt_locked": "完成主流程后解锁普通野兽",
+			"prompt_ready": "按 E 观察普通野兽",
+			"prompt_done": "普通野兽已发现",
+			"locked_log": "完成主流程后解锁普通野兽。",
+			"already_done_log": "普通野兽已经被发现。",
+			"success_log": "观察普通野兽成功",
+			"error_prefix": "观察失败",
+			"completion_done_prefix": "已发现",
+			"metadata_key": "creature_id",
+			"locked_alpha": 0.3,
+			"ready_alpha": 1.0,
+			"done_alpha": 0.45
 		}
 	]
 
@@ -153,6 +233,25 @@ func _init_optional_content_config() -> void:
 		var content_id := str(config.get("id", ""))
 		optional_state[content_id] = false
 		optional_near_state[content_id] = false
+
+
+func _create_optional_polygon(node_name: String, position: Vector2, color: Color, polygon: PackedVector2Array) -> Polygon2D:
+	var node := Polygon2D.new()
+	node.name = node_name
+	node.position = position
+	node.color = color
+	node.polygon = polygon
+	world_root.add_child(node)
+	return node
+
+
+func _create_optional_label(label_name: String, label_position: Vector2, text: String) -> Label:
+	var label := Label.new()
+	label.name = label_name
+	label.position = label_position
+	label.text = text
+	world_root.add_child(label)
+	return label
 
 
 func _process(delta: float) -> void:
