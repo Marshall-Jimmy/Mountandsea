@@ -49,6 +49,7 @@ enum DemoStep {
 @onready var reset_demo_button: Button = %ResetDemoButton
 @onready var close_menu_button: Button = %CloseMenuButton
 @onready var interaction_history_panel: Control = %InteractionHistoryPanel
+@onready var interaction_history_toggle_button: Button = %InteractionHistoryToggleButton
 @onready var interaction_history_label: Label = %InteractionHistoryLabel
 @onready var completion_panel: Control = %CompletionPanel
 @onready var completion_summary_label: Label = %CompletionSummaryLabel
@@ -75,6 +76,8 @@ var optional_collectibles: Array = []
 var optional_creatures: Array = []
 var optional_state := {}
 var optional_near_state := {}
+var optional_progress_journal_label: Label
+var interaction_history_panel_visible := true
 var was_near_zhuyu := false
 var was_near_stone := false
 var was_near_shensheng := false
@@ -83,12 +86,15 @@ var was_menu_toggle_key_pressed := false
 
 
 func _ready() -> void:
-	_connect_button_signals()
 	_init_optional_content_config()
+	_configure_interaction_history_panel()
+	_connect_button_signals()
 	demo_menu_panel.visible = false
 	completion_panel.visible = false
 	prompt_label.visible = false
+	_set_interaction_history_panel_visible(true)
 	_update_history_ui()
+	_update_optional_progress_journal()
 	_refresh_status()
 	_update_objective_ui()
 	_update_objective_guidance()
@@ -279,6 +285,7 @@ func _connect_button_signals() -> void:
 	var close_menu_callable := Callable(self, "_on_close_menu_pressed")
 	var restart_callable := Callable(self, "_on_restart_demo_pressed")
 	var close_completion_callable := Callable(self, "_on_close_completion_pressed")
+	var history_toggle_callable := Callable(self, "_on_interaction_history_toggle_pressed")
 
 	if not save_demo_button.pressed.is_connected(save_callable):
 		save_demo_button.pressed.connect(save_callable)
@@ -292,6 +299,64 @@ func _connect_button_signals() -> void:
 		restart_demo_button.pressed.connect(restart_callable)
 	if not close_completion_button.pressed.is_connected(close_completion_callable):
 		close_completion_button.pressed.connect(close_completion_callable)
+	if interaction_history_toggle_button != null and not interaction_history_toggle_button.pressed.is_connected(history_toggle_callable):
+		interaction_history_toggle_button.pressed.connect(history_toggle_callable)
+
+
+func _configure_interaction_history_panel() -> void:
+	if interaction_history_panel == null:
+		return
+
+	interaction_history_panel.offset_top = 272.0
+	interaction_history_panel.offset_bottom = 600.0
+	var title_label := interaction_history_panel.get_node_or_null("InteractionHistoryTitleLabel") as Label
+	if title_label != null:
+		title_label.text = "可选进度 / 历史"
+
+	if optional_progress_journal_label == null:
+		optional_progress_journal_label = Label.new()
+		optional_progress_journal_label.name = "OptionalProgressJournalLabel"
+		optional_progress_journal_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		interaction_history_panel.add_child(optional_progress_journal_label)
+	optional_progress_journal_label.offset_left = 16.0
+	optional_progress_journal_label.offset_top = 44.0
+	optional_progress_journal_label.offset_right = 250.0
+	optional_progress_journal_label.offset_bottom = 176.0
+
+	if interaction_history_label != null:
+		interaction_history_label.offset_top = 192.0
+		interaction_history_label.offset_bottom = 340.0
+
+	if interaction_history_toggle_button == null:
+		return
+	interaction_history_toggle_button.offset_left = 884.0
+	interaction_history_toggle_button.offset_top = 232.0
+	interaction_history_toggle_button.offset_right = 1010.0
+	interaction_history_toggle_button.offset_bottom = 264.0
+	interaction_history_toggle_button.visible = true
+	_update_interaction_history_toggle_text()
+
+
+func _on_interaction_history_toggle_pressed() -> void:
+	_set_interaction_history_panel_visible(not interaction_history_panel_visible)
+
+
+func _set_interaction_history_panel_visible(is_visible: bool) -> void:
+	interaction_history_panel_visible = is_visible
+	if log_label != null:
+		log_label.visible = interaction_history_panel_visible
+	if interaction_history_panel != null:
+		interaction_history_panel.visible = interaction_history_panel_visible
+	_update_interaction_history_toggle_text()
+
+
+func _update_interaction_history_toggle_text() -> void:
+	if interaction_history_toggle_button == null:
+		return
+	if interaction_history_panel_visible:
+		interaction_history_toggle_button.text = "隐藏日志"
+	else:
+		interaction_history_toggle_button.text = "显示日志"
 
 
 func _initialize_services() -> void:
@@ -1144,6 +1209,38 @@ func _format_optional_completion_summary() -> String:
 	return "\n可选探索已解锁：%s" % _format_optional_display_names("、")
 
 
+func _update_optional_progress_journal() -> void:
+	if optional_progress_journal_label == null:
+		return
+	optional_progress_journal_label.text = _format_optional_progress_journal()
+
+
+func _format_optional_progress_journal() -> String:
+	return "可选内容进度\n%s\n%s" % [
+		_format_optional_progress_section("可选采集物", optional_collectibles),
+		_format_optional_progress_section("可选生物 / 互动", optional_creatures)
+	]
+
+
+func _format_optional_progress_section(title: String, configs: Array) -> String:
+	var formatted := "%s：" % title
+	if configs.is_empty():
+		return "%s\n- 无" % formatted
+
+	for config in configs:
+		formatted += "\n- %s：%s" % [
+			str(config.get("display_name", config.get("id", ""))),
+			_format_optional_progress_status(config)
+		]
+	return formatted
+
+
+func _format_optional_progress_status(config: Dictionary) -> String:
+	if _is_optional_done(config):
+		return "已完成"
+	return "未完成"
+
+
 func _is_optional_exploration_complete() -> bool:
 	return _has_completed_all_optional_content()
 
@@ -1172,14 +1269,12 @@ func _update_history_ui() -> void:
 	if interaction_history_label == null:
 		return
 	if interaction_history.is_empty():
-		interaction_history_label.text = "尚无记录"
+		interaction_history_label.text = "历史记录：尚无记录"
 		return
 
-	var formatted := ""
+	var formatted := "历史记录："
 	for index in range(interaction_history.size()):
-		if index > 0:
-			formatted += "\n"
-		formatted += interaction_history[index]
+		formatted += "\n%s" % interaction_history[index]
 	interaction_history_label.text = formatted
 
 
@@ -1341,6 +1436,8 @@ func _update_optional_content_visuals() -> void:
 			node.modulate.a = _to_float_or_default(config.get("ready_alpha", 1.0), 1.0)
 		else:
 			node.modulate.a = _to_float_or_default(config.get("locked_alpha", 0.3), 0.3)
+
+	_update_optional_progress_journal()
 
 
 func _set_optional_content_alpha(alpha: float) -> void:
