@@ -6,6 +6,9 @@ const CREATURE_ID := "shensheng"
 const ZHUYU_INTERACTABLE_ID := "pickup_zhuyu_leaf"
 const SHENSHENG_INTERACTABLE_ID := "observe_shensheng"
 const STONE_INTERACTABLE_ID := "activate_guidance_stone"
+const SAVE_PROVIDER_ID := "minimal_playable_demo"
+const DEMO_SAVE_SLOT := 0
+const PLAYER_START_POSITION := Vector2(220, 260)
 
 enum DemoStep {
 	COLLECT_ZHUYU,
@@ -26,6 +29,15 @@ enum DemoStep {
 @onready var prompt_label: Label = %PromptLabel
 @onready var status_label: Label = %StatusLabel
 @onready var log_label: RichTextLabel = %LogLabel
+@onready var demo_menu_panel: Control = %DemoMenuPanel
+@onready var save_demo_button: Button = %SaveDemoButton
+@onready var load_demo_button: Button = %LoadDemoButton
+@onready var reset_demo_button: Button = %ResetDemoButton
+@onready var close_menu_button: Button = %CloseMenuButton
+@onready var completion_panel: Control = %CompletionPanel
+@onready var completion_summary_label: Label = %CompletionSummaryLabel
+@onready var restart_demo_button: Button = %RestartDemoButton
+@onready var close_completion_button: Button = %CloseCompletionButton
 
 var player_speed := 220.0
 var interaction_distance := 80.0
@@ -33,9 +45,12 @@ var interaction_distance := 80.0
 var inventory_service: InventoryService
 var bestiary_service: BestiaryService
 var interaction_service: InteractionService
+var save_service: Node
 
 var current_step := DemoStep.COLLECT_ZHUYU
 var initialized := false
+var save_provider_registered := false
+var menu_open := false
 var zhuyu_collected := false
 var stone_activated := false
 var shensheng_discovered := false
@@ -43,9 +58,13 @@ var was_near_zhuyu := false
 var was_near_stone := false
 var was_near_shensheng := false
 var was_interact_key_pressed := false
+var was_menu_toggle_key_pressed := false
 
 
 func _ready() -> void:
+	_connect_button_signals()
+	demo_menu_panel.visible = false
+	completion_panel.visible = false
 	prompt_label.visible = false
 	_refresh_status()
 	_update_objective_ui()
@@ -55,13 +74,43 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	_handle_menu_toggle_input()
+
 	if not initialized:
+		return
+
+	if _is_ui_blocking_gameplay():
+		prompt_label.visible = false
+		was_interact_key_pressed = Input.is_key_pressed(KEY_E)
+		_update_objective_guidance()
 		return
 
 	_move_player(delta)
 	_update_prompt()
 	_handle_interaction_input()
 	_update_objective_guidance()
+
+
+func _connect_button_signals() -> void:
+	var save_callable := Callable(self, "_on_save_demo_pressed")
+	var load_callable := Callable(self, "_on_load_demo_pressed")
+	var reset_callable := Callable(self, "_on_reset_demo_pressed")
+	var close_menu_callable := Callable(self, "_on_close_menu_pressed")
+	var restart_callable := Callable(self, "_on_restart_demo_pressed")
+	var close_completion_callable := Callable(self, "_on_close_completion_pressed")
+
+	if not save_demo_button.pressed.is_connected(save_callable):
+		save_demo_button.pressed.connect(save_callable)
+	if not load_demo_button.pressed.is_connected(load_callable):
+		load_demo_button.pressed.connect(load_callable)
+	if not reset_demo_button.pressed.is_connected(reset_callable):
+		reset_demo_button.pressed.connect(reset_callable)
+	if not close_menu_button.pressed.is_connected(close_menu_callable):
+		close_menu_button.pressed.connect(close_menu_callable)
+	if not restart_demo_button.pressed.is_connected(restart_callable):
+		restart_demo_button.pressed.connect(restart_callable)
+	if not close_completion_button.pressed.is_connected(close_completion_callable):
+		close_completion_button.pressed.connect(close_completion_callable)
 
 
 func _initialize_services() -> void:
@@ -85,8 +134,14 @@ func _initialize_services() -> void:
 	inventory_service = InventoryService.new()
 	bestiary_service = BestiaryService.new()
 	interaction_service = InteractionService.new()
+	save_service = _get_autoload("SaveService")
+	if save_service == null:
+		_log_error("找不到 SaveService autoload，Demo 菜单保存读取不可用。")
+		return
 
 	if not _register_interactables():
+		return
+	if not _register_save_provider():
 		return
 
 	initialized = true
@@ -134,6 +189,60 @@ func _register_interactables() -> bool:
 
 	_log_ok("InteractionService 注册成功")
 	return true
+
+
+func _register_save_provider() -> bool:
+	if save_service == null:
+		save_service = _get_autoload("SaveService")
+	if save_service == null:
+		_log_error("找不到 SaveService autoload，无法注册 Demo provider。")
+		return false
+
+	if save_provider_registered and save_service.has_method("has_provider") and save_service.call("has_provider", SAVE_PROVIDER_ID) == true:
+		return true
+
+	if save_service.has_method("has_provider") and save_service.call("has_provider", SAVE_PROVIDER_ID) == true:
+		if save_service.has_method("unregister_provider"):
+			save_service.call("unregister_provider", SAVE_PROVIDER_ID)
+
+	if not save_service.has_method("register_provider"):
+		_log_error("SaveService 缺少 register_provider()。")
+		return false
+
+	var registered: Variant = save_service.call("register_provider", SAVE_PROVIDER_ID, self)
+	save_provider_registered = registered == true
+	if not save_provider_registered:
+		_log_error("SaveService provider 注册失败：%s。" % SAVE_PROVIDER_ID)
+		return false
+
+	_log_ok("SaveService provider 已注册：%s。" % SAVE_PROVIDER_ID)
+	return true
+
+
+func _handle_menu_toggle_input() -> void:
+	var menu_toggle_key_pressed := Input.is_key_pressed(KEY_ESCAPE) or Input.is_key_pressed(KEY_M)
+	if menu_toggle_key_pressed and not was_menu_toggle_key_pressed:
+		if demo_menu_panel.visible:
+			_close_demo_menu()
+		else:
+			_open_demo_menu()
+
+	was_menu_toggle_key_pressed = menu_toggle_key_pressed
+
+
+func _is_ui_blocking_gameplay() -> bool:
+	return demo_menu_panel.visible or completion_panel.visible
+
+
+func _open_demo_menu() -> void:
+	demo_menu_panel.visible = true
+	menu_open = true
+	prompt_label.visible = false
+
+
+func _close_demo_menu() -> void:
+	demo_menu_panel.visible = false
+	menu_open = false
 
 
 func _move_player(delta: float) -> void:
@@ -344,6 +453,245 @@ func _on_shensheng_interacted(actor_id: String, interactable_id: String, metadat
 	_refresh_status()
 	_update_objective_ui()
 	_update_objective_guidance()
+	_show_completion_panel()
+	return true
+
+
+func get_save_data() -> Dictionary:
+	return _build_demo_save_state()
+
+
+func load_save_data(data: Dictionary) -> bool:
+	return _apply_demo_save_state(data)
+
+
+func _on_save_demo_pressed() -> void:
+	if not _ensure_services_ready("保存 Demo"):
+		return
+	if not _register_save_provider():
+		_log_error("Demo 保存失败")
+		return
+	if _build_demo_save_state().is_empty():
+		_log_error("Demo 保存失败")
+		return
+
+	var saved: Variant = save_service.call("save_slot", DEMO_SAVE_SLOT)
+	if saved == true:
+		_log_ok("Demo 已保存到 Slot %d" % DEMO_SAVE_SLOT)
+	else:
+		_log_error("Demo 保存失败")
+
+
+func _on_load_demo_pressed() -> void:
+	if not _ensure_services_ready("读取 Demo"):
+		return
+	if not _register_save_provider():
+		_log_error("Slot %d 没有可读取的 Demo 存档" % DEMO_SAVE_SLOT)
+		return
+	if not _has_demo_save_in_slot(DEMO_SAVE_SLOT):
+		_log_error("Slot %d 没有可读取的 Demo 存档" % DEMO_SAVE_SLOT)
+		return
+
+	var loaded: Variant = save_service.call("load_slot", DEMO_SAVE_SLOT)
+	if loaded == true:
+		_log_ok("Demo 已从 Slot %d 读取" % DEMO_SAVE_SLOT)
+		_close_demo_menu()
+		if current_step == DemoStep.COMPLETE:
+			_show_completion_panel()
+		else:
+			completion_panel.visible = false
+	else:
+		_log_error("Slot %d 没有可读取的 Demo 存档" % DEMO_SAVE_SLOT)
+
+
+func _on_reset_demo_pressed() -> void:
+	_reset_demo_state()
+
+
+func _on_close_menu_pressed() -> void:
+	_close_demo_menu()
+
+
+func _on_restart_demo_pressed() -> void:
+	_reset_demo_state()
+
+
+func _on_close_completion_pressed() -> void:
+	completion_panel.visible = false
+
+
+func _build_demo_save_state() -> Dictionary:
+	if inventory_service == null or bestiary_service == null:
+		return {}
+
+	return {
+		"version": 1,
+		"owner_id": OWNER_ID,
+		"current_step": int(current_step),
+		"world": {
+			"pickup_collected": zhuyu_collected,
+			"stone_activated": stone_activated,
+			"creature_discovered": shensheng_discovered
+		},
+		"inventory": {
+			ITEM_ID: inventory_service.get_item_count(OWNER_ID, ITEM_ID)
+		},
+		"bestiary": bestiary_service.get_save_data_for_owner(OWNER_ID)
+	}
+
+
+func _apply_demo_save_state(state: Dictionary) -> bool:
+	if inventory_service == null or bestiary_service == null:
+		return false
+	if not (state is Dictionary):
+		return false
+
+	var saved_owner_id: Variant = state.get("owner_id", OWNER_ID)
+	if saved_owner_id != OWNER_ID:
+		return false
+
+	var saved_step := _to_non_negative_int(state.get("current_step", -1))
+	if saved_step < DemoStep.COLLECT_ZHUYU or saved_step > DemoStep.COMPLETE:
+		return false
+
+	var world_data: Variant = state.get("world", {})
+	var inventory_data: Variant = state.get("inventory", {})
+	var bestiary_data: Variant = state.get("bestiary", {})
+	if not (world_data is Dictionary):
+		return false
+	if not (inventory_data is Dictionary):
+		return false
+	if not (bestiary_data is Dictionary):
+		return false
+
+	var item_count := _to_non_negative_int(inventory_data.get(ITEM_ID, 0))
+	if item_count < 0:
+		return false
+
+	inventory_service.clear_inventory(OWNER_ID)
+	bestiary_service.clear_owner(OWNER_ID)
+	if item_count > 0 and not inventory_service.add_item(OWNER_ID, ITEM_ID, item_count):
+		return false
+	if not bestiary_service.load_save_data_for_owner(OWNER_ID, bestiary_data):
+		return false
+
+	current_step = saved_step
+	zhuyu_collected = world_data.get("pickup_collected", false) == true
+	stone_activated = world_data.get("stone_activated", false) == true
+	shensheng_discovered = world_data.get("creature_discovered", false) == true
+	if current_step >= DemoStep.ACTIVATE_STONE:
+		zhuyu_collected = true
+	if current_step >= DemoStep.OBSERVE_SHENSHENG:
+		stone_activated = true
+	if current_step == DemoStep.COMPLETE:
+		shensheng_discovered = true
+
+	_apply_world_visual_state()
+	completion_panel.visible = false
+	if current_step == DemoStep.COMPLETE:
+		_refresh_completion_summary()
+	_refresh_status()
+	_update_objective_ui()
+	_update_objective_guidance()
+	return true
+
+
+func _has_demo_save_in_slot(slot: int) -> bool:
+	if save_service == null or not save_service.has_method("get_slot_path"):
+		return false
+
+	var path_value: Variant = save_service.call("get_slot_path", slot)
+	if not (path_value is String) or path_value.is_empty():
+		return false
+	var path: String = path_value
+	if not FileAccess.file_exists(path):
+		return false
+
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return false
+
+	var json := JSON.new()
+	if json.parse(file.get_as_text()) != OK:
+		return false
+
+	var save_data: Variant = json.data
+	if not (save_data is Dictionary):
+		return false
+
+	var providers: Variant = save_data.get("providers", {})
+	if not (providers is Dictionary):
+		return false
+
+	return providers.has(SAVE_PROVIDER_ID)
+
+
+func _reset_demo_state() -> void:
+	if inventory_service != null:
+		inventory_service.clear_inventory(OWNER_ID)
+	if bestiary_service != null:
+		bestiary_service.clear_owner(OWNER_ID)
+
+	player.position = PLAYER_START_POSITION
+	current_step = DemoStep.COLLECT_ZHUYU
+	zhuyu_collected = false
+	stone_activated = false
+	shensheng_discovered = false
+	_close_demo_menu()
+	completion_panel.visible = false
+	_apply_world_visual_state()
+	_refresh_status()
+	_update_objective_ui()
+	_update_objective_guidance()
+	_log_ok("Demo 已重置")
+
+
+func _apply_world_visual_state() -> void:
+	zhuyu_pickup.visible = not zhuyu_collected
+	zhuyu_label.visible = not zhuyu_collected
+	zhuyu_label.text = "祝余叶"
+
+	if stone_activated:
+		guidance_stone.modulate.a = 0.55
+		guidance_stone_label.text = "山海石碑（已激活）"
+	else:
+		guidance_stone.modulate.a = 1.0
+		guidance_stone_label.text = "山海石碑"
+
+	if shensheng_discovered:
+		shensheng_creature.modulate.a = 0.45
+		shensheng_label.text = "狌狌（已发现）"
+	else:
+		shensheng_creature.modulate.a = 1.0
+		shensheng_label.text = "狌狌"
+
+	prompt_label.visible = false
+	was_near_zhuyu = false
+	was_near_stone = false
+	was_near_shensheng = false
+	was_interact_key_pressed = false
+
+
+func _show_completion_panel() -> void:
+	_refresh_completion_summary()
+	completion_panel.visible = true
+	prompt_label.visible = false
+	_refresh_status()
+	_update_objective_ui()
+	_update_objective_guidance()
+
+
+func _refresh_completion_summary() -> void:
+	completion_summary_label.text = "已完成 Demo 流程\n\n已采集：祝余叶\n已激活：山海石碑\n已发现：狌狌\n\n验证服务：\n- DataRegistry\n- InteractionService\n- InventoryService\n- BestiaryService\n- SaveService（菜单保存 / 读取）"
+
+
+func _ensure_services_ready(action_name: String) -> bool:
+	if not initialized:
+		_log_error("%s 失败：Demo 尚未初始化。" % action_name)
+		return false
+	if inventory_service == null or bestiary_service == null or interaction_service == null or save_service == null:
+		_log_error("%s 失败：Demo 服务不可用。" % action_name)
+		return false
 	return true
 
 
@@ -498,6 +846,14 @@ func _to_positive_int(value: Variant) -> int:
 	if value is float and floor(value) == value:
 		return int(value)
 	return 0
+
+
+func _to_non_negative_int(value: Variant) -> int:
+	if value is int:
+		return value
+	if value is float and floor(value) == value:
+		return int(value)
+	return -1
 
 
 func _log_ok(message: String) -> void:
