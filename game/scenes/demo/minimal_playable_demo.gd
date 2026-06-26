@@ -66,19 +66,20 @@ var interaction_history: Array[String] = []
 var zhuyu_collected := false
 var stone_activated := false
 var shensheng_discovered := false
-var migu_collected := false
-var lushu_discovered := false
+var optional_collectibles: Array = []
+var optional_creatures: Array = []
+var optional_state := {}
+var optional_near_state := {}
 var was_near_zhuyu := false
 var was_near_stone := false
 var was_near_shensheng := false
-var was_near_migu := false
-var was_near_lushu := false
 var was_interact_key_pressed := false
 var was_menu_toggle_key_pressed := false
 
 
 func _ready() -> void:
 	_connect_button_signals()
+	_init_optional_content_config()
 	demo_menu_panel.visible = false
 	completion_panel.visible = false
 	prompt_label.visible = false
@@ -88,6 +89,70 @@ func _ready() -> void:
 	_update_objective_guidance()
 	_log("山海经 Demo 场景启动")
 	_initialize_services()
+
+
+func _init_optional_content_config() -> void:
+	optional_collectibles = [
+		{
+			"id": MIGU_BRANCH_ITEM_ID,
+			"interactable_id": MIGU_BRANCH_INTERACTABLE_ID,
+			"display_name": "迷穀枝",
+			"content_type": "collectible",
+			"interaction_type": "pickup",
+			"node": migu_branch,
+			"label": migu_branch_label,
+			"label_default": "迷穀枝",
+			"label_done": "迷穀枝（已采集）",
+			"history": "采集迷穀枝",
+			"prompt_locked": "完成主流程后解锁迷穀枝",
+			"prompt_ready": "按 E 采集迷穀枝",
+			"prompt_done": "迷穀枝已采集",
+			"locked_log": "完成主流程后解锁迷穀枝。",
+			"already_done_log": "迷穀枝已经采集。",
+			"success_log": "采集迷穀枝成功",
+			"error_prefix": "采集失败",
+			"completion_done_prefix": "已采集",
+			"metadata_key": "item_id",
+			"count": 1,
+			"locked_alpha": 0.3,
+			"ready_alpha": 1.0,
+			"done_alpha": 0.35
+		}
+	]
+
+	optional_creatures = [
+		{
+			"id": LUSHU_CREATURE_ID,
+			"interactable_id": LUSHU_INTERACTABLE_ID,
+			"display_name": "鹿蜀",
+			"content_type": "creature",
+			"interaction_type": "observe",
+			"node": lushu_creature,
+			"label": lushu_label,
+			"label_default": "鹿蜀",
+			"label_done": "鹿蜀（已发现）",
+			"history": "发现鹿蜀",
+			"prompt_locked": "完成主流程后解锁鹿蜀",
+			"prompt_ready": "按 E 观察鹿蜀",
+			"prompt_done": "鹿蜀已发现",
+			"locked_log": "完成主流程后解锁鹿蜀。",
+			"already_done_log": "鹿蜀已经被发现。",
+			"success_log": "观察鹿蜀成功",
+			"error_prefix": "观察失败",
+			"completion_done_prefix": "已发现",
+			"metadata_key": "creature_id",
+			"locked_alpha": 0.3,
+			"ready_alpha": 1.0,
+			"done_alpha": 0.45
+		}
+	]
+
+	optional_state.clear()
+	optional_near_state.clear()
+	for config in _all_optional_content():
+		var content_id := str(config.get("id", ""))
+		optional_state[content_id] = false
+		optional_near_state[content_id] = false
 
 
 func _process(delta: float) -> void:
@@ -193,29 +258,7 @@ func _register_interactables() -> bool:
 		_log_error("InteractionService 注册失败：%s" % SHENSHENG_INTERACTABLE_ID)
 		return false
 
-	var migu_registered := interaction_service.register_interactable(MIGU_BRANCH_INTERACTABLE_ID, {
-		"type": "pickup",
-		"metadata": {
-			"item_id": MIGU_BRANCH_ITEM_ID,
-			"count": 1
-		},
-		"callback_target": self,
-		"callback_method": "_on_migu_branch_interacted"
-	})
-	if not migu_registered:
-		_log_error("InteractionService 注册失败：%s" % MIGU_BRANCH_INTERACTABLE_ID)
-		return false
-
-	var lushu_registered := interaction_service.register_interactable(LUSHU_INTERACTABLE_ID, {
-		"type": "observe",
-		"metadata": {
-			"creature_id": LUSHU_CREATURE_ID
-		},
-		"callback_target": self,
-		"callback_method": "_on_lushu_interacted"
-	})
-	if not lushu_registered:
-		_log_error("InteractionService 注册失败：%s" % LUSHU_INTERACTABLE_ID)
+	if not _register_optional_interactables():
 		return false
 
 	var stone_registered := interaction_service.register_interactable(STONE_INTERACTABLE_ID, {
@@ -231,6 +274,47 @@ func _register_interactables() -> bool:
 		return false
 
 	_log_ok("InteractionService 注册成功")
+	return true
+
+
+func _register_optional_interactables() -> bool:
+	for config in optional_collectibles:
+		if not _register_optional_interactable(config, "_on_optional_collectible_interacted"):
+			return false
+
+	for config in optional_creatures:
+		if not _register_optional_interactable(config, "_on_optional_creature_interacted"):
+			return false
+
+	return true
+
+
+func _register_optional_interactable(config: Dictionary, callback_method: String) -> bool:
+	var interactable_id := str(config.get("interactable_id", ""))
+	if interactable_id.is_empty():
+		_log_error("InteractionService 注册失败：optional interactable_id 为空")
+		return false
+
+	var metadata_key := str(config.get("metadata_key", ""))
+	if metadata_key.is_empty():
+		_log_error("InteractionService 注册失败：%s metadata_key 为空" % interactable_id)
+		return false
+
+	var metadata := {}
+	metadata[metadata_key] = str(config.get("id", ""))
+	if config.has("count"):
+		metadata["count"] = _to_positive_int(config.get("count", 1))
+
+	var registered := interaction_service.register_interactable(interactable_id, {
+		"type": str(config.get("interaction_type", "")),
+		"metadata": metadata,
+		"callback_target": self,
+		"callback_method": callback_method
+	})
+	if not registered:
+		_log_error("InteractionService 注册失败：%s" % interactable_id)
+		return false
+
 	return true
 
 
@@ -308,8 +392,8 @@ func _update_prompt() -> void:
 	var near_zhuyu := _is_near_zhuyu()
 	var near_stone := _is_near_stone()
 	var near_shensheng := _is_near_shensheng()
-	var near_migu := _is_near_migu()
-	var near_lushu := _is_near_lushu()
+	var nearest_optional := _nearest_optional_config()
+	var near_optional := not nearest_optional.is_empty()
 
 	match current_step:
 		DemoStep.COLLECT_ZHUYU:
@@ -319,10 +403,8 @@ func _update_prompt() -> void:
 				_show_prompt("先采集祝余叶")
 			elif near_shensheng:
 				_show_prompt("先完成前置目标")
-			elif near_migu:
-				_show_prompt("完成主流程后解锁迷穀枝")
-			elif near_lushu:
-				_show_prompt("完成主流程后解锁鹿蜀")
+			elif near_optional:
+				_show_prompt(str(nearest_optional.get("prompt_locked", "")))
 			else:
 				prompt_label.visible = false
 		DemoStep.ACTIVATE_STONE:
@@ -330,10 +412,8 @@ func _update_prompt() -> void:
 				_show_prompt("按 E 激活山海石碑")
 			elif near_shensheng:
 				_show_prompt("先激活山海石碑")
-			elif near_migu:
-				_show_prompt("完成主流程后解锁迷穀枝")
-			elif near_lushu:
-				_show_prompt("完成主流程后解锁鹿蜀")
+			elif near_optional:
+				_show_prompt(str(nearest_optional.get("prompt_locked", "")))
 			else:
 				prompt_label.visible = false
 		DemoStep.OBSERVE_SHENSHENG:
@@ -341,23 +421,16 @@ func _update_prompt() -> void:
 				_show_prompt("按 E 观察狌狌")
 			elif near_stone:
 				_show_prompt("山海石碑已激活")
-			elif near_migu:
-				_show_prompt("完成主流程后解锁迷穀枝")
-			elif near_lushu:
-				_show_prompt("完成主流程后解锁鹿蜀")
+			elif near_optional:
+				_show_prompt(str(nearest_optional.get("prompt_locked", "")))
 			else:
 				prompt_label.visible = false
 		DemoStep.COMPLETE:
-			if near_migu:
-				if migu_collected:
-					_show_prompt("迷穀枝已采集")
+			if near_optional:
+				if _is_optional_done(nearest_optional):
+					_show_prompt(str(nearest_optional.get("prompt_done", "")))
 				else:
-					_show_prompt("按 E 采集迷穀枝")
-			elif near_lushu:
-				if lushu_discovered:
-					_show_prompt("鹿蜀已发现")
-				else:
-					_show_prompt("按 E 观察鹿蜀")
+					_show_prompt(str(nearest_optional.get("prompt_ready", "")))
 			elif near_zhuyu or near_stone or near_shensheng:
 				_show_prompt("Demo 已完成")
 			else:
@@ -369,16 +442,11 @@ func _update_prompt() -> void:
 		_log("靠近山海石碑")
 	if near_shensheng and not was_near_shensheng:
 		_log("靠近狌狌")
-	if near_migu and not was_near_migu:
-		_log("靠近迷穀枝")
-	if near_lushu and not was_near_lushu:
-		_log("靠近鹿蜀")
+	_update_optional_near_state_logs()
 
 	was_near_zhuyu = near_zhuyu
 	was_near_stone = near_stone
 	was_near_shensheng = near_shensheng
-	was_near_migu = near_migu
-	was_near_lushu = near_lushu
 
 
 func _handle_interaction_input() -> void:
@@ -395,19 +463,15 @@ func _try_interact() -> void:
 	var near_zhuyu := _is_near_zhuyu()
 	var near_stone := _is_near_stone()
 	var near_shensheng := _is_near_shensheng()
-	var near_migu := _is_near_migu()
-	var near_lushu := _is_near_lushu()
+	var nearest_optional := _nearest_optional_config()
+	var near_optional := not nearest_optional.is_empty()
 
 	if current_step == DemoStep.COMPLETE:
-		if near_migu:
-			var migu_interacted := interaction_service.interact(OWNER_ID, MIGU_BRANCH_INTERACTABLE_ID)
-			if not migu_interacted:
-				_log_error("InteractionService 交互失败：%s" % MIGU_BRANCH_INTERACTABLE_ID)
-			return
-		if near_lushu:
-			var lushu_interacted := interaction_service.interact(OWNER_ID, LUSHU_INTERACTABLE_ID)
-			if not lushu_interacted:
-				_log_error("InteractionService 交互失败：%s" % LUSHU_INTERACTABLE_ID)
+		if near_optional:
+			var interactable_id := str(nearest_optional.get("interactable_id", ""))
+			var optional_interacted := interaction_service.interact(OWNER_ID, interactable_id)
+			if not optional_interacted:
+				_log_error("InteractionService 交互失败：%s" % interactable_id)
 			return
 		if near_zhuyu or near_stone or near_shensheng:
 			_log("Demo 已完成。")
@@ -415,11 +479,8 @@ func _try_interact() -> void:
 			_log("附近没有可交互对象。")
 		return
 
-	if near_migu:
-		_log("完成主流程后解锁迷穀枝。")
-		return
-	if near_lushu:
-		_log("完成主流程后解锁鹿蜀。")
+	if near_optional:
+		_log(str(nearest_optional.get("locked_log", "")))
 		return
 
 	if not near_zhuyu and not near_stone and not near_shensheng:
@@ -560,81 +621,61 @@ func _on_shensheng_interacted(actor_id: String, interactable_id: String, metadat
 	return true
 
 
-func _on_migu_branch_interacted(actor_id: String, interactable_id: String, metadata: Dictionary) -> bool:
+func _on_optional_collectible_interacted(actor_id: String, interactable_id: String, metadata: Dictionary) -> bool:
+	return _on_optional_content_interacted(actor_id, interactable_id, metadata, "collectible")
+
+
+func _on_optional_creature_interacted(actor_id: String, interactable_id: String, metadata: Dictionary) -> bool:
+	return _on_optional_content_interacted(actor_id, interactable_id, metadata, "creature")
+
+
+func _on_optional_content_interacted(actor_id: String, interactable_id: String, metadata: Dictionary, expected_type: String) -> bool:
+	var config := _find_optional_config_by_interactable_id(interactable_id)
+	var error_prefix := str(config.get("error_prefix", "交互失败"))
 	if actor_id.is_empty():
-		_log_error("采集失败：actor_id 为空。")
+		_log_error("%s：actor_id 为空。" % error_prefix)
 		return false
-	if interactable_id != MIGU_BRANCH_INTERACTABLE_ID:
-		_log_error("采集失败：interactable_id 不匹配。")
+	if config.is_empty() or config.get("content_type", "") != expected_type:
+		_log_error("%s：interactable_id 不匹配。" % error_prefix)
 		return false
 	if current_step != DemoStep.COMPLETE:
-		_log("完成主流程后解锁迷穀枝。")
+		_log(str(config.get("locked_log", "")))
 		return false
-	if migu_collected:
-		_log("迷穀枝已经采集。")
+	if _is_optional_done(config):
+		_log(str(config.get("already_done_log", "")))
 		return true
 
-	var item_id_value: Variant = metadata.get("item_id", "")
-	if not (item_id_value is String) or item_id_value.is_empty():
-		_log_error("采集失败：metadata.item_id 无效。")
+	var metadata_key := str(config.get("metadata_key", ""))
+	var content_id_value: Variant = metadata.get(metadata_key, "")
+	if not (content_id_value is String) or content_id_value.is_empty():
+		_log_error("%s：metadata.%s 无效。" % [error_prefix, metadata_key])
 		return false
-	var item_id: String = item_id_value
+	var content_id: String = content_id_value
 
-	var count := _to_positive_int(metadata.get("count", 0))
-	if count <= 0:
-		_log_error("采集失败：metadata.count 无效。")
+	if expected_type == "collectible":
+		var count := _to_positive_int(metadata.get("count", 0))
+		if count <= 0:
+			_log_error("%s：metadata.count 无效。" % error_prefix)
+			return false
+		if not inventory_service.add_item(actor_id, content_id, count):
+			_log_error("背包增加 %s 失败。" % content_id)
+			return false
+		if not bestiary_service.discover_item(actor_id, content_id):
+			_log_error("图鉴发现 %s 失败。" % content_id)
+			return false
+	elif expected_type == "creature":
+		if not bestiary_service.discover_creature(actor_id, content_id):
+			_log_error("图鉴发现 %s 失败。" % content_id)
+			return false
+	else:
+		_log_error("未知 optional content 类型：%s。" % expected_type)
 		return false
 
-	if not inventory_service.add_item(actor_id, item_id, count):
-		_log_error("背包增加 %s 失败。" % item_id)
-		return false
-	if not bestiary_service.discover_item(actor_id, item_id):
-		_log_error("图鉴发现 %s 失败。" % item_id)
-		return false
-
-	migu_collected = true
-	migu_branch.modulate.a = 0.35
-	migu_branch_label.text = "迷穀枝（已采集）"
+	_set_optional_done(config, true)
+	_update_optional_content_visuals()
 	prompt_label.visible = false
-	_log_ok("采集迷穀枝成功")
-	_append_history_event("采集迷穀枝")
-	_refresh_status()
-	_refresh_completion_summary()
-	_update_objective_ui()
-	_update_objective_guidance()
-	return true
-
-
-func _on_lushu_interacted(actor_id: String, interactable_id: String, metadata: Dictionary) -> bool:
-	if actor_id.is_empty():
-		_log_error("观察失败：actor_id 为空。")
-		return false
-	if interactable_id != LUSHU_INTERACTABLE_ID:
-		_log_error("观察失败：interactable_id 不匹配。")
-		return false
-	if current_step != DemoStep.COMPLETE:
-		_log("完成主流程后解锁鹿蜀。")
-		return false
-	if lushu_discovered:
-		_log("鹿蜀已经被发现。")
-		return true
-
-	var creature_id_value: Variant = metadata.get("creature_id", "")
-	if not (creature_id_value is String) or creature_id_value.is_empty():
-		_log_error("观察失败：metadata.creature_id 无效。")
-		return false
-	var creature_id: String = creature_id_value
-
-	if not bestiary_service.discover_creature(actor_id, creature_id):
-		_log_error("图鉴发现 %s 失败。" % creature_id)
-		return false
-
-	lushu_discovered = true
-	lushu_creature.modulate.a = 0.45
-	lushu_label.text = "鹿蜀（已发现）"
-	prompt_label.visible = false
-	_log_ok("观察鹿蜀成功")
-	_append_history_event("发现鹿蜀")
+	_log_ok(str(config.get("success_log", "")))
+	_append_history_event(str(config.get("history", "")))
 	_refresh_status()
 	_refresh_completion_summary()
 	_update_objective_ui()
@@ -728,8 +769,7 @@ func _build_demo_save_state() -> Dictionary:
 			"pickup_collected": zhuyu_collected,
 			"stone_activated": stone_activated,
 			"creature_discovered": shensheng_discovered,
-			"migu_collected": migu_collected,
-			"lushu_discovered": lushu_discovered
+			"optional": _build_optional_save_state()
 		},
 		"player": {
 			"position": {
@@ -737,13 +777,64 @@ func _build_demo_save_state() -> Dictionary:
 				"y": player.position.y
 			}
 		},
-		"inventory": {
-			ITEM_ID: inventory_service.get_item_count(OWNER_ID, ITEM_ID),
-			MIGU_BRANCH_ITEM_ID: inventory_service.get_item_count(OWNER_ID, MIGU_BRANCH_ITEM_ID)
-		},
+		"inventory": _build_inventory_save_state(),
 		"bestiary": bestiary_service.get_save_data_for_owner(OWNER_ID),
 		"history": interaction_history.duplicate()
 	}
+
+
+func _build_optional_save_state() -> Dictionary:
+	var state := {}
+	for config in _all_optional_content():
+		var content_id := str(config.get("id", ""))
+		state[content_id] = _is_optional_done(config)
+	return state
+
+
+func _apply_optional_save_state(state: Dictionary) -> void:
+	for config in _all_optional_content():
+		var content_id := str(config.get("id", ""))
+		optional_state[content_id] = state.get(content_id, false) == true
+
+	_update_optional_content_visuals()
+
+
+func _apply_legacy_optional_save_state(world_data: Dictionary, optional_data: Dictionary) -> void:
+	if not optional_data.has(MIGU_BRANCH_ITEM_ID) and world_data.has("migu_collected"):
+		optional_state[MIGU_BRANCH_ITEM_ID] = world_data.get("migu_collected", false) == true
+	if not optional_data.has(LUSHU_CREATURE_ID) and world_data.has("lushu_discovered"):
+		optional_state[LUSHU_CREATURE_ID] = world_data.get("lushu_discovered", false) == true
+
+	_update_optional_content_visuals()
+
+
+func _build_inventory_save_state() -> Dictionary:
+	var state := {
+		ITEM_ID: inventory_service.get_item_count(OWNER_ID, ITEM_ID)
+	}
+
+	for config in optional_collectibles:
+		var content_id := str(config.get("id", ""))
+		state[content_id] = inventory_service.get_item_count(OWNER_ID, content_id)
+
+	return state
+
+
+func _build_loaded_inventory_counts(inventory_data: Dictionary) -> Dictionary:
+	var counts := {}
+	var item_count := _to_non_negative_int(inventory_data.get(ITEM_ID, 0))
+	if item_count < 0:
+		return {}
+	counts[ITEM_ID] = item_count
+
+	for config in optional_collectibles:
+		var content_id := str(config.get("id", ""))
+		var optional_item_count := _to_non_negative_int(inventory_data.get(content_id, 0))
+		if optional_item_count < 0:
+			return {}
+		counts[content_id] = optional_item_count
+
+	return counts
 
 
 func _apply_demo_save_state(state: Dictionary) -> bool:
@@ -770,17 +861,17 @@ func _apply_demo_save_state(state: Dictionary) -> bool:
 	if not (bestiary_data is Dictionary):
 		return false
 
-	var item_count := _to_non_negative_int(inventory_data.get(ITEM_ID, 0))
-	var migu_count := _to_non_negative_int(inventory_data.get(MIGU_BRANCH_ITEM_ID, 0))
-	if item_count < 0 or migu_count < 0:
+	var inventory_counts := _build_loaded_inventory_counts(inventory_data)
+	if inventory_counts.is_empty():
 		return false
 
 	inventory_service.clear_inventory(OWNER_ID)
 	bestiary_service.clear_owner(OWNER_ID)
-	if item_count > 0 and not inventory_service.add_item(OWNER_ID, ITEM_ID, item_count):
-		return false
-	if migu_count > 0 and not inventory_service.add_item(OWNER_ID, MIGU_BRANCH_ITEM_ID, migu_count):
-		return false
+	for item_id in inventory_counts:
+		var item_id_string := str(item_id)
+		var item_count: int = inventory_counts[item_id]
+		if item_count > 0 and not inventory_service.add_item(OWNER_ID, item_id_string, item_count):
+			return false
 	if not bestiary_service.load_save_data_for_owner(OWNER_ID, bestiary_data):
 		return false
 
@@ -788,8 +879,11 @@ func _apply_demo_save_state(state: Dictionary) -> bool:
 	zhuyu_collected = world_data.get("pickup_collected", false) == true
 	stone_activated = world_data.get("stone_activated", false) == true
 	shensheng_discovered = world_data.get("creature_discovered", false) == true
-	migu_collected = world_data.get("migu_collected", false) == true
-	lushu_discovered = world_data.get("lushu_discovered", false) == true
+	var optional_data: Variant = world_data.get("optional", {})
+	if not (optional_data is Dictionary):
+		return false
+	_apply_optional_save_state(optional_data)
+	_apply_legacy_optional_save_state(world_data, optional_data)
 	if current_step >= DemoStep.ACTIVATE_STONE:
 		zhuyu_collected = true
 	if current_step >= DemoStep.OBSERVE_SHENSHENG:
@@ -882,8 +976,7 @@ func _reset_demo_state(history_message := "Demo 已重置") -> void:
 	zhuyu_collected = false
 	stone_activated = false
 	shensheng_discovered = false
-	migu_collected = false
-	lushu_discovered = false
+	_reset_optional_state()
 	_close_demo_menu()
 	completion_panel.visible = false
 	_apply_world_visual_state()
@@ -914,34 +1007,13 @@ func _apply_world_visual_state() -> void:
 		shensheng_creature.modulate.a = 1.0
 		shensheng_label.text = "狌狌"
 
-	migu_branch.visible = true
-	migu_branch_label.visible = true
-	migu_branch_label.text = "迷穀枝"
-	if migu_collected:
-		migu_branch.modulate.a = 0.35
-		migu_branch_label.text = "迷穀枝（已采集）"
-	elif current_step == DemoStep.COMPLETE:
-		migu_branch.modulate.a = 1.0
-	else:
-		migu_branch.modulate.a = 0.3
-
-	lushu_creature.visible = true
-	lushu_label.visible = true
-	lushu_label.text = "鹿蜀"
-	if lushu_discovered:
-		lushu_creature.modulate.a = 0.45
-		lushu_label.text = "鹿蜀（已发现）"
-	elif current_step == DemoStep.COMPLETE:
-		lushu_creature.modulate.a = 1.0
-	else:
-		lushu_creature.modulate.a = 0.3
+	_update_optional_content_visuals()
 
 	prompt_label.visible = false
 	was_near_zhuyu = false
 	was_near_stone = false
 	was_near_shensheng = false
-	was_near_migu = false
-	was_near_lushu = false
+	_reset_optional_near_state()
 	was_interact_key_pressed = false
 
 
@@ -962,13 +1034,19 @@ func _refresh_completion_summary() -> void:
 
 
 func _format_optional_completion_summary() -> String:
-	if _is_optional_exploration_complete():
-		return "\n可选探索：\n- 已采集：迷穀枝\n- 已发现：鹿蜀"
-	return "\n可选探索已解锁：迷穀枝、鹿蜀"
+	if _has_completed_all_optional_content():
+		var completed_summary := "\n可选探索："
+		for config in _all_optional_content():
+			completed_summary += "\n- %s：%s" % [
+				str(config.get("completion_done_prefix", "已完成")),
+				str(config.get("display_name", config.get("id", "")))
+			]
+		return completed_summary
+	return "\n可选探索已解锁：%s" % _format_optional_display_names("、")
 
 
 func _is_optional_exploration_complete() -> bool:
-	return migu_collected and lushu_discovered
+	return _has_completed_all_optional_content()
 
 
 func _append_history_event(message: String) -> void:
@@ -1033,9 +1111,11 @@ func _verify_demo_data(data_registry: Variant) -> bool:
 	if data_registry.call("has_item", ITEM_ID) != true:
 		_log_error("Demo 物品不存在：%s。" % ITEM_ID)
 		return false
-	if data_registry.call("has_item", MIGU_BRANCH_ITEM_ID) != true:
-		_log_error("Demo 物品不存在：%s。" % MIGU_BRANCH_ITEM_ID)
-		return false
+	for config in optional_collectibles:
+		var item_id := str(config.get("id", ""))
+		if data_registry.call("has_item", item_id) != true:
+			_log_error("Demo 物品不存在：%s。" % item_id)
+			return false
 
 	if not data_registry.has_method("has_creature"):
 		_log_error("DataRegistry 缺少 has_creature()，无法验证 Demo 生物。")
@@ -1043,9 +1123,11 @@ func _verify_demo_data(data_registry: Variant) -> bool:
 	if data_registry.call("has_creature", CREATURE_ID) != true:
 		_log_error("Demo 生物不存在：%s。" % CREATURE_ID)
 		return false
-	if data_registry.call("has_creature", LUSHU_CREATURE_ID) != true:
-		_log_error("Demo 生物不存在：%s。" % LUSHU_CREATURE_ID)
-		return false
+	for config in optional_creatures:
+		var creature_id := str(config.get("id", ""))
+		if data_registry.call("has_creature", creature_id) != true:
+			_log_error("Demo 生物不存在：%s。" % creature_id)
+			return false
 
 	return true
 
@@ -1068,16 +1150,122 @@ func _is_near_shensheng() -> bool:
 	return player.global_position.distance_to(shensheng_creature.global_position) <= interaction_distance
 
 
-func _is_near_migu() -> bool:
-	if migu_branch == null or not migu_branch.visible:
-		return false
-	return player.global_position.distance_to(migu_branch.global_position) <= interaction_distance
+func _all_optional_content() -> Array:
+	return optional_collectibles + optional_creatures
 
 
-func _is_near_lushu() -> bool:
-	if lushu_creature == null or not lushu_creature.visible:
+func _find_optional_config_by_id(content_id: String) -> Dictionary:
+	for config in _all_optional_content():
+		if str(config.get("id", "")) == content_id:
+			return config
+	return {}
+
+
+func _find_optional_config_by_interactable_id(interactable_id: String) -> Dictionary:
+	for config in _all_optional_content():
+		if str(config.get("interactable_id", "")) == interactable_id:
+			return config
+	return {}
+
+
+func _is_optional_done(config: Dictionary) -> bool:
+	var content_id := str(config.get("id", ""))
+	return optional_state.get(content_id, false) == true
+
+
+func _set_optional_done(config: Dictionary, done: bool) -> void:
+	var content_id := str(config.get("id", ""))
+	optional_state[content_id] = done
+
+
+func _is_near_optional(config: Dictionary) -> bool:
+	var node: Node2D = config.get("node", null) as Node2D
+	if node == null or not node.visible:
 		return false
-	return player.global_position.distance_to(lushu_creature.global_position) <= interaction_distance
+	return player.global_position.distance_to(node.global_position) <= interaction_distance
+
+
+func _nearest_optional_config() -> Dictionary:
+	for config in _all_optional_content():
+		if _is_near_optional(config):
+			return config
+	return {}
+
+
+func _has_completed_all_optional_content() -> bool:
+	var optional_content := _all_optional_content()
+	if optional_content.is_empty():
+		return false
+
+	for config in optional_content:
+		if not _is_optional_done(config):
+			return false
+	return true
+
+
+func _reset_optional_state() -> void:
+	for config in _all_optional_content():
+		_set_optional_done(config, false)
+		var content_id := str(config.get("id", ""))
+		optional_near_state[content_id] = false
+
+
+func _reset_optional_near_state() -> void:
+	for config in _all_optional_content():
+		var content_id := str(config.get("id", ""))
+		optional_near_state[content_id] = false
+
+
+func _update_optional_near_state_logs() -> void:
+	for config in _all_optional_content():
+		var content_id := str(config.get("id", ""))
+		var near := _is_near_optional(config)
+		if near and not optional_near_state.get(content_id, false):
+			_log("靠近%s" % str(config.get("display_name", content_id)))
+		optional_near_state[content_id] = near
+
+
+func _update_optional_content_visuals() -> void:
+	for config in _all_optional_content():
+		var node: Node2D = config.get("node", null) as Node2D
+		var label: Label = config.get("label", null) as Label
+		if node == null or label == null:
+			continue
+
+		node.visible = true
+		label.visible = true
+		label.text = str(config.get("label_default", ""))
+		if _is_optional_done(config):
+			node.modulate.a = _to_float_or_default(config.get("done_alpha", 1.0), 1.0)
+			label.text = str(config.get("label_done", ""))
+		elif current_step == DemoStep.COMPLETE:
+			node.modulate.a = _to_float_or_default(config.get("ready_alpha", 1.0), 1.0)
+		else:
+			node.modulate.a = _to_float_or_default(config.get("locked_alpha", 0.3), 0.3)
+
+
+func _set_optional_content_alpha(alpha: float) -> void:
+	for config in _all_optional_content():
+		var node: Node2D = config.get("node", null) as Node2D
+		if node != null:
+			node.modulate.a = alpha
+
+
+func _reset_optional_content_scale() -> void:
+	for config in _all_optional_content():
+		var node: Node2D = config.get("node", null) as Node2D
+		if node != null:
+			node.scale = Vector2.ONE
+
+
+func _format_optional_display_names(separator: String) -> String:
+	var formatted := ""
+	var optional_content := _all_optional_content()
+	for index in range(optional_content.size()):
+		if index > 0:
+			formatted += separator
+		formatted += str(optional_content[index].get("display_name", optional_content[index].get("id", "")))
+	return formatted
 
 
 func _get_autoload(node_name: String) -> Node:
@@ -1089,25 +1277,31 @@ func _get_autoload(node_name: String) -> Node:
 
 func _refresh_status() -> void:
 	var item_count := 0
-	var migu_count := 0
 	var discovered_items: Array = []
 	var discovered_creatures: Array = []
 
 	if inventory_service != null:
 		item_count = inventory_service.get_item_count(OWNER_ID, ITEM_ID)
-		migu_count = inventory_service.get_item_count(OWNER_ID, MIGU_BRANCH_ITEM_ID)
 	if bestiary_service != null:
 		discovered_items = bestiary_service.get_discovered_items(OWNER_ID)
 		discovered_creatures = bestiary_service.get_discovered_creatures(OWNER_ID)
 
-	status_label.text = "背包：%s x%d, %s x%d\n图鉴 items=%s\n图鉴 creatures=%s" % [
-		ITEM_ID,
-		item_count,
-		MIGU_BRANCH_ITEM_ID,
-		migu_count,
+	status_label.text = "背包：%s\n图鉴 items=%s\n图鉴 creatures=%s" % [
+		_format_inventory_status(item_count),
 		_format_ids(discovered_items),
 		_format_ids(discovered_creatures)
 	]
+
+
+func _format_inventory_status(main_item_count: int) -> String:
+	var formatted := "%s x%d" % [ITEM_ID, main_item_count]
+	for config in optional_collectibles:
+		var content_id := str(config.get("id", ""))
+		var item_count := 0
+		if inventory_service != null:
+			item_count = inventory_service.get_item_count(OWNER_ID, content_id)
+		formatted += ", %s x%d" % [content_id, item_count]
+	return formatted
 
 
 func _update_objective_ui() -> void:
@@ -1149,46 +1343,35 @@ func _update_objective_guidance() -> void:
 				zhuyu_pickup.scale = Vector2(1.15, 1.15)
 			guidance_stone.modulate.a = 0.35
 			shensheng_creature.modulate.a = 0.35
-			migu_branch.modulate.a = 0.3
-			lushu_creature.modulate.a = 0.3
+			_set_optional_content_alpha(0.3)
 			target_hint_label.text = _format_target_hint("祝余叶", "按 E 采集", active_target)
 		DemoStep.ACTIVATE_STONE:
 			guidance_stone.modulate.a = 1.0
 			guidance_stone.scale = Vector2(1.15, 1.15)
 			shensheng_creature.modulate.a = 0.35
-			migu_branch.modulate.a = 0.3
-			lushu_creature.modulate.a = 0.3
+			_set_optional_content_alpha(0.3)
 			target_hint_label.text = _format_target_hint("山海石碑", "按 E 激活", active_target)
 		DemoStep.OBSERVE_SHENSHENG:
 			guidance_stone.modulate.a = 0.55
 			shensheng_creature.modulate.a = 1.0
 			shensheng_creature.scale = Vector2(1.15, 1.15)
-			migu_branch.modulate.a = 0.3
-			lushu_creature.modulate.a = 0.3
+			_set_optional_content_alpha(0.3)
 			target_hint_label.text = _format_target_hint("狌狌", "按 E 观察", active_target)
 		DemoStep.COMPLETE:
 			guidance_stone.modulate.a = 0.55
 			shensheng_creature.modulate.a = 0.45
-			if migu_collected:
-				migu_branch.modulate.a = 0.35
-			else:
-				migu_branch.modulate.a = 1.0
-			if lushu_discovered:
-				lushu_creature.modulate.a = 0.45
-			else:
-				lushu_creature.modulate.a = 1.0
+			_update_optional_content_visuals()
 			if _is_optional_exploration_complete():
 				target_hint_label.text = "目标提示：所有 Demo 内容已完成"
 			else:
-				target_hint_label.text = "目标提示：可选探索：迷穀枝 / 鹿蜀"
+				target_hint_label.text = "目标提示：可选探索：%s" % _format_optional_display_names(" / ")
 
 
 func _reset_guidance_visuals() -> void:
 	zhuyu_pickup.scale = Vector2.ONE
 	guidance_stone.scale = Vector2.ONE
 	shensheng_creature.scale = Vector2.ONE
-	migu_branch.scale = Vector2.ONE
-	lushu_creature.scale = Vector2.ONE
+	_reset_optional_content_scale()
 
 
 func _format_target_hint(target_name: String, action_text: String, active_target: Node2D) -> String:

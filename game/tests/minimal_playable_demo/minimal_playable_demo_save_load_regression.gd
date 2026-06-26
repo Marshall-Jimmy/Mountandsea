@@ -168,13 +168,13 @@ func _force_optional_complete() -> void:
 	if demo.get("current_step") != STEP_COMPLETE:
 		_force_state_complete()
 
-	var migu_result: Variant = demo.call("_on_migu_branch_interacted", OWNER_ID, MIGU_BRANCH_INTERACTABLE_ID, {
+	var migu_result: Variant = demo.call("_on_optional_collectible_interacted", OWNER_ID, MIGU_BRANCH_INTERACTABLE_ID, {
 		"item_id": MIGU_BRANCH_ITEM_ID,
 		"count": 1
 	})
 	_assert_true(migu_result == true, "migu branch interaction should succeed")
 
-	var lushu_result: Variant = demo.call("_on_lushu_interacted", OWNER_ID, LUSHU_INTERACTABLE_ID, {
+	var lushu_result: Variant = demo.call("_on_optional_creature_interacted", OWNER_ID, LUSHU_INTERACTABLE_ID, {
 		"creature_id": LUSHU_CREATURE_ID
 	})
 	_assert_true(lushu_result == true, "lushu interaction should succeed")
@@ -227,8 +227,8 @@ func _assert_state_complete() -> void:
 
 
 func _assert_optional_state_pending() -> void:
-	_assert_true(demo.get("migu_collected") == false, "migu branch should not be collected")
-	_assert_true(demo.get("lushu_discovered") == false, "lushu should not be discovered")
+	_assert_optional_done(MIGU_BRANCH_ITEM_ID, false)
+	_assert_optional_done(LUSHU_CREATURE_ID, false)
 
 	var migu_label := demo.get_node_or_null("WorldRoot/MiguBranchLabel")
 	var lushu_label := demo.get_node_or_null("WorldRoot/LushuLabel")
@@ -242,8 +242,8 @@ func _assert_optional_state_pending() -> void:
 
 
 func _assert_optional_state_complete() -> void:
-	_assert_true(demo.get("migu_collected") == true, "migu branch should be collected")
-	_assert_true(demo.get("lushu_discovered") == true, "lushu should be discovered")
+	_assert_optional_done(MIGU_BRANCH_ITEM_ID, true)
+	_assert_optional_done(LUSHU_CREATURE_ID, true)
 
 	var migu_label := demo.get_node_or_null("WorldRoot/MiguBranchLabel")
 	var lushu_label := demo.get_node_or_null("WorldRoot/LushuLabel")
@@ -262,6 +262,15 @@ func _assert_optional_state_complete() -> void:
 	_assert_inventory_item_count(MIGU_BRANCH_ITEM_ID, 1)
 	_assert_bestiary_has_item_id(MIGU_BRANCH_ITEM_ID, true)
 	_assert_bestiary_has_creature_id(LUSHU_CREATURE_ID, true)
+
+
+func _assert_optional_done(content_id: String, expected: bool) -> void:
+	var optional_state: Variant = demo.get("optional_state")
+	_assert_true(optional_state is Dictionary, "optional_state should be a Dictionary")
+	if not (optional_state is Dictionary):
+		return
+
+	_assert_true(optional_state.get(content_id, false) == expected, "optional state mismatch for %s" % content_id)
 
 
 func _assert_inventory_count(expected_count: int) -> void:
