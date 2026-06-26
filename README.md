@@ -216,6 +216,22 @@ game/scenes/demo/minimal_playable_demo.tscn
 
 `minimal_playable_demo` 支持 demo-local 菜单：保存 Demo、读取 Demo、重置 Demo、完成总结和重新开始 Demo。Save/load is local to the demo scene and is not a general production save system.
 
+### Minimal playable demo local validation
+
+Run the full local validation stack for the minimal playable demo:
+
+```bash
+python tools/validate_minimal_demo.py
+```
+
+This runs data validation, framework isolation checks, Godot import, the demo script check, the minimal demo save/load regression test, and a framework keyword scan.
+
+Set `GODOT_BIN` if the Godot executable is not on `PATH`:
+
+```bash
+GODOT_BIN=/path/to/godot python tools/validate_minimal_demo.py
+```
+
 ### Minimal playable demo validation matrix
 
 | Area | Validation | Automated | GUI required |
