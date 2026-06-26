@@ -18,6 +18,9 @@ const SAVE_PROVIDER_ID := "minimal_playable_demo"
 const DEMO_SAVE_SLOT := 0
 const PLAYER_START_POSITION := Vector2(220, 260)
 const MAX_HISTORY_EVENTS := 8
+const HISTORY_UI_RECENT_LIMIT := 5
+const OPTIONAL_PROGRESS_DETAIL_LINE_LIMIT := 10
+const OPTIONAL_PROGRESS_COMPACT_LINE_LIMIT := 6
 
 enum DemoStep {
 	COLLECT_ZHUYU,
@@ -77,6 +80,9 @@ var optional_creatures: Array = []
 var optional_state := {}
 var optional_near_state := {}
 var optional_progress_journal_label: Label
+var optional_progress_view_toggle_button: Button
+var optional_progress_detail_view := true
+var recent_optional_completion_name := ""
 var interaction_history_panel_visible := true
 var was_near_zhuyu := false
 var was_near_stone := false
@@ -286,6 +292,7 @@ func _connect_button_signals() -> void:
 	var restart_callable := Callable(self, "_on_restart_demo_pressed")
 	var close_completion_callable := Callable(self, "_on_close_completion_pressed")
 	var history_toggle_callable := Callable(self, "_on_interaction_history_toggle_pressed")
+	var progress_view_toggle_callable := Callable(self, "_on_optional_progress_view_toggle_pressed")
 
 	if not save_demo_button.pressed.is_connected(save_callable):
 		save_demo_button.pressed.connect(save_callable)
@@ -301,40 +308,76 @@ func _connect_button_signals() -> void:
 		close_completion_button.pressed.connect(close_completion_callable)
 	if interaction_history_toggle_button != null and not interaction_history_toggle_button.pressed.is_connected(history_toggle_callable):
 		interaction_history_toggle_button.pressed.connect(history_toggle_callable)
+	if optional_progress_view_toggle_button != null and not optional_progress_view_toggle_button.pressed.is_connected(progress_view_toggle_callable):
+		optional_progress_view_toggle_button.pressed.connect(progress_view_toggle_callable)
 
 
 func _configure_interaction_history_panel() -> void:
 	if interaction_history_panel == null:
 		return
 
-	interaction_history_panel.offset_top = 272.0
+	interaction_history_panel.offset_top = 248.0
 	interaction_history_panel.offset_bottom = 600.0
 	var title_label := interaction_history_panel.get_node_or_null("InteractionHistoryTitleLabel") as Label
 	if title_label != null:
-		title_label.text = "可选进度 / 历史"
+		title_label.text = "可选进度"
+		title_label.offset_right = 148.0
 
 	if optional_progress_journal_label == null:
 		optional_progress_journal_label = Label.new()
 		optional_progress_journal_label.name = "OptionalProgressJournalLabel"
 		optional_progress_journal_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		interaction_history_panel.add_child(optional_progress_journal_label)
+	optional_progress_journal_label.clip_text = true
+
+	if optional_progress_view_toggle_button == null:
+		optional_progress_view_toggle_button = Button.new()
+		optional_progress_view_toggle_button.name = "OptionalProgressViewToggleButton"
+		interaction_history_panel.add_child(optional_progress_view_toggle_button)
+		var progress_view_toggle_callable := Callable(self, "_on_optional_progress_view_toggle_pressed")
+		optional_progress_view_toggle_button.pressed.connect(progress_view_toggle_callable)
+	optional_progress_view_toggle_button.offset_left = 154.0
+	optional_progress_view_toggle_button.offset_top = 8.0
+	optional_progress_view_toggle_button.offset_right = 250.0
+	optional_progress_view_toggle_button.offset_bottom = 36.0
+	optional_progress_view_toggle_button.visible = true
+	_update_optional_progress_view_toggle_text()
+
 	optional_progress_journal_label.offset_left = 16.0
 	optional_progress_journal_label.offset_top = 44.0
 	optional_progress_journal_label.offset_right = 250.0
-	optional_progress_journal_label.offset_bottom = 176.0
+	optional_progress_journal_label.offset_bottom = 218.0
 
 	if interaction_history_label != null:
-		interaction_history_label.offset_top = 192.0
+		interaction_history_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		interaction_history_label.clip_text = true
+		interaction_history_label.max_lines_visible = HISTORY_UI_RECENT_LIMIT + 1
+		interaction_history_label.offset_top = 234.0
 		interaction_history_label.offset_bottom = 340.0
 
 	if interaction_history_toggle_button == null:
 		return
 	interaction_history_toggle_button.offset_left = 884.0
-	interaction_history_toggle_button.offset_top = 232.0
+	interaction_history_toggle_button.offset_top = 208.0
 	interaction_history_toggle_button.offset_right = 1010.0
-	interaction_history_toggle_button.offset_bottom = 264.0
+	interaction_history_toggle_button.offset_bottom = 240.0
 	interaction_history_toggle_button.visible = true
 	_update_interaction_history_toggle_text()
+
+
+func _on_optional_progress_view_toggle_pressed() -> void:
+	optional_progress_detail_view = not optional_progress_detail_view
+	_update_optional_progress_view_toggle_text()
+	_update_optional_progress_journal()
+
+
+func _update_optional_progress_view_toggle_text() -> void:
+	if optional_progress_view_toggle_button == null:
+		return
+	if optional_progress_detail_view:
+		optional_progress_view_toggle_button.text = "简洁视图"
+	else:
+		optional_progress_view_toggle_button.text = "详细视图"
 
 
 func _on_interaction_history_toggle_pressed() -> void:
@@ -836,6 +879,7 @@ func _on_optional_content_interacted(actor_id: String, interactable_id: String, 
 		return false
 
 	_set_optional_done(config, true)
+	recent_optional_completion_name = str(config.get("display_name", content_id))
 	_update_optional_content_visuals()
 	prompt_label.visible = false
 	_log_ok(str(config.get("success_log", "")))
@@ -1043,6 +1087,7 @@ func _apply_demo_save_state(state: Dictionary) -> bool:
 	zhuyu_collected = world_data.get("pickup_collected", false) == true
 	stone_activated = world_data.get("stone_activated", false) == true
 	shensheng_discovered = world_data.get("creature_discovered", false) == true
+	recent_optional_completion_name = ""
 	var optional_data: Variant = world_data.get("optional", {})
 	if not (optional_data is Dictionary):
 		return false
@@ -1140,6 +1185,7 @@ func _reset_demo_state(history_message := "Demo 已重置") -> void:
 	zhuyu_collected = false
 	stone_activated = false
 	shensheng_discovered = false
+	recent_optional_completion_name = ""
 	_reset_optional_state()
 	_close_demo_menu()
 	completion_panel.visible = false
@@ -1212,20 +1258,34 @@ func _format_optional_completion_summary() -> String:
 func _update_optional_progress_journal() -> void:
 	if optional_progress_journal_label == null:
 		return
+	if optional_progress_detail_view:
+		optional_progress_journal_label.max_lines_visible = OPTIONAL_PROGRESS_DETAIL_LINE_LIMIT
+	else:
+		optional_progress_journal_label.max_lines_visible = OPTIONAL_PROGRESS_COMPACT_LINE_LIMIT
 	optional_progress_journal_label.text = _format_optional_progress_journal()
 
 
 func _format_optional_progress_journal() -> String:
-	return "可选内容进度\n%s\n%s" % [
+	var optional_content := _all_optional_content()
+	return "可选进度：%d / %d\n最近完成：%s\n\n%s\n\n%s" % [
+		_count_completed_optional_content(optional_content),
+		optional_content.size(),
+		_format_recent_optional_completion(),
 		_format_optional_progress_section("可选采集物", optional_collectibles),
 		_format_optional_progress_section("可选生物 / 互动", optional_creatures)
 	]
 
 
 func _format_optional_progress_section(title: String, configs: Array) -> String:
-	var formatted := "%s：" % title
+	var formatted := "%s：%d / %d" % [
+		title,
+		_count_completed_optional_content(configs),
+		configs.size()
+	]
 	if configs.is_empty():
-		return "%s\n- 无" % formatted
+		return "%s\n无内容" % formatted
+	if not optional_progress_detail_view:
+		return formatted
 
 	for config in configs:
 		formatted += "\n- %s：%s" % [
@@ -1233,6 +1293,20 @@ func _format_optional_progress_section(title: String, configs: Array) -> String:
 			_format_optional_progress_status(config)
 		]
 	return formatted
+
+
+func _count_completed_optional_content(configs: Array) -> int:
+	var completed_count := 0
+	for config in configs:
+		if _is_optional_done(config):
+			completed_count += 1
+	return completed_count
+
+
+func _format_recent_optional_completion() -> String:
+	if recent_optional_completion_name.is_empty():
+		return "无"
+	return recent_optional_completion_name
 
 
 func _format_optional_progress_status(config: Dictionary) -> String:
@@ -1269,12 +1343,13 @@ func _update_history_ui() -> void:
 	if interaction_history_label == null:
 		return
 	if interaction_history.is_empty():
-		interaction_history_label.text = "历史记录：尚无记录"
+		interaction_history_label.text = "历史记录（最近 %d 条）\n尚无记录" % HISTORY_UI_RECENT_LIMIT
 		return
 
-	var formatted := "历史记录："
-	for index in range(interaction_history.size()):
-		formatted += "\n%s" % interaction_history[index]
+	var formatted := "历史记录（最近 %d 条）" % HISTORY_UI_RECENT_LIMIT
+	var first_visible_index: int = max(0, interaction_history.size() - HISTORY_UI_RECENT_LIMIT)
+	for index in range(first_visible_index, interaction_history.size()):
+		formatted += "\n- %s" % interaction_history[index]
 	interaction_history_label.text = formatted
 
 

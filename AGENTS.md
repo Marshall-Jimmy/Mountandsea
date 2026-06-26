@@ -99,6 +99,39 @@
 
 ---
 
+## 任务开始前本地同步规则
+
+agent 开始任何新任务前，必须先确认当前操作的本地 checkout / worktree 状态。
+
+推荐流程：
+
+1. 运行 `git status --short` 检查是否存在未提交改动。
+2. 若存在未提交改动，不得擅自 `reset --hard`、`clean -fd`、`stash drop` 或覆盖用户改动；必须停止并报告用户处理。
+3. 若工作区干净，切回 `master`。
+4. 运行 `git fetch origin`。
+5. 运行 `git pull --ff-only origin master`，确保本地 `master` 与远端同步。
+6. 再从最新 `master` 创建任务分支或任务 worktree。
+7. 如果任务需要在已有 PR 分支上继续，应先 `git fetch origin`，再确认当前分支与远端 PR head 的关系，避免基于过期提交继续开发。
+
+agent 不得在过期的本地 `master` 或来源不明的旧 worktree 上开始新任务。
+
+---
+
+## 任务结束后的 worktree / 临时目录清理规则
+
+agent 使用临时 worktree 或 sibling checkout 完成任务后，必须在最终汇报中说明该目录是否仍需保留。
+
+- 如果 PR 仍是 draft、仍需用户 GUI 手测、或后续可能继续追加 commit，则保留对应 worktree，并明确告诉用户目录路径。
+- 如果 PR 已合并且本地没有未提交改动，应清理本次任务创建的 worktree / 临时目录。
+- 清理前必须运行 `git status --short`。
+- 若存在未提交改动，不得擅自删除、`reset --hard`、`clean -fd` 或覆盖用户改动；必须停止并报告。
+- 对 Git worktree，优先使用 `git worktree remove <path>`，必要时在用户明确同意后才使用 `--force`。
+- 清理后运行 `git worktree prune`。
+- agent 不得删除用户其他仓库目录或无法确认来源的文件夹。
+- agent 不得假定所有名似 `Mountandsea-*` 的文件夹都可以删除；只能处理本次任务明确创建或用户明确指定的目录。
+
+---
+
 ## 自动合并规则
 
 agent 只有在同时满足以下条件时，才可以自动合并 PR：
