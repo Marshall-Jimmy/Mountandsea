@@ -36,21 +36,26 @@ This file is the repository-local handoff for continuing web ChatGPT conversatio
 - Extended regression coverage
 - GUI manual test passed by user
 
+### PR #33: game: add collapsible optional progress journal
+- **Status:** merged
+- **Branch:** `game/collapsible-optional-progress-journal`
+- **Head SHA:** 24a3201bf674508577ad15ee9b32591ddd9ada2b
+- **Merge commit:** 86de81a24c3a18a7dd22e5773c3f2754b881ce9c
+- **Link:** https://github.com/Marshall-Jimmy/Mountandsea/pull/33
+- Adds a collapsible optional progress journal to `minimal_playable_demo`.
+- Shows data-driven optional collectible and creature/interaction completion state from existing optional state.
+- Adds an explicit `InteractionHistoryToggleButton` scene node.
+- The toggle hides both the right-side journal/history panel and the left-side live log while preserving their text/history.
+- Extends the minimal demo save/load regression to cover journal state after save/load, reset, legacy optional loads, and the toggle preserving history.
+- Regression coverage now emits the toggle button's `pressed` signal instead of directly calling the handler.
+- Validation passed: `python tools/validate_data.py`, `python tools/check_framework.py`, `python tools/validate_minimal_demo.py`, `git diff --check`, `git diff --stat`, and explicit Snowhuman Framework keyword scan.
+- GUI collapse/expand behavior manually tested successfully by user.
+
 ---
 
 ## Current Open PRs
 
-### PR #33: game: add collapsible optional progress journal
-- **Status:** PR opened / pending review (draft)
-- **Branch:** `game/collapsible-optional-progress-journal`
-- **Link:** https://github.com/Marshall-Jimmy/Mountandsea/pull/33
-- Adds a collapsible optional progress journal to `minimal_playable_demo`.
-- Shows data-driven optional collectible and creature/interaction completion state from existing optional state.
-- Adds a show/hide toggle for the existing interaction history panel while preserving history when collapsed.
-- After user feedback that the log could not be collapsed, the PR now uses an explicit scene button node and the toggle hides both the right-side journal/history panel and the left-side live log while preserving their text.
-- Extends the minimal demo save/load regression to cover journal state after save/load, reset, legacy optional loads, and the toggle preserving history.
-- Regression coverage now emits the toggle button's `pressed` signal instead of directly calling the handler.
-- GUI manual test is reserved for user.
+- None.
 
 ---
 
@@ -59,7 +64,9 @@ This file is the repository-local handoff for continuing web ChatGPT conversatio
 - Minimal playable demo has data-driven optional content.
 - There are three optional content pairs.
 - Optional content supports prompt, interaction, history, completion summary, save/load, and reset.
-- PR #33 adds an optional progress journal and history panel toggle, but it is not merged yet.
+- The collapsible optional progress journal from PR #33 is merged and available.
+- The journal shows optional collectible and optional creature/interaction completion state.
+- The explicit `InteractionHistoryToggleButton` collapses and expands both the right-side journal/history panel and the left-side live log while preserving text/history.
 - Snowhuman Framework remains generic (no project-specific content inside the addon).
 
 ---
@@ -93,24 +100,12 @@ Plus: framework addon keyword scan for project-specific content (handled by `too
 
 ## Current Suggested Next Feature
 
-**Current active feature:** `game: add collapsible optional progress journal`
+**Candidate next feature:** `improve optional progress journal readability / layout polish`
 
 **Goal:**
-- Add optional content progress journal to minimal playable demo
-- Show completion state for optional collectibles and optional creature/interactions
-- Add show/hide toggle for interaction log panel
-- Preserve history while collapsed
-- Keep GUI manual test reserved for user
+- Improve spacing, labels, and journal readability without changing optional state, save fields, or data-driven content.
 
-**Status:** PR #33 opened / pending review (draft). This feature is not merged yet.
-
-**Validation run for PR #33:**
-- `python tools/validate_data.py` passed
-- `python tools/check_framework.py` passed
-- `python tools/validate_minimal_demo.py` passed
-- `git diff --check` passed with exit code 0; Windows line-ending warnings only
-- `git diff --stat` ran
-- Explicit Snowhuman Framework keyword scan for `zhuyu`, `shensheng`, `zaoyaoshan`, `祝余`, `狌狌`, `招摇山` found no matches
+**Status:** Not started.
 
 ---
 
