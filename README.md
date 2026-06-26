@@ -216,6 +216,24 @@ game/scenes/demo/minimal_playable_demo.tscn
 
 `minimal_playable_demo` 支持 demo-local 菜单：保存 Demo、读取 Demo、重置 Demo、完成总结和重新开始 Demo。Save/load is local to the demo scene and is not a general production save system.
 
+### Minimal playable demo validation matrix
+
+| Area | Validation | Automated | GUI required |
+|---|---|---:|---:|
+| Player movement | Manual demo run | No | Yes |
+| Zhuyu pickup | Demo regression + manual run | Partial | Yes |
+| Guidance stone activation | Demo regression + manual run | Partial | Yes |
+| Shensheng discovery | Demo regression + manual run | Partial | Yes |
+| Objective guidance | Manual demo run | No | Yes |
+| Demo menu input blocking | Manual demo run | No | Yes |
+| Save/load state restore | `minimal_playable_demo_save_load_regression.gd` | Yes | No |
+| Player position restore | `minimal_playable_demo_save_load_regression.gd` | Yes | No |
+| Interaction history restore | `minimal_playable_demo_save_load_regression.gd` | Yes | No |
+| Reset/restart | `minimal_playable_demo_save_load_regression.gd` + manual run | Partial | Yes |
+| Completion panel | Manual demo run | No | Yes |
+
+The matrix tracks the current demo-local validation coverage. It is not a production QA plan.
+
 ---
 
 ## 参与贡献

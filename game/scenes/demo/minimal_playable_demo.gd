@@ -9,6 +9,7 @@ const STONE_INTERACTABLE_ID := "activate_guidance_stone"
 const SAVE_PROVIDER_ID := "minimal_playable_demo"
 const DEMO_SAVE_SLOT := 0
 const PLAYER_START_POSITION := Vector2(220, 260)
+const MAX_HISTORY_EVENTS := 8
 
 enum DemoStep {
 	COLLECT_ZHUYU,
@@ -34,6 +35,8 @@ enum DemoStep {
 @onready var load_demo_button: Button = %LoadDemoButton
 @onready var reset_demo_button: Button = %ResetDemoButton
 @onready var close_menu_button: Button = %CloseMenuButton
+@onready var interaction_history_panel: Control = %InteractionHistoryPanel
+@onready var interaction_history_label: Label = %InteractionHistoryLabel
 @onready var completion_panel: Control = %CompletionPanel
 @onready var completion_summary_label: Label = %CompletionSummaryLabel
 @onready var restart_demo_button: Button = %RestartDemoButton
@@ -51,6 +54,7 @@ var current_step := DemoStep.COLLECT_ZHUYU
 var initialized := false
 var save_provider_registered := false
 var menu_open := false
+var interaction_history: Array[String] = []
 var zhuyu_collected := false
 var stone_activated := false
 var shensheng_discovered := false
@@ -66,6 +70,7 @@ func _ready() -> void:
 	demo_menu_panel.visible = false
 	completion_panel.visible = false
 	prompt_label.visible = false
+	_update_history_ui()
 	_refresh_status()
 	_update_objective_ui()
 	_update_objective_guidance()
@@ -146,6 +151,7 @@ func _initialize_services() -> void:
 
 	initialized = true
 	_log_ok("Demo 初始化完成")
+	_append_history_event("Demo 开始：采集祝余叶")
 	_refresh_status()
 
 
@@ -387,6 +393,7 @@ func _on_zhuyu_interacted(actor_id: String, interactable_id: String, metadata: D
 	current_step = DemoStep.ACTIVATE_STONE
 	_log_ok("采集祝余叶成功")
 	_log("当前目标：前往山海石碑")
+	_append_history_event("采集祝余叶")
 	_refresh_status()
 	_update_objective_ui()
 	_update_objective_guidance()
@@ -411,6 +418,7 @@ func _on_guidance_stone_interacted(actor_id: String, interactable_id: String, _m
 	prompt_label.visible = false
 	_log_ok("山海石碑已激活")
 	_log("当前目标：观察狌狌")
+	_append_history_event("激活山海石碑")
 	_update_objective_ui()
 	_update_objective_guidance()
 	return true
@@ -450,6 +458,8 @@ func _on_shensheng_interacted(actor_id: String, interactable_id: String, metadat
 	prompt_label.visible = false
 	_log_ok("观察狌狌成功")
 	_log("Demo 完成")
+	_append_history_event("发现狌狌")
+	_append_history_event("Demo 完成")
 	_refresh_status()
 	_update_objective_ui()
 	_update_objective_guidance()
@@ -467,41 +477,52 @@ func load_save_data(data: Dictionary) -> bool:
 
 func _on_save_demo_pressed() -> void:
 	if not _ensure_services_ready("保存 Demo"):
+		_append_history_event("保存 Demo 失败")
 		return
 	if not _register_save_provider():
 		_log_error("Demo 保存失败")
+		_append_history_event("保存 Demo 失败")
 		return
 	if _build_demo_save_state().is_empty():
 		_log_error("Demo 保存失败")
+		_append_history_event("保存 Demo 失败")
 		return
 
+	_append_history_event("保存 Demo")
 	var saved: Variant = save_service.call("save_slot", DEMO_SAVE_SLOT)
 	if saved == true:
 		_log_ok("Demo 已保存到 Slot %d" % DEMO_SAVE_SLOT)
 	else:
+		_remove_latest_history_event("保存 Demo")
 		_log_error("Demo 保存失败")
+		_append_history_event("保存 Demo 失败")
 
 
 func _on_load_demo_pressed() -> void:
 	if not _ensure_services_ready("读取 Demo"):
+		_append_history_event("读取 Demo 失败")
 		return
 	if not _register_save_provider():
 		_log_error("Slot %d 没有可读取的 Demo 存档" % DEMO_SAVE_SLOT)
+		_append_history_event("读取 Demo 失败")
 		return
 	if not _has_demo_save_in_slot(DEMO_SAVE_SLOT):
 		_log_error("Slot %d 没有可读取的 Demo 存档" % DEMO_SAVE_SLOT)
+		_append_history_event("读取 Demo 失败")
 		return
 
 	var loaded: Variant = save_service.call("load_slot", DEMO_SAVE_SLOT)
 	if loaded == true:
 		_log_ok("Demo 已从 Slot %d 读取" % DEMO_SAVE_SLOT)
 		_close_demo_menu()
+		_append_history_event("读取 Demo")
 		if current_step == DemoStep.COMPLETE:
 			_show_completion_panel()
 		else:
 			completion_panel.visible = false
 	else:
 		_log_error("Slot %d 没有可读取的 Demo 存档" % DEMO_SAVE_SLOT)
+		_append_history_event("读取 Demo 失败")
 
 
 func _on_reset_demo_pressed() -> void:
@@ -513,7 +534,7 @@ func _on_close_menu_pressed() -> void:
 
 
 func _on_restart_demo_pressed() -> void:
-	_reset_demo_state()
+	_reset_demo_state("重新开始 Demo")
 
 
 func _on_close_completion_pressed() -> void:
@@ -542,7 +563,8 @@ func _build_demo_save_state() -> Dictionary:
 		"inventory": {
 			ITEM_ID: inventory_service.get_item_count(OWNER_ID, ITEM_ID)
 		},
-		"bestiary": bestiary_service.get_save_data_for_owner(OWNER_ID)
+		"bestiary": bestiary_service.get_save_data_for_owner(OWNER_ID),
+		"history": interaction_history.duplicate()
 	}
 
 
@@ -593,6 +615,7 @@ func _apply_demo_save_state(state: Dictionary) -> bool:
 		shensheng_discovered = true
 
 	_restore_saved_player_position(state)
+	_restore_saved_history(state)
 	_apply_world_visual_state()
 	completion_panel.visible = false
 	if current_step == DemoStep.COMPLETE:
@@ -618,6 +641,21 @@ func _restore_saved_player_position(state: Dictionary) -> void:
 		_to_float_or_default(position_data.get("x"), player.position.x),
 		_to_float_or_default(position_data.get("y"), player.position.y)
 	)
+
+
+func _restore_saved_history(state: Dictionary) -> void:
+	interaction_history.clear()
+
+	var loaded_history: Variant = state.get("history", [])
+	if loaded_history is Array:
+		for entry in loaded_history:
+			if entry is String and not entry.strip_edges().is_empty():
+				interaction_history.append(entry)
+
+	while interaction_history.size() > MAX_HISTORY_EVENTS:
+		interaction_history.pop_front()
+
+	_update_history_ui()
 
 
 func _has_demo_save_in_slot(slot: int) -> bool:
@@ -650,7 +688,7 @@ func _has_demo_save_in_slot(slot: int) -> bool:
 	return providers.has(SAVE_PROVIDER_ID)
 
 
-func _reset_demo_state() -> void:
+func _reset_demo_state(history_message := "Demo 已重置") -> void:
 	if inventory_service != null:
 		inventory_service.clear_inventory(OWNER_ID)
 	if bestiary_service != null:
@@ -667,7 +705,9 @@ func _reset_demo_state() -> void:
 	_refresh_status()
 	_update_objective_ui()
 	_update_objective_guidance()
-	_log_ok("Demo 已重置")
+	interaction_history.clear()
+	_append_history_event(history_message)
+	_log_ok(history_message)
 
 
 func _apply_world_visual_state() -> void:
@@ -706,7 +746,52 @@ func _show_completion_panel() -> void:
 
 
 func _refresh_completion_summary() -> void:
-	completion_summary_label.text = "已完成 Demo 流程\n\n已采集：祝余叶\n已激活：山海石碑\n已发现：狌狌\n\n验证服务：\n- DataRegistry\n- InteractionService\n- InventoryService\n- BestiaryService\n- SaveService（菜单保存 / 读取）"
+	completion_summary_label.text = "已完成 Demo 流程\n\n已采集：祝余叶\n已激活：山海石碑\n已发现：狌狌\n\n%s\n\n验证服务：\n- DataRegistry\n- InteractionService\n- InventoryService\n- BestiaryService\n- SaveService（菜单保存 / 读取）" % _format_completion_history()
+
+
+func _append_history_event(message: String) -> void:
+	var trimmed_message := message.strip_edges()
+	if trimmed_message.is_empty():
+		return
+
+	interaction_history.append(trimmed_message)
+	while interaction_history.size() > MAX_HISTORY_EVENTS:
+		interaction_history.pop_front()
+
+	_update_history_ui()
+
+
+func _remove_latest_history_event(message: String) -> void:
+	if interaction_history.is_empty():
+		return
+	if interaction_history[interaction_history.size() - 1] == message:
+		interaction_history.pop_back()
+		_update_history_ui()
+
+
+func _update_history_ui() -> void:
+	if interaction_history_label == null:
+		return
+	if interaction_history.is_empty():
+		interaction_history_label.text = "尚无记录"
+		return
+
+	var formatted := ""
+	for index in range(interaction_history.size()):
+		if index > 0:
+			formatted += "\n"
+		formatted += interaction_history[index]
+	interaction_history_label.text = formatted
+
+
+func _format_completion_history() -> String:
+	if interaction_history.is_empty():
+		return "历史记录：无"
+
+	var formatted := "历史记录："
+	for entry in interaction_history:
+		formatted += "\n- %s" % entry
+	return formatted
 
 
 func _ensure_services_ready(action_name: String) -> bool:
