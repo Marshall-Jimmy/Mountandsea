@@ -85,12 +85,13 @@
 - 为 `minimal_playable_demo` 的 optional journal 增加 keyboard shortcuts：`J` 切换隐藏 / 显示，`V` 切换简洁 / 详细视图。
 - 用户 GUI 手测发现 journal panel 内未显示快捷键提示。
 - 本次追加修复将提示设为固定单行小字号、增加可用高度并显式设为可见，文案为：`快捷键：J 隐藏/显示，V 简洁/详细`。
+- Godot headless 回归发现提示与 `简洁视图` / `详细视图` 按钮的实际 Control rect 仍有重叠；已下移提示并顺延 progress label 起点，保留明确间距。
 - 回归测试补充 shortcut hint label 的存在、可见、非空、包含 `J` / `V`，以及不与 journal buttons、progress label、history label 重叠的断言。
 - 将 optional journal layout offsets 提取为局部常量，并拆分 panel title、progress label、history label、buttons 和 shortcut hint 的配置 helper。
 - 保持 PR #36 的 overlap 修复：progress 与 history 分区显示，history UI 只显示最近 5 条，内部 `interaction_history` 不截断。
 - 不改变 optional state、不新增 save fields、不改变 data-driven optional content 设计。
 - 未修改 Snowhuman Framework addon。
-- 本次追加修复验证：`python tools/validate_data.py` 和 `python tools/check_framework.py` passed；`python tools/validate_minimal_demo.py` 的 data / framework / keyword scan 子检查通过，但因当前环境找不到 Godot CLI，整体报告 incomplete，headless 回归未执行。
+- 本次追加修复验证：`python tools/validate_data.py`、`python tools/check_framework.py`、`python tools/validate_minimal_demo.py`、`git diff --check`、`git diff --stat` passed / ran；显式 Snowhuman Framework keyword scan 无匹配。
 - Godot GUI manual test 仍由用户完成；本 PR 不允许自动合并。
 
 ---
@@ -155,7 +156,7 @@ git diff --stat
 **验证：**
 - `python tools/validate_data.py` passed
 - `python tools/check_framework.py` passed
-- `python tools/validate_minimal_demo.py`：data / framework / keyword scan 子检查通过；当前环境找不到 Godot CLI，因此整体 incomplete，headless 回归未执行
+- `python tools/validate_minimal_demo.py` passed
 - `git diff --check` passed；仅有 Windows line-ending warning
 - `git diff --stat` ran
 - 显式 Snowhuman Framework keyword scan for `zhuyu|shensheng|zaoyaoshan|祝余|狌狌|招摇山`：no matches
