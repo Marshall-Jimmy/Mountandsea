@@ -22,6 +22,7 @@ const HISTORY_UI_RECENT_LIMIT := 5
 const OPTIONAL_PROGRESS_DETAIL_LINE_LIMIT := 10
 const OPTIONAL_PROGRESS_COMPACT_LINE_LIMIT := 6
 const JOURNAL_SHORTCUT_HINT_TEXT := "快捷键：J 隐藏/显示，V 简洁/详细"
+const JOURNAL_SHORTCUT_HINT_FONT_SIZE := 13
 const JOURNAL_PANEL_TOP := 248.0
 const JOURNAL_PANEL_BOTTOM := 600.0
 const JOURNAL_CONTENT_LEFT := 16.0
@@ -31,7 +32,7 @@ const JOURNAL_VIEW_BUTTON_LEFT := 154.0
 const JOURNAL_TITLE_TOP := 8.0
 const JOURNAL_TITLE_BOTTOM := 36.0
 const JOURNAL_HINT_TOP := 38.0
-const JOURNAL_HINT_BOTTOM := 58.0
+const JOURNAL_HINT_BOTTOM := 62.0
 const JOURNAL_PROGRESS_TOP := 66.0
 const JOURNAL_PROGRESS_BOTTOM := 224.0
 const JOURNAL_HISTORY_TOP := 238.0
@@ -396,14 +397,17 @@ func _configure_optional_progress_shortcut_hint_label() -> void:
 	if optional_progress_shortcut_hint_label == null:
 		optional_progress_shortcut_hint_label = Label.new()
 		optional_progress_shortcut_hint_label.name = "OptionalProgressShortcutHintLabel"
-		optional_progress_shortcut_hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		interaction_history_panel.add_child(optional_progress_shortcut_hint_label)
 	optional_progress_shortcut_hint_label.text = JOURNAL_SHORTCUT_HINT_TEXT
+	optional_progress_shortcut_hint_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	optional_progress_shortcut_hint_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	optional_progress_shortcut_hint_label.add_theme_font_size_override("font_size", JOURNAL_SHORTCUT_HINT_FONT_SIZE)
 	optional_progress_shortcut_hint_label.clip_text = true
 	optional_progress_shortcut_hint_label.offset_left = JOURNAL_CONTENT_LEFT
 	optional_progress_shortcut_hint_label.offset_top = JOURNAL_HINT_TOP
 	optional_progress_shortcut_hint_label.offset_right = JOURNAL_CONTENT_RIGHT
 	optional_progress_shortcut_hint_label.offset_bottom = JOURNAL_HINT_BOTTOM
+	optional_progress_shortcut_hint_label.visible = true
 
 
 func _configure_interaction_history_label() -> void:

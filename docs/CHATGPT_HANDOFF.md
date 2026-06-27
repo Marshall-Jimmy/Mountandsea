@@ -79,17 +79,19 @@
 ## 当前开放 PR
 
 ### PR #37: game: polish optional journal controls
-- **状态：** Draft PR opened / pending Godot GUI manual test
+- **状态：** Draft PR；用户 GUI 手测发现 shortcut hint label 未显示，本次已追加修复，等待用户复测
 - **Branch：** `game/optional-journal-controls-polish`
 - **链接：** https://github.com/Marshall-Jimmy/Mountandsea/pull/37
 - 为 `minimal_playable_demo` 的 optional journal 增加 keyboard shortcuts：`J` 切换隐藏 / 显示，`V` 切换简洁 / 详细视图。
-- 在 journal panel 内新增快捷键提示：`快捷键：J 隐藏/显示，V 简洁/详细`。
+- 用户 GUI 手测发现 journal panel 内未显示快捷键提示。
+- 本次追加修复将提示设为固定单行小字号、增加可用高度并显式设为可见，文案为：`快捷键：J 隐藏/显示，V 简洁/详细`。
+- 回归测试补充 shortcut hint label 的存在、可见、非空、包含 `J` / `V`，以及不与 journal buttons、progress label、history label 重叠的断言。
 - 将 optional journal layout offsets 提取为局部常量，并拆分 panel title、progress label、history label、buttons 和 shortcut hint 的配置 helper。
 - 保持 PR #36 的 overlap 修复：progress 与 history 分区显示，history UI 只显示最近 5 条，内部 `interaction_history` 不截断。
 - 不改变 optional state、不新增 save fields、不改变 data-driven optional content 设计。
 - 未修改 Snowhuman Framework addon。
-- 验证已通过：`python tools/validate_data.py`、`python tools/check_framework.py`、`python tools/validate_minimal_demo.py`、`git diff --check`、`git diff --stat`，以及显式 Snowhuman Framework keyword scan。
-- Godot GUI manual test reserved for user；本 PR 不允许自动合并。
+- 本次追加修复验证：`python tools/validate_data.py` 和 `python tools/check_framework.py` passed；`python tools/validate_minimal_demo.py` 的 data / framework / keyword scan 子检查通过，但因当前环境找不到 Godot CLI，整体报告 incomplete，headless 回归未执行。
+- Godot GUI manual test 仍由用户完成；本 PR 不允许自动合并。
 
 ---
 
@@ -103,7 +105,7 @@
 - 显式 `InteractionHistoryToggleButton` 可折叠 / 展开右侧 journal/history panel 和左侧 live log，并保留 text/history。
 - PR #36 已合并：journal 支持 progress counters、compact/detail view toggle、recent completion hint，以及 readability / layout polish。
 - PR #36 已根据用户 GUI 手测反馈修复 journal layout overlap：progress 与 history 分区显示，history UI 只显示最近 5 条但不截断内部 history 数据。
-- PR #37 正在补充 optional journal keyboard shortcuts、shortcut hint label，并整理 layout constants/helper。
+- PR #37 正在补充 optional journal keyboard shortcuts、shortcut hint label，并整理 layout constants/helper；用户 GUI 手测发现提示未显示，本次已追加修复并等待用户复测。
 - PR #36 不改变 optional state 核心结构、不新增 save fields、不改变 data-driven optional content 设计。
 - Snowhuman Framework 保持通用；addon 内没有项目专用内容。
 
@@ -148,18 +150,18 @@ git diff --stat
 - 不改变 optional state、save fields 或 data-driven content。
 - 不移动 demo-specific 内容到 Snowhuman Framework。
 
-**状态：** Draft PR 已打开，等待用户 Godot GUI manual test；不要自动合并。
+**状态：** Draft PR 仍开放；用户 GUI 手测发现 shortcut hint label 未显示，本次已追加修复，等待用户复测；不要自动合并。
 
 **验证：**
 - `python tools/validate_data.py` passed
 - `python tools/check_framework.py` passed
-- `python tools/validate_minimal_demo.py` passed
+- `python tools/validate_minimal_demo.py`：data / framework / keyword scan 子检查通过；当前环境找不到 Godot CLI，因此整体 incomplete，headless 回归未执行
 - `git diff --check` passed；仅有 Windows line-ending warning
 - `git diff --stat` ran
 - 显式 Snowhuman Framework keyword scan for `zhuyu|shensheng|zaoyaoshan|祝余|狌狌|招摇山`：no matches
 
 **下一步：**
-- 用户进行 Godot GUI manual test，重点检查 `J` / `V` 快捷键、shortcut hint label 和 journal layout 是否正常。
+- 用户进行 Godot GUI manual test 复测，重点检查 `J` / `V` 快捷键、shortcut hint label 和 journal layout 是否正常。
 - GUI 手测通过后，由用户决定是否将 draft 标为 ready、merge 或继续反馈修改。
 
 ---

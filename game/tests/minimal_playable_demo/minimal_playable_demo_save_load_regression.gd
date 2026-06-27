@@ -621,13 +621,22 @@ func _assert_journal_labels_separated() -> void:
 	var journal_label := _get_journal_label()
 	var history_label := demo.get_node_or_null("CanvasLayer/InteractionHistoryPanel/InteractionHistoryLabel") as Label
 	var hint_label := demo.get_node_or_null("CanvasLayer/InteractionHistoryPanel/OptionalProgressShortcutHintLabel") as Label
+	var view_toggle_button := demo.get_node_or_null("CanvasLayer/InteractionHistoryPanel/OptionalProgressViewToggleButton") as Button
+	var history_toggle_button := demo.get_node_or_null("CanvasLayer/InteractionHistoryToggleButton") as Button
 	_assert_true(history_label != null, "interaction history label must exist")
 	_assert_true(hint_label != null, "optional progress shortcut hint label must exist")
-	if journal_label == null or history_label == null or hint_label == null:
+	_assert_true(view_toggle_button != null, "optional progress view toggle button must exist")
+	_assert_true(history_toggle_button != null, "interaction history toggle button must exist")
+	if journal_label == null or history_label == null or hint_label == null or view_toggle_button == null or history_toggle_button == null:
 		return
 
 	_assert_true(hint_label.offset_bottom <= journal_label.offset_top, "shortcut hint should end before journal label starts")
 	_assert_true(journal_label.offset_bottom <= history_label.offset_top, "journal label should end before history label starts")
+	var hint_rect := hint_label.get_global_rect()
+	_assert_true(not hint_rect.intersects(view_toggle_button.get_global_rect()), "shortcut hint should not overlap compact/detail view button")
+	_assert_true(not hint_rect.intersects(history_toggle_button.get_global_rect()), "shortcut hint should not overlap hide/show journal button")
+	_assert_true(not hint_rect.intersects(journal_label.get_global_rect()), "shortcut hint should not overlap optional progress label")
+	_assert_true(not hint_rect.intersects(history_label.get_global_rect()), "shortcut hint should not overlap interaction history label")
 	_assert_true(hint_label.clip_text == true, "shortcut hint label should clip text inside its fixed area")
 	_assert_true(journal_label.clip_text == true, "journal label should clip text inside its fixed area")
 	_assert_true(history_label.clip_text == true, "history label should clip text inside its fixed area")
@@ -639,9 +648,14 @@ func _assert_shortcut_hint_label() -> void:
 	if hint_label == null:
 		return
 
+	_assert_true(hint_label.visible, "shortcut hint should be visible")
+	_assert_true(hint_label.is_visible_in_tree(), "shortcut hint should be visible while journal panel is shown")
+	_assert_true(not hint_label.text.strip_edges().is_empty(), "shortcut hint should not be empty")
 	_assert_true(hint_label.text.contains("快捷键"), "shortcut hint should explain keyboard controls")
 	_assert_true(hint_label.text.contains("J"), "shortcut hint should mention J")
 	_assert_true(hint_label.text.contains("V"), "shortcut hint should mention V")
+	_assert_true(hint_label.autowrap_mode == TextServer.AUTOWRAP_OFF, "shortcut hint should remain on one line")
+	_assert_true(hint_label.size.y >= hint_label.get_minimum_size().y, "shortcut hint should have enough height to render")
 
 
 func _assert_journal_save_fields_absent() -> void:
