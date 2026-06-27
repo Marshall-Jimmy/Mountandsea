@@ -109,7 +109,7 @@ agent 开始任何新任务前，必须先确认当前操作的本地 checkout /
 2. 若存在未提交改动，不得擅自 `reset --hard`、`clean -fd`、`stash drop` 或覆盖用户改动；必须停止并报告用户处理。
 3. 若工作区干净，切回 `master`。
 4. 运行 `git fetch origin`。
-5. 运行 `git pull --ff-only origin master`，确保本地 `master` 与远端同步。
+5. 运行 `git merge --ff-only origin/master`，确保本地 `master` 与远端同步。
 6. 再从最新 `master` 创建任务分支或任务 worktree。
 7. 如果任务需要在已有 PR 分支上继续，应先 `git fetch origin`，再确认当前分支与远端 PR head 的关系，避免基于过期提交继续开发。
 
@@ -147,29 +147,102 @@ agent 只有在同时满足以下条件时，才可以自动合并 PR：
 
 agent 不得自动合并 feature PR、gameplay PR、save/load PR、test PR、Godot scene PR、framework PR、schema PR、CI PR、tooling PR 或 project settings PR。这些 PR 必须经过用户 review；Godot GUI 手动测试仍然由用户完成。
 
-### 自动合并后的本地同步规则
+允许自动合并时，默认使用 squash merge，除非用户明确要求其他合并方式。合并成功后，必须按照“PR 合并后的本地同步规则”同步当前本地 checkout / worktree，并确认工作区干净。
 
-当 agent 被明确允许自动合并 PR，并且 PR 已成功合并后，agent 必须同步其当前操作的本地 checkout / worktree：
+---
 
-1. 切回 `master`。
-2. 拉取最新 `origin/master`。
-3. 确认本地 `master` 已包含刚刚合并的 commit。
-4. 删除本次任务使用的本地功能分支。
-5. 删除本次任务使用的远程功能分支，如果远程分支仍然存在。
-6. 运行 `git status --short`，确认工作区干净。
-7. 在最终汇报中说明：
-   - PR 编号
-   - merge commit SHA
-   - 本地 `master` 当前 HEAD
-   - 本地同步是否完成
-   - 本地和远程功能分支是否已清理
-   - 工作区是否干净
+## PR 合并后的本地同步规则
 
-同步前必须先确认当前本地 checkout / worktree 没有未提交改动。若存在未提交改动，agent 不得擅自 `reset --hard`、`clean -fd`、`stash drop` 或覆盖用户改动；应停止同步并报告需要用户处理。
+PR 合并后，agent 不得把仓库留在旧 feature branch、旧 `master` 或未同步状态。无论 PR 是由 agent 自动合并，还是用户在 GitHub 页面手动合并，只要 agent 确认 PR 已合并，任务结束前都必须同步当前操作的本地 `master` 到最新 `origin/master`。
 
-agent 只能同步自己当前操作的本地 checkout / worktree。不要假定用户电脑上的其他仓库目录也已同步，除非任务提示明确给出了对应路径并要求处理。
+本节只在 PR 已确认合并后触发；尚未合并的 draft / open PR 继续按照“任务结束后的 worktree / 临时目录清理规则”保留需要后续验证或开发的分支和 worktree。
 
-允许自动合并时，默认使用 squash merge，除非用户明确要求其他合并方式。合并成功后，必须按照“自动合并后的本地同步规则”同步当前本地 checkout / worktree，并确认工作区干净。
+### 标准收尾流程
+
+同步前先运行 `git status --short`。若存在未提交改动，必须先按本节的安全规则判断；不得直接切分支或覆盖文件。
+
+标准收尾命令：
+
+```
+git fetch origin
+git checkout master
+git merge --ff-only origin/master
+git status --short
+git log --oneline -5
+```
+
+要求：
+
+- 本地 `master` 必须快进到 `origin/master`。
+- `git status --short` 必须为空。
+- `git log --oneline -5` 中应能看到刚合并 PR 的 merge / squash commit。
+- 未完成以上同步，不得汇报“任务完成”。
+- 如果因未提交改动、冲突、权限或其他原因无法切回或同步，必须明确报告实际阻塞，不能假装完成。
+- agent 只能同步自己当前操作的 checkout / worktree；除非任务明确要求，不得声称用户电脑上的其他仓库目录也已同步。
+- 最终汇报必须包含 PR 编号、merge commit SHA、本地 `master` HEAD、本地同步结果、本地/远程分支与 worktree 清理结果，以及 `git status --short` 是否为空。
+
+### `git pull` 配置错误处理
+
+仓库曾出现 `Cannot fast-forward to multiple branches`。如果 `git pull --ff-only origin master` 因本地 pull 配置报错，agent 不应卡住、结束任务或跳过同步，应改用：
+
+```
+git fetch origin
+git merge --ff-only origin/master
+```
+
+### 已合并分支和 worktree 清理
+
+PR 已合并后，不应继续停留在已合并的 feature branch。完成 `master` 同步后：
+
+- 如果没有未提交改动，应删除本次已合并的本地 feature branch。
+- 如果远程 feature branch 仍存在，应在任务范围和权限允许时删除；否则明确报告给用户。
+- 如果使用了 Git worktree，应在确认对应 worktree 干净后清理。
+- 清理前必须运行 `git status --short`。
+- Git worktree 优先使用：
+
+```
+git worktree remove <path>
+git worktree prune
+```
+
+- 不得使用 `--force`，除非用户明确同意。
+- 不得删除用户其他仓库目录、来源不明的目录或不属于本次任务的 worktree。
+
+### Godot 自动脏文件安全处理
+
+如果同步或打开 Godot 后只出现明确的 Godot 自动脏文件，例如：
+
+```
+ M game/project.godot
+ M game/scenes/demo/minimal_playable_demo.tscn
+?? game/tests/example.gd.uid
+```
+
+只有在同时满足以下条件时，才可以备份后定点清理：
+
+- `git status --short` 中没有 staged changes。
+- `git diff` 已确认 tracked files 仅包含 Godot 自动序列化内容，例如 `uid`、`unique_id`、`layout_mode` 或等价的无行为变化格式化。
+- 所有待恢复 tracked files 都在本次确认的白名单中。
+- 所有待删除文件都是 `git status --short` 明确列出的 `.uid` 文件。
+
+安全步骤：
+
+1. 使用唯一、明确的文件名把 patch 保存到仓库外，例如 `git diff > ../Mountandsea-dirty-before-cleanup.patch`。
+2. 使用 `git restore -- <白名单 tracked files>` 定点恢复。
+3. 使用 `rm -f <已列出的 uid>` 或 PowerShell `Remove-Item -LiteralPath <已列出的 uid>` 逐个删除 `.uid`。
+4. 再次运行 `git status --short`，确认工作区干净。
+
+禁止使用 `git reset --hard`、`git clean -fd`、`stash drop`，也不得删除 `git status --short` 中未列出的文件。
+
+### 真实源码改动必须停止
+
+如果 `git status --short` 中出现以下任一情况，agent 必须停止并请求用户确认，不能自动丢弃：
+
+- staged changes。
+- 非白名单源码改动。
+- 新增 `.gd`、`.tscn`、`.png`、`.json`、`.md` 等非 `.uid` 文件。
+- Snowhuman Framework addon、schemas、CI 或 tooling 改动。
+- 任何无法判断来源或是否有行为影响的改动。
 
 ---
 
