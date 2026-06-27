@@ -21,6 +21,26 @@ const MAX_HISTORY_EVENTS := 8
 const HISTORY_UI_RECENT_LIMIT := 5
 const OPTIONAL_PROGRESS_DETAIL_LINE_LIMIT := 10
 const OPTIONAL_PROGRESS_COMPACT_LINE_LIMIT := 6
+const JOURNAL_SHORTCUT_HINT_TEXT := "快捷键：J 隐藏/显示，V 简洁/详细"
+const JOURNAL_SHORTCUT_HINT_FONT_SIZE := 13
+const JOURNAL_PANEL_TOP := 248.0
+const JOURNAL_PANEL_BOTTOM := 600.0
+const JOURNAL_CONTENT_LEFT := 16.0
+const JOURNAL_CONTENT_RIGHT := 250.0
+const JOURNAL_TITLE_RIGHT := 148.0
+const JOURNAL_VIEW_BUTTON_LEFT := 154.0
+const JOURNAL_TITLE_TOP := 8.0
+const JOURNAL_TITLE_BOTTOM := 36.0
+const JOURNAL_HINT_TOP := 44.0
+const JOURNAL_HINT_BOTTOM := 68.0
+const JOURNAL_PROGRESS_TOP := 76.0
+const JOURNAL_PROGRESS_BOTTOM := 224.0
+const JOURNAL_HISTORY_TOP := 238.0
+const JOURNAL_HISTORY_BOTTOM := 340.0
+const JOURNAL_TOGGLE_BUTTON_LEFT := 884.0
+const JOURNAL_TOGGLE_BUTTON_TOP := 208.0
+const JOURNAL_TOGGLE_BUTTON_RIGHT := 1010.0
+const JOURNAL_TOGGLE_BUTTON_BOTTOM := 240.0
 
 enum DemoStep {
 	COLLECT_ZHUYU,
@@ -81,6 +101,7 @@ var optional_state := {}
 var optional_near_state := {}
 var optional_progress_journal_label: Label
 var optional_progress_view_toggle_button: Button
+var optional_progress_shortcut_hint_label: Label
 var optional_progress_detail_view := true
 var recent_optional_completion_name := ""
 var interaction_history_panel_visible := true
@@ -89,6 +110,8 @@ var was_near_stone := false
 var was_near_shensheng := false
 var was_interact_key_pressed := false
 var was_menu_toggle_key_pressed := false
+var was_journal_toggle_key_pressed := false
+var was_progress_view_toggle_key_pressed := false
 
 
 func _ready() -> void:
@@ -270,14 +293,17 @@ func _process(delta: float) -> void:
 	_handle_menu_toggle_input()
 
 	if not initialized:
+		_sync_journal_shortcut_key_state()
 		return
 
 	if _is_ui_blocking_gameplay():
 		prompt_label.visible = false
 		was_interact_key_pressed = Input.is_key_pressed(KEY_E)
+		_sync_journal_shortcut_key_state()
 		_update_objective_guidance()
 		return
 
+	_handle_journal_shortcut_input()
 	_move_player(delta)
 	_update_prompt()
 	_handle_interaction_input()
@@ -316,51 +342,92 @@ func _configure_interaction_history_panel() -> void:
 	if interaction_history_panel == null:
 		return
 
-	interaction_history_panel.offset_top = 248.0
-	interaction_history_panel.offset_bottom = 600.0
+	_configure_interaction_history_panel_bounds()
+	_configure_interaction_history_title()
+	_configure_optional_progress_view_toggle_button()
+	_configure_optional_progress_shortcut_hint_label()
+	_configure_optional_progress_label()
+	_configure_interaction_history_label()
+	_configure_interaction_history_toggle_button()
+
+
+func _configure_interaction_history_panel_bounds() -> void:
+	interaction_history_panel.offset_top = JOURNAL_PANEL_TOP
+	interaction_history_panel.offset_bottom = JOURNAL_PANEL_BOTTOM
+
+
+func _configure_interaction_history_title() -> void:
 	var title_label := interaction_history_panel.get_node_or_null("InteractionHistoryTitleLabel") as Label
 	if title_label != null:
 		title_label.text = "可选进度"
-		title_label.offset_right = 148.0
+		title_label.offset_top = JOURNAL_TITLE_TOP
+		title_label.offset_right = JOURNAL_TITLE_RIGHT
+		title_label.offset_bottom = JOURNAL_TITLE_BOTTOM
 
+
+func _configure_optional_progress_label() -> void:
 	if optional_progress_journal_label == null:
 		optional_progress_journal_label = Label.new()
 		optional_progress_journal_label.name = "OptionalProgressJournalLabel"
 		optional_progress_journal_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		interaction_history_panel.add_child(optional_progress_journal_label)
 	optional_progress_journal_label.clip_text = true
+	optional_progress_journal_label.offset_left = JOURNAL_CONTENT_LEFT
+	optional_progress_journal_label.offset_top = JOURNAL_PROGRESS_TOP
+	optional_progress_journal_label.offset_right = JOURNAL_CONTENT_RIGHT
+	optional_progress_journal_label.offset_bottom = JOURNAL_PROGRESS_BOTTOM
 
+
+func _configure_optional_progress_view_toggle_button() -> void:
 	if optional_progress_view_toggle_button == null:
 		optional_progress_view_toggle_button = Button.new()
 		optional_progress_view_toggle_button.name = "OptionalProgressViewToggleButton"
 		interaction_history_panel.add_child(optional_progress_view_toggle_button)
 		var progress_view_toggle_callable := Callable(self, "_on_optional_progress_view_toggle_pressed")
 		optional_progress_view_toggle_button.pressed.connect(progress_view_toggle_callable)
-	optional_progress_view_toggle_button.offset_left = 154.0
-	optional_progress_view_toggle_button.offset_top = 8.0
-	optional_progress_view_toggle_button.offset_right = 250.0
-	optional_progress_view_toggle_button.offset_bottom = 36.0
+	optional_progress_view_toggle_button.offset_left = JOURNAL_VIEW_BUTTON_LEFT
+	optional_progress_view_toggle_button.offset_top = JOURNAL_TITLE_TOP
+	optional_progress_view_toggle_button.offset_right = JOURNAL_CONTENT_RIGHT
+	optional_progress_view_toggle_button.offset_bottom = JOURNAL_TITLE_BOTTOM
 	optional_progress_view_toggle_button.visible = true
 	_update_optional_progress_view_toggle_text()
 
-	optional_progress_journal_label.offset_left = 16.0
-	optional_progress_journal_label.offset_top = 44.0
-	optional_progress_journal_label.offset_right = 250.0
-	optional_progress_journal_label.offset_bottom = 218.0
 
+func _configure_optional_progress_shortcut_hint_label() -> void:
+	if optional_progress_shortcut_hint_label == null:
+		optional_progress_shortcut_hint_label = Label.new()
+		optional_progress_shortcut_hint_label.name = "OptionalProgressShortcutHintLabel"
+		interaction_history_panel.add_child(optional_progress_shortcut_hint_label)
+	optional_progress_shortcut_hint_label.text = JOURNAL_SHORTCUT_HINT_TEXT
+	optional_progress_shortcut_hint_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	optional_progress_shortcut_hint_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	optional_progress_shortcut_hint_label.add_theme_font_size_override("font_size", JOURNAL_SHORTCUT_HINT_FONT_SIZE)
+	optional_progress_shortcut_hint_label.clip_text = true
+	optional_progress_shortcut_hint_label.offset_left = JOURNAL_CONTENT_LEFT
+	optional_progress_shortcut_hint_label.offset_top = JOURNAL_HINT_TOP
+	optional_progress_shortcut_hint_label.offset_right = JOURNAL_CONTENT_RIGHT
+	optional_progress_shortcut_hint_label.offset_bottom = JOURNAL_HINT_BOTTOM
+	optional_progress_shortcut_hint_label.visible = true
+
+
+func _configure_interaction_history_label() -> void:
 	if interaction_history_label != null:
 		interaction_history_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		interaction_history_label.clip_text = true
 		interaction_history_label.max_lines_visible = HISTORY_UI_RECENT_LIMIT + 1
-		interaction_history_label.offset_top = 234.0
-		interaction_history_label.offset_bottom = 340.0
+		interaction_history_label.offset_left = JOURNAL_CONTENT_LEFT
+		interaction_history_label.offset_top = JOURNAL_HISTORY_TOP
+		interaction_history_label.offset_right = JOURNAL_CONTENT_RIGHT
+		interaction_history_label.offset_bottom = JOURNAL_HISTORY_BOTTOM
 
+
+func _configure_interaction_history_toggle_button() -> void:
 	if interaction_history_toggle_button == null:
 		return
-	interaction_history_toggle_button.offset_left = 884.0
-	interaction_history_toggle_button.offset_top = 208.0
-	interaction_history_toggle_button.offset_right = 1010.0
-	interaction_history_toggle_button.offset_bottom = 240.0
+	interaction_history_toggle_button.offset_left = JOURNAL_TOGGLE_BUTTON_LEFT
+	interaction_history_toggle_button.offset_top = JOURNAL_TOGGLE_BUTTON_TOP
+	interaction_history_toggle_button.offset_right = JOURNAL_TOGGLE_BUTTON_RIGHT
+	interaction_history_toggle_button.offset_bottom = JOURNAL_TOGGLE_BUTTON_BOTTOM
 	interaction_history_toggle_button.visible = true
 	_update_interaction_history_toggle_text()
 
@@ -382,6 +449,24 @@ func _update_optional_progress_view_toggle_text() -> void:
 
 func _on_interaction_history_toggle_pressed() -> void:
 	_set_interaction_history_panel_visible(not interaction_history_panel_visible)
+
+
+func _handle_journal_shortcut_input() -> void:
+	var journal_toggle_key_pressed := Input.is_key_pressed(KEY_J)
+	var progress_view_toggle_key_pressed := Input.is_key_pressed(KEY_V)
+
+	if journal_toggle_key_pressed and not was_journal_toggle_key_pressed:
+		_on_interaction_history_toggle_pressed()
+	if progress_view_toggle_key_pressed and not was_progress_view_toggle_key_pressed:
+		_on_optional_progress_view_toggle_pressed()
+
+	was_journal_toggle_key_pressed = journal_toggle_key_pressed
+	was_progress_view_toggle_key_pressed = progress_view_toggle_key_pressed
+
+
+func _sync_journal_shortcut_key_state() -> void:
+	was_journal_toggle_key_pressed = Input.is_key_pressed(KEY_J)
+	was_progress_view_toggle_key_pressed = Input.is_key_pressed(KEY_V)
 
 
 func _set_interaction_history_panel_visible(is_visible: bool) -> void:
