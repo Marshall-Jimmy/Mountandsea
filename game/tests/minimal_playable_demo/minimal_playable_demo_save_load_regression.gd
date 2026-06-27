@@ -452,6 +452,25 @@ func _assert_player_animation_pipeline() -> void:
 		return
 	_assert_true(player_sprite.visible, "player AnimatedSprite2D must be visible")
 	_assert_true(player_sprite.is_visible_in_tree(), "player AnimatedSprite2D must be visible in the scene tree")
+	_assert_true(
+		player_sprite.scale.x >= 0.18 and player_sprite.scale.y >= 0.18,
+		"player sprite must be large enough to remain readable in the demo"
+	)
+	_assert_true(
+		player_sprite.texture_filter == CanvasItem.TEXTURE_FILTER_LINEAR,
+		"player sprite must use linear filtering for non-pixel art"
+	)
+	var polygon_fallback := player as Polygon2D
+	_assert_true(polygon_fallback != null, "player Polygon2D fallback must exist")
+	if polygon_fallback != null:
+		_assert_true(
+			polygon_fallback.color.a <= 0.05,
+			"player Polygon2D fallback must remain visually hidden"
+		)
+		_assert_true(
+			player_sprite.z_index > polygon_fallback.z_index,
+			"player sprite must render above the Polygon2D fallback"
+		)
 
 	var sprite_frames := player_sprite.sprite_frames
 	_assert_true(sprite_frames != null, "player sprite frames must exist")
@@ -464,6 +483,7 @@ func _assert_player_animation_pipeline() -> void:
 	_assert_true(sprite_frames.get_frame_count(&"walk") >= 4, "walk animation must include at least 4 frames")
 	_assert_animation_frame_sources(sprite_frames, &"idle")
 	_assert_animation_frame_sources(sprite_frames, &"walk")
+	_assert_player_sprite_sheet_readability()
 
 	_assert_player_animation_state(PLAYER_ANIMATION_STATE_IDLE, &"idle")
 	_assert_true(player_sprite.is_playing(), "player idle animation should be playing initially")
@@ -498,6 +518,37 @@ func _assert_animation_frame_sources(sprite_frames: SpriteFrames, animation_name
 			frame_texture.region.size == Vector2(512.0, 512.0),
 			"%s frame %d must be 512x512" % [animation_name, frame_index]
 		)
+
+
+func _assert_player_sprite_sheet_readability() -> void:
+	var sprite_sheet := Image.load_from_file(ProjectSettings.globalize_path(PLAYER_SPRITE_SHEET_PATH))
+	_assert_true(sprite_sheet != null, "player sprite sheet image must load")
+	if sprite_sheet == null:
+		return
+	_assert_true(sprite_sheet.get_width() == 512 * 6, "player sprite sheet must contain six horizontal frames")
+	_assert_true(sprite_sheet.get_height() == 512, "player sprite sheet frames must be 512 pixels tall")
+
+	var frame_data: Array[PackedByteArray] = []
+	for frame_index in 6:
+		var frame_image := sprite_sheet.get_region(Rect2i(frame_index * 512, 0, 512, 512))
+		var used_rect := frame_image.get_used_rect()
+		_assert_true(
+			used_rect.size.x >= 240 and used_rect.size.y >= 400,
+			"player frame %d must use enough canvas area to remain readable" % frame_index
+		)
+		frame_data.append(frame_image.get_data())
+
+	_assert_true(frame_data[0] != frame_data[1], "idle frames must contain visible motion or glow changes")
+	for walk_frame_index in range(2, 6):
+		_assert_true(
+			frame_data[walk_frame_index] != frame_data[0] and frame_data[walk_frame_index] != frame_data[1],
+			"walk frame %d must differ from idle frames" % (walk_frame_index - 2)
+		)
+		for previous_walk_frame_index in range(2, walk_frame_index):
+			_assert_true(
+				frame_data[walk_frame_index] != frame_data[previous_walk_frame_index],
+				"walk frame %d must differ from earlier walk frames" % (walk_frame_index - 2)
+			)
 
 
 func _assert_player_animation_state(expected_state: int, expected_animation: StringName) -> void:

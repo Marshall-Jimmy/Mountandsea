@@ -73,8 +73,9 @@ polygon = PackedVector2Array(-20, -20, 20, -20, 20, 20, -20, 20)
 [node name="PlayerSprite" type="AnimatedSprite2D" parent="WorldRoot/Player"]
 unique_name_in_owner = true
 texture_filter = 2
-position = Vector2(0, -8)
-scale = Vector2(0.12, 0.12)
+position = Vector2(0, -12)
+scale = Vector2(0.2, 0.2)
+z_index = 10
 sprite_frames = SubResource("SpriteFrames_demo_player")
 animation = &"idle"
 
