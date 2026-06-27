@@ -95,9 +95,10 @@
 
 ## 当前开放 PR
 
-### Draft PR 待创建: game: add art-guided demo animation state machine
-- **状态：** 本地实现中 / pending draft PR / pending Godot GUI manual test
+### PR #39: game: add art-guided demo animation state machine
+- **状态：** Draft PR / pending Godot GUI manual test
 - **Branch：** `game/demo-animation-state-machine`
+- **链接：** https://github.com/Marshall-Jimmy/Mountandsea/pull/39
 - **美术依据：**
   - `docs/art-direction-materials.md`
   - `docs/山海经附录5-工程路线图.md`
@@ -175,7 +176,7 @@ git diff --stat
 
 ## 当前建议的下一项功能
 
-**Current active PR：** `game: add art-guided demo animation state machine`（draft PR 待创建）
+**Current active PR：** `game: add art-guided demo animation state machine`（PR #39）
 
 **目标：**
 - 根据 `docs/art-direction-materials.md` 生成可复现的 demo-local player placeholder sprite sheet。
@@ -185,7 +186,7 @@ git diff --stat
 - 不改变 optional state、save fields 或 data-driven content。
 - 不移动 demo-specific 内容到 Snowhuman Framework。
 
-**状态：** 本地实现与 headless regression 已完成，待创建 draft PR；Godot GUI manual test reserved for user；不要自动合并。
+**状态：** Draft PR 已创建，headless regression 已完成；Godot GUI manual test reserved for user；不要自动合并。
 
 **验证：**
 - `python tools/validate_data.py` passed
@@ -197,7 +198,6 @@ git diff --stat
 - 显式 Snowhuman Framework keyword scan for `zhuyu|shensheng|zaoyaoshan|祝余|狌狌|招摇山`：no matches
 
 **下一步：**
-- 创建 draft PR。
 - 用户进行 Godot GUI manual test，重点检查 player idle/walk 动画、移动切换、reset/load 后 idle，以及 journal/interaction 行为未回归。
 
 ---
