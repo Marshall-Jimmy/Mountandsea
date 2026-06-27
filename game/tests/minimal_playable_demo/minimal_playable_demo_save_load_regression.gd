@@ -16,6 +16,9 @@ const MIGU_BRANCH_INTERACTABLE_ID := "collect_migu_branch"
 const BASIC_ORE_INTERACTABLE_ID := "collect_basic_ore"
 const LUSHU_INTERACTABLE_ID := "observe_lushu"
 const GENERIC_BEAST_INTERACTABLE_ID := "observe_generic_beast"
+const PLAYER_SPRITE_SHEET_PATH := "res://assets/demo/placeholder_sprites/demo_player_idle_walk.png"
+const PLAYER_ANIMATION_STATE_IDLE := 0
+const PLAYER_ANIMATION_STATE_WALK := 1
 const STEP_COLLECT_ZHUYU := 0
 const STEP_OBSERVE_SHENSHENG := 2
 const STEP_COMPLETE := 3
@@ -46,6 +49,7 @@ func _run_test() -> void:
 	player = demo.get_node_or_null("WorldRoot/Player")
 	_assert_true(player != null, "Player node must exist")
 	_assert_true(demo.get("initialized") == true, "Demo must initialize services")
+	_assert_player_animation_pipeline()
 	_assert_history_panel_visible(true)
 	_assert_initial_journal_state()
 	_assert_progress_view_toggle_preserves_history("Demo 开始")
@@ -73,8 +77,12 @@ func _run_test() -> void:
 	_assert_history_contains("Demo 已重置")
 	_assert_history_not_contains("采集祝余叶")
 
+	var animation_state_machine := _get_player_animation_state_machine()
+	if animation_state_machine != null:
+		animation_state_machine.call("set_moving", true)
 	demo.call("_on_load_demo_pressed")
 	_assert_vec2_near(player.position, saved_position, "load should restore saved player position")
+	_assert_player_animation_state(PLAYER_ANIMATION_STATE_IDLE, &"idle")
 	_assert_state_after_stone_activation()
 	_assert_history_contains("采集祝余叶")
 	_assert_history_contains("激活山海石碑")
@@ -434,6 +442,105 @@ func _assert_journal_status(display_name: String, expected_status: String) -> vo
 	_assert_true(journal_label.text.contains(expected_text), "journal should contain %s, actual=%s" % [expected_text, journal_label.text])
 
 
+func _assert_player_animation_pipeline() -> void:
+	var player_sprite := demo.get_node_or_null("WorldRoot/Player/PlayerSprite") as AnimatedSprite2D
+	var animation_state_machine := _get_player_animation_state_machine()
+	_assert_true(player_sprite != null, "player AnimatedSprite2D must exist")
+	_assert_true(animation_state_machine != null, "player animation state machine must exist")
+	_assert_true(ResourceLoader.exists(PLAYER_SPRITE_SHEET_PATH), "player sprite sheet resource path must exist")
+	if player_sprite == null or animation_state_machine == null:
+		return
+	_assert_true(player_sprite.visible, "player AnimatedSprite2D must be visible")
+	_assert_true(player_sprite.is_visible_in_tree(), "player AnimatedSprite2D must be visible in the scene tree")
+
+	var sprite_frames := player_sprite.sprite_frames
+	_assert_true(sprite_frames != null, "player sprite frames must exist")
+	if sprite_frames == null:
+		return
+
+	_assert_true(sprite_frames.has_animation(&"idle"), "player sprite frames must include idle")
+	_assert_true(sprite_frames.has_animation(&"walk"), "player sprite frames must include walk")
+	_assert_true(sprite_frames.get_frame_count(&"idle") >= 2, "idle animation must include at least 2 frames")
+	_assert_true(sprite_frames.get_frame_count(&"walk") >= 4, "walk animation must include at least 4 frames")
+	_assert_animation_frame_sources(sprite_frames, &"idle")
+	_assert_animation_frame_sources(sprite_frames, &"walk")
+
+	_assert_player_animation_state(PLAYER_ANIMATION_STATE_IDLE, &"idle")
+	_assert_true(player_sprite.is_playing(), "player idle animation should be playing initially")
+
+	animation_state_machine.call("set_movement_vector", Vector2.RIGHT)
+	_assert_player_animation_state(PLAYER_ANIMATION_STATE_WALK, &"walk")
+	var walk_play_count := int(animation_state_machine.get("animation_play_count"))
+	animation_state_machine.call("set_movement_vector", Vector2.RIGHT)
+	_assert_true(
+		int(animation_state_machine.get("animation_play_count")) == walk_play_count,
+		"setting the same movement state should not restart the walk animation"
+	)
+
+	animation_state_machine.call("set_movement_vector", Vector2.ZERO)
+	_assert_player_animation_state(PLAYER_ANIMATION_STATE_IDLE, &"idle")
+	_assert_player_animation_save_fields_absent()
+
+
+func _assert_animation_frame_sources(sprite_frames: SpriteFrames, animation_name: StringName) -> void:
+	for frame_index in sprite_frames.get_frame_count(animation_name):
+		var frame_texture := sprite_frames.get_frame_texture(animation_name, frame_index) as AtlasTexture
+		_assert_true(frame_texture != null, "%s frame %d must use an AtlasTexture" % [animation_name, frame_index])
+		if frame_texture == null:
+			continue
+		_assert_true(frame_texture.atlas != null, "%s frame %d must reference the sprite sheet" % [animation_name, frame_index])
+		if frame_texture.atlas != null:
+			_assert_true(
+				frame_texture.atlas.resource_path == PLAYER_SPRITE_SHEET_PATH,
+				"%s frame %d should use %s" % [animation_name, frame_index, PLAYER_SPRITE_SHEET_PATH]
+			)
+		_assert_true(
+			frame_texture.region.size == Vector2(512.0, 512.0),
+			"%s frame %d must be 512x512" % [animation_name, frame_index]
+		)
+
+
+func _assert_player_animation_state(expected_state: int, expected_animation: StringName) -> void:
+	var player_sprite := demo.get_node_or_null("WorldRoot/Player/PlayerSprite") as AnimatedSprite2D
+	var animation_state_machine := _get_player_animation_state_machine()
+	if player_sprite == null or animation_state_machine == null:
+		return
+
+	_assert_true(
+		int(animation_state_machine.get("current_state")) == expected_state,
+		"player animation state should be %d" % expected_state
+	)
+	_assert_true(
+		animation_state_machine.get("current_animation_name") == expected_animation,
+		"player animation name should be %s" % expected_animation
+	)
+	_assert_true(
+		player_sprite.animation == expected_animation,
+		"AnimatedSprite2D should play %s" % expected_animation
+	)
+
+
+func _assert_player_animation_save_fields_absent() -> void:
+	var save_data: Variant = demo.call("get_save_data")
+	_assert_true(save_data is Dictionary, "save data should be a Dictionary")
+	if not (save_data is Dictionary):
+		return
+
+	_assert_true(not save_data.has("player_animation_state"), "save data should not persist player animation state")
+	_assert_true(not save_data.has("current_animation_name"), "save data should not persist player animation name")
+	var player_data: Variant = save_data.get("player", {})
+	_assert_true(player_data is Dictionary, "player save data should be a Dictionary")
+	if player_data is Dictionary:
+		_assert_true(not player_data.has("animation_state"), "player save data should not persist animation state")
+		_assert_true(not player_data.has("animation"), "player save data should not persist animation name")
+
+
+func _get_player_animation_state_machine() -> Node:
+	var animation_state_machine := demo.get_node_or_null("WorldRoot/Player/PlayerAnimationStateMachine")
+	_assert_true(animation_state_machine != null, "player animation state machine must exist")
+	return animation_state_machine
+
+
 func _assert_initial_journal_state() -> void:
 	_ensure_detail_journal_view()
 	_assert_shortcut_hint_label()
@@ -562,8 +669,13 @@ func _assert_reset_preserves_compact_journal_view() -> void:
 	_ensure_detail_journal_view()
 	demo.call("_on_optional_progress_view_toggle_pressed")
 	_assert_true(demo.get("optional_progress_detail_view") == false, "journal should be compact before reset")
+	var animation_state_machine := _get_player_animation_state_machine()
+	if animation_state_machine != null:
+		animation_state_machine.call("set_moving", true)
+	_assert_player_animation_state(PLAYER_ANIMATION_STATE_WALK, &"walk")
 
 	demo.call("_reset_demo_state")
+	_assert_player_animation_state(PLAYER_ANIMATION_STATE_IDLE, &"idle")
 	_assert_true(demo.get("optional_progress_detail_view") == false, "reset should preserve runtime journal view mode")
 	_assert_journal_progress(0, _optional_total_count())
 	_assert_journal_recent("无")

@@ -74,13 +74,10 @@
 - 扩展 `minimal_playable_demo_save_load_regression.gd`，覆盖 progress counters、compact/detail toggle、recent completion、history preservation、reset、legacy optional load、不新增 save fields，以及 layout overlap regression。
 - 用户已完成 Godot GUI 复测，并确认 optional journal layout overlap 修复通过。
 
----
-
-## 当前开放 PR
-
 ### PR #37: game: polish optional journal controls
-- **状态：** Draft PR；用户 GUI 手测发现 shortcut hint label 未显示，本次已追加修复，等待用户复测
+- **状态：** 已合并
 - **Branch：** `game/optional-journal-controls-polish`
+- **Merge commit：** 571b2f5fa076c115a774d46c22e9136abb0f9d27
 - **链接：** https://github.com/Marshall-Jimmy/Mountandsea/pull/37
 - 为 `minimal_playable_demo` 的 optional journal 增加 keyboard shortcuts：`J` 切换隐藏 / 显示，`V` 切换简洁 / 详细视图。
 - 用户 GUI 手测发现 journal panel 内未显示快捷键提示。
@@ -91,8 +88,44 @@
 - 保持 PR #36 的 overlap 修复：progress 与 history 分区显示，history UI 只显示最近 5 条，内部 `interaction_history` 不截断。
 - 不改变 optional state、不新增 save fields、不改变 data-driven optional content 设计。
 - 未修改 Snowhuman Framework addon。
-- 本次追加修复验证：`python tools/validate_data.py`、`python tools/check_framework.py`、`python tools/validate_minimal_demo.py`、`git diff --check`、`git diff --stat` passed / ran；显式 Snowhuman Framework keyword scan 无匹配。
-- Godot GUI manual test 仍由用户完成；本 PR 不允许自动合并。
+- 追加修复验证：`python tools/validate_data.py`、`python tools/check_framework.py`、`python tools/validate_minimal_demo.py`、`git diff --check`、`git diff --stat` passed / ran；显式 Snowhuman Framework keyword scan 无匹配。
+- 用户已完成 PR #37 Godot GUI 手动测试。
+
+---
+
+## 当前开放 PR
+
+### Draft PR 待创建: game: add art-guided demo animation state machine
+- **状态：** 本地实现中 / pending draft PR / pending Godot GUI manual test
+- **Branch：** `game/demo-animation-state-machine`
+- **美术依据：**
+  - `docs/art-direction-materials.md`
+  - `docs/山海经附录5-工程路线图.md`
+  - `docs/山海经游戏设定集.md`
+  - `docs/third-party.md`
+- **美术约束摘要：**
+  - 画风为半写实东方手绘、青绿山水、动漫感、荒野生存、古朴神秘，优先俯视角表达。
+  - 色彩以墨青 `#193d3f`、深绿 `#327345`、雾蓝 `#4f6781` 为主，浅赭/陶土辅助，朱砂与青光作为强调。
+  - 角色使用 512×512 单帧画布，实际轮廓约占 300×450；强调清晰剪影和可读表情。文档未规定更具体的身体比例。
+  - 明确不采用像素风；使用自由缩放和平滑插值。
+  - 文档未规定 idle/walk 精确帧数、FPS 或最终 4/8 方向方案；本 demo 按任务最小范围使用 idle 2 帧、walk 4 帧，idle 2 FPS、walk 6 FPS。
+  - 禁止现代科幻 UI、纯欧美卡通、克苏鲁/现代怪兽、照片级写实和直接照搬《饥荒》焦黑哥特风格。
+  - 不引入外部版权素材；本 PR 的 PNG 完全由仓库内 Python 标准库脚本程序化生成。
+- 新增横向 `3072×512` player sprite sheet：frame `0-1` 为 idle，frame `2-5` 为 walk，每帧 `512×512`。
+- 新增 demo-local `DemoPlayerAnimationStateMachine`，集中管理 `IDLE` / `WALK` 与 `idle` / `walk` 映射；重复状态不会重启动画。
+- `minimal_playable_demo` 使用 `AnimatedSprite2D` 显示 player；移动代码只传入 movement vector，reset/load 回到 idle，动画状态不进入存档。
+- 回归测试覆盖资源路径、frame source、状态切换、重复状态、reset/load、journal/optional/save-load 回归和不新增 save fields。
+- 当前自动验证已通过；Godot GUI manual test reserved for user。
+
+---
+
+## 过期 / 关闭 PR
+
+### PR #38: game: add journal keyboard shortcuts and hints
+- **状态：** 已关闭、未合并
+- **Branch：** `game/journal-keyboard-shortcuts`
+- **链接：** https://github.com/Marshall-Jimmy/Mountandsea/pull/38
+- PR #38 是 PR #37 的过期重复 PR，不应继续开发或合并。
 
 ---
 
@@ -106,7 +139,8 @@
 - 显式 `InteractionHistoryToggleButton` 可折叠 / 展开右侧 journal/history panel 和左侧 live log，并保留 text/history。
 - PR #36 已合并：journal 支持 progress counters、compact/detail view toggle、recent completion hint，以及 readability / layout polish。
 - PR #36 已根据用户 GUI 手测反馈修复 journal layout overlap：progress 与 history 分区显示，history UI 只显示最近 5 条但不截断内部 history 数据。
-- PR #37 正在补充 optional journal keyboard shortcuts、shortcut hint label，并整理 layout constants/helper；用户 GUI 手测发现提示未显示，本次已追加修复并等待用户复测。
+- PR #37 已合并：journal 支持 `J` / `V` keyboard shortcuts、可见 shortcut hint 和防 overlap layout，并已完成用户 Godot GUI 手测。
+- 当前分支正在增加 art-guided demo-local player sprite、idle/walk animation 和独立 animation state machine。
 - PR #36 不改变 optional state 核心结构、不新增 save fields、不改变 data-driven optional content 设计。
 - Snowhuman Framework 保持通用；addon 内没有项目专用内容。
 
@@ -141,29 +175,30 @@ git diff --stat
 
 ## 当前建议的下一项功能
 
-**Current active PR：** `game: polish optional journal controls`（PR #37）
+**Current active PR：** `game: add art-guided demo animation state machine`（draft PR 待创建）
 
 **目标：**
-- 为 optional journal 增加 `J` 隐藏 / 显示和 `V` 简洁 / 详细视图 keyboard shortcuts。
-- 在 journal panel 内显示快捷键提示。
-- 将 optional journal layout offsets 提取为常量，并拆分更清晰的配置 helper。
-- 保持 PR #36 的 overlap 修复、progress counters、recent completion hint 和 history UI 最近 5 条展示。
+- 根据 `docs/art-direction-materials.md` 生成可复现的 demo-local player placeholder sprite sheet。
+- 使用 `AnimatedSprite2D` 接入 idle 2 帧和 walk 4 帧。
+- 使用独立 demo-local animation state machine 管理 `IDLE` / `WALK`，不在移动代码中复制动画状态逻辑。
+- reset/load 回 idle，save data 不持久化动画状态。
 - 不改变 optional state、save fields 或 data-driven content。
 - 不移动 demo-specific 内容到 Snowhuman Framework。
 
-**状态：** Draft PR 仍开放；用户 GUI 手测发现 shortcut hint label 未显示，本次已追加修复，等待用户复测；不要自动合并。
+**状态：** 本地实现与 headless regression 已完成，待创建 draft PR；Godot GUI manual test reserved for user；不要自动合并。
 
 **验证：**
 - `python tools/validate_data.py` passed
 - `python tools/check_framework.py` passed
 - `python tools/validate_minimal_demo.py` passed
+- sprite generator reproducibility：passed，重复生成 SHA-256 均为 `243FFC9350B31DDB0F49C74376800386DBEED8844C2E2B6A11A9E8B6EA654309`
 - `git diff --check` passed；仅有 Windows line-ending warning
 - `git diff --stat` ran
 - 显式 Snowhuman Framework keyword scan for `zhuyu|shensheng|zaoyaoshan|祝余|狌狌|招摇山`：no matches
 
 **下一步：**
-- 用户进行 Godot GUI manual test 复测，重点检查 `J` / `V` 快捷键、shortcut hint label 和 journal layout 是否正常。
-- GUI 手测通过后，由用户决定是否将 draft 标为 ready、merge 或继续反馈修改。
+- 创建 draft PR。
+- 用户进行 Godot GUI manual test，重点检查 player idle/walk 动画、移动切换、reset/load 后 idle，以及 journal/interaction 行为未回归。
 
 ---
 
