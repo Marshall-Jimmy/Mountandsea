@@ -41,12 +41,21 @@ const JOURNAL_TOGGLE_BUTTON_LEFT := 884.0
 const JOURNAL_TOGGLE_BUTTON_TOP := 208.0
 const JOURNAL_TOGGLE_BUTTON_RIGHT := 1010.0
 const JOURNAL_TOGGLE_BUTTON_BOTTOM := 240.0
+const DEMO_HUNGER_MAX := 100.0
+const DEMO_HUNGER_DECAY_PER_SECOND := 2.0
+const DEMO_HUNGER_WARNING_THRESHOLD := 70.0
+const DEMO_HUNGER_CRITICAL_THRESHOLD := 35.0
+const ZHUYU_SATIETY_DURATION := 15.0
+const ZHUYU_KNOWLEDGE_APPEARANCE := "appearance"
+const ZHUYU_KNOWLEDGE_TYPE := "type"
+const ZHUYU_KNOWLEDGE_EFFECT := "effect"
 
 enum DemoStep {
-	COLLECT_ZHUYU,
-	ACTIVATE_STONE,
-	OBSERVE_SHENSHENG,
-	COMPLETE
+	COLLECT_ZHUYU = 0,
+	ACTIVATE_STONE = 1,
+	OBSERVE_SHENSHENG = 2,
+	COMPLETE = 3,
+	EAT_ZHUYU = 4
 }
 
 @onready var world_root: Node2D = $WorldRoot
@@ -104,9 +113,21 @@ var optional_near_state := {}
 var optional_progress_journal_label: Label
 var optional_progress_view_toggle_button: Button
 var optional_progress_shortcut_hint_label: Label
+var survival_status_label: Label
 var optional_progress_detail_view := true
 var recent_optional_completion_name := ""
 var interaction_history_panel_visible := true
+var demo_hunger := DEMO_HUNGER_MAX
+var demo_hunger_max := DEMO_HUNGER_MAX
+var demo_hunger_decay_per_second := DEMO_HUNGER_DECAY_PER_SECOND
+var zhuyu_satiety_remaining := 0.0
+var zhuyu_consumed := false
+var zhuyu_knowledge_state := {
+	ZHUYU_KNOWLEDGE_APPEARANCE: false,
+	ZHUYU_KNOWLEDGE_TYPE: false,
+	ZHUYU_KNOWLEDGE_EFFECT: false
+}
+var hunger_warning_level := 0
 var was_near_zhuyu := false
 var was_near_stone := false
 var was_near_shensheng := false
@@ -119,11 +140,13 @@ var was_progress_view_toggle_key_pressed := false
 func _ready() -> void:
 	_init_optional_content_config()
 	_configure_interaction_history_panel()
+	_configure_survival_status_label()
 	_connect_button_signals()
 	demo_menu_panel.visible = false
 	completion_panel.visible = false
 	prompt_label.visible = false
 	_set_interaction_history_panel_visible(true)
+	_apply_world_visual_state()
 	_update_history_ui()
 	_update_optional_progress_journal()
 	_refresh_status()
@@ -307,6 +330,7 @@ func _process(delta: float) -> void:
 		_update_objective_guidance()
 		return
 
+	_update_hunger(delta)
 	_handle_journal_shortcut_input()
 	_move_player(delta)
 	_update_prompt()
@@ -353,6 +377,19 @@ func _configure_interaction_history_panel() -> void:
 	_configure_optional_progress_label()
 	_configure_interaction_history_label()
 	_configure_interaction_history_toggle_button()
+
+
+func _configure_survival_status_label() -> void:
+	if survival_status_label == null:
+		survival_status_label = Label.new()
+		survival_status_label.name = "SurvivalStatusLabel"
+		survival_status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		$CanvasLayer.add_child(survival_status_label)
+	survival_status_label.offset_left = 744.0
+	survival_status_label.offset_top = 16.0
+	survival_status_label.offset_right = 1010.0
+	survival_status_label.offset_bottom = 104.0
+	_refresh_survival_status()
 
 
 func _configure_interaction_history_panel_bounds() -> void:
@@ -661,11 +698,15 @@ func _open_demo_menu() -> void:
 	demo_menu_panel.visible = true
 	menu_open = true
 	prompt_label.visible = false
+	if survival_status_label != null:
+		survival_status_label.visible = false
 
 
 func _close_demo_menu() -> void:
 	demo_menu_panel.visible = false
 	menu_open = false
+	if survival_status_label != null:
+		survival_status_label.visible = true
 
 
 func _move_player(delta: float) -> void:
@@ -691,25 +732,71 @@ func _set_player_animation_movement(movement: Vector2) -> void:
 		player_animation_state_machine.set_movement_vector(movement)
 
 
+func _update_hunger(delta: float) -> void:
+	if delta <= 0.0:
+		return
+
+	var decay_time := delta
+	if zhuyu_satiety_remaining > 0.0:
+		var protected_time := minf(delta, zhuyu_satiety_remaining)
+		zhuyu_satiety_remaining = maxf(0.0, zhuyu_satiety_remaining - protected_time)
+		decay_time -= protected_time
+		if zhuyu_satiety_remaining <= 0.0:
+			_log("祝余效力消退，饥饿会再次增长。")
+
+	if decay_time > 0.0:
+		demo_hunger = clampf(
+			demo_hunger - demo_hunger_decay_per_second * decay_time,
+			0.0,
+			demo_hunger_max
+		)
+		_update_hunger_pressure_feedback()
+
+	_refresh_survival_status()
+
+
+func _update_hunger_pressure_feedback() -> void:
+	var next_warning_level := _get_hunger_warning_level()
+
+	if next_warning_level > hunger_warning_level:
+		if next_warning_level >= 2:
+			_log("饥饿加深，应该寻找可食之物。")
+		else:
+			_log("你开始感到饥饿。")
+	hunger_warning_level = next_warning_level
+
+
+func _get_hunger_warning_level() -> int:
+	if demo_hunger <= DEMO_HUNGER_CRITICAL_THRESHOLD:
+		return 2
+	if demo_hunger <= DEMO_HUNGER_WARNING_THRESHOLD:
+		return 1
+	return 0
+
+
 func _update_prompt() -> void:
 	var near_zhuyu := _is_near_zhuyu()
 	var near_stone := _is_near_stone()
 	var near_shensheng := _is_near_shensheng()
 	var nearest_optional := _nearest_optional_config()
 	var near_optional := not nearest_optional.is_empty()
+	if near_zhuyu:
+		_discover_zhuyu_appearance_and_type()
 
 	match current_step:
 		DemoStep.COLLECT_ZHUYU:
 			if near_zhuyu:
-				_show_prompt("按 E 采集祝余叶")
+				_show_prompt(_format_zhuyu_collect_prompt())
 			elif near_stone:
-				_show_prompt("先采集祝余叶")
+				_show_prompt("先寻找并采集祝余")
 			elif near_shensheng:
 				_show_prompt("先完成前置目标")
 			elif near_optional:
 				_show_prompt(str(nearest_optional.get("prompt_locked", "")))
 			else:
 				prompt_label.visible = false
+		DemoStep.EAT_ZHUYU:
+			_show_prompt("按 E 食用祝余")
 		DemoStep.ACTIVATE_STONE:
 			if near_stone:
 				_show_prompt("按 E 激活山海石碑")
@@ -769,6 +856,10 @@ func _try_interact() -> void:
 	var nearest_optional := _nearest_optional_config()
 	var near_optional := not nearest_optional.is_empty()
 
+	if current_step == DemoStep.EAT_ZHUYU:
+		_eat_zhuyu()
+		return
+
 	if current_step == DemoStep.COMPLETE:
 		if near_optional:
 			var interactable_id := str(nearest_optional.get("interactable_id", ""))
@@ -822,7 +913,7 @@ func _on_zhuyu_interacted(actor_id: String, interactable_id: String, metadata: D
 		_log_error("采集失败：interactable_id 不匹配。")
 		return false
 	if current_step != DemoStep.COLLECT_ZHUYU:
-		_log("祝余叶不是当前目标。")
+		_log("祝余不是当前目标。")
 		return false
 
 	var item_id_value: Variant = metadata.get("item_id", "")
@@ -843,15 +934,48 @@ func _on_zhuyu_interacted(actor_id: String, interactable_id: String, metadata: D
 		_log_error("图鉴发现 %s 失败。" % item_id)
 		return false
 
+	_discover_zhuyu_appearance_and_type()
 	zhuyu_collected = true
 	zhuyu_pickup.visible = false
 	zhuyu_label.visible = false
 	prompt_label.visible = false
-	current_step = DemoStep.ACTIVATE_STONE
-	_log_ok("采集祝余叶成功")
-	_log("当前目标：前往山海石碑")
+	current_step = DemoStep.EAT_ZHUYU
+	_log_ok("你采集了祝余。")
+	_log("祝余已采集，可食用以缓解饥饿。")
 	_append_history_event("采集祝余叶")
 	_refresh_status()
+	_refresh_survival_status()
+	_update_objective_ui()
+	_update_objective_guidance()
+	return true
+
+
+func _eat_zhuyu() -> bool:
+	if current_step != DemoStep.EAT_ZHUYU or zhuyu_consumed:
+		_log("祝余已经食用，无法重复食用。")
+		return false
+	if inventory_service == null or inventory_service.get_item_count(OWNER_ID, ITEM_ID) <= 0:
+		_log_error("食用祝余失败：背包中没有祝余。")
+		return false
+	if not inventory_service.remove_item(OWNER_ID, ITEM_ID, 1):
+		_log_error("食用祝余失败：无法移除背包物品。")
+		return false
+
+	zhuyu_consumed = true
+	demo_hunger = demo_hunger_max
+	zhuyu_satiety_remaining = ZHUYU_SATIETY_DURATION
+	hunger_warning_level = 0
+	current_step = DemoStep.ACTIVATE_STONE
+	_log_ok("你食用了祝余，饥饿感暂时消退。")
+	_unlock_zhuyu_knowledge(
+		ZHUYU_KNOWLEDGE_EFFECT,
+		"图鉴更新：祝余 · 效果：食之不饥"
+	)
+	_log("祝余效力发动：食之不饥")
+	_append_history_event("食用祝余")
+	prompt_label.visible = false
+	_refresh_status()
+	_refresh_survival_status()
 	_update_objective_ui()
 	_update_objective_guidance()
 	return true
@@ -987,6 +1111,55 @@ func _on_optional_content_interacted(actor_id: String, interactable_id: String, 
 	return true
 
 
+func _discover_zhuyu_appearance_and_type() -> void:
+	_unlock_zhuyu_knowledge(
+		ZHUYU_KNOWLEDGE_APPEARANCE,
+		"图鉴更新：祝余 · 外观"
+	)
+	_unlock_zhuyu_knowledge(
+		ZHUYU_KNOWLEDGE_TYPE,
+		"图鉴更新：祝余 · 类型"
+	)
+
+
+func _unlock_zhuyu_knowledge(slot: String, feedback: String) -> bool:
+	if not zhuyu_knowledge_state.has(slot):
+		return false
+	if zhuyu_knowledge_state.get(slot, false) == true:
+		return false
+
+	zhuyu_knowledge_state[slot] = true
+	if zhuyu_label != null and (
+		slot == ZHUYU_KNOWLEDGE_APPEARANCE
+		or slot == ZHUYU_KNOWLEDGE_TYPE
+	):
+		zhuyu_label.text = "祝余"
+	_log(feedback)
+	_refresh_survival_status()
+	return true
+
+
+func _has_zhuyu_knowledge(slot: String) -> bool:
+	return zhuyu_knowledge_state.get(slot, false) == true
+
+
+func _reset_zhuyu_knowledge_state() -> void:
+	zhuyu_knowledge_state = {
+		ZHUYU_KNOWLEDGE_APPEARANCE: false,
+		ZHUYU_KNOWLEDGE_TYPE: false,
+		ZHUYU_KNOWLEDGE_EFFECT: false
+	}
+
+
+func _format_zhuyu_collect_prompt() -> String:
+	if (
+		_has_zhuyu_knowledge(ZHUYU_KNOWLEDGE_APPEARANCE)
+		and _has_zhuyu_knowledge(ZHUYU_KNOWLEDGE_TYPE)
+	):
+		return "按 E 采集祝余"
+	return "按 E 采集陌生青华草"
+
+
 func get_save_data() -> Dictionary:
 	return _build_demo_save_state()
 
@@ -1066,14 +1239,22 @@ func _build_demo_save_state() -> Dictionary:
 		return {}
 
 	return {
-		"version": 1,
+		"version": 2,
 		"owner_id": OWNER_ID,
 		"current_step": int(current_step),
 		"world": {
 			"pickup_collected": zhuyu_collected,
+			"zhuyu_consumed": zhuyu_consumed,
 			"stone_activated": stone_activated,
 			"creature_discovered": shensheng_discovered,
 			"optional": _build_optional_save_state()
+		},
+		"survival": {
+			"demo_hunger": demo_hunger,
+			"zhuyu_satiety_remaining": zhuyu_satiety_remaining
+		},
+		"knowledge": {
+			"zhuyu": zhuyu_knowledge_state.duplicate(true)
 		},
 		"player": {
 			"position": {
@@ -1093,6 +1274,32 @@ func _build_optional_save_state() -> Dictionary:
 		var content_id := str(config.get("id", ""))
 		state[content_id] = _is_optional_done(config)
 	return state
+
+
+func _apply_survival_save_state(state: Dictionary) -> void:
+	demo_hunger_max = DEMO_HUNGER_MAX
+	demo_hunger_decay_per_second = DEMO_HUNGER_DECAY_PER_SECOND
+	demo_hunger = clampf(
+		_to_float_or_default(state.get("demo_hunger"), demo_hunger_max),
+		0.0,
+		demo_hunger_max
+	)
+	zhuyu_satiety_remaining = clampf(
+		_to_float_or_default(state.get("zhuyu_satiety_remaining"), 0.0),
+		0.0,
+		ZHUYU_SATIETY_DURATION
+	)
+	hunger_warning_level = _get_hunger_warning_level()
+
+
+func _apply_zhuyu_knowledge_save_state(state: Dictionary) -> void:
+	_reset_zhuyu_knowledge_state()
+	for slot in [
+		ZHUYU_KNOWLEDGE_APPEARANCE,
+		ZHUYU_KNOWLEDGE_TYPE,
+		ZHUYU_KNOWLEDGE_EFFECT
+	]:
+		zhuyu_knowledge_state[slot] = state.get(slot, false) == true
 
 
 func _apply_optional_save_state(state: Dictionary) -> void:
@@ -1152,17 +1359,26 @@ func _apply_demo_save_state(state: Dictionary) -> bool:
 		return false
 
 	var saved_step := _to_non_negative_int(state.get("current_step", -1))
-	if saved_step < DemoStep.COLLECT_ZHUYU or saved_step > DemoStep.COMPLETE:
+	if not _is_valid_demo_step(saved_step):
 		return false
 
 	var world_data: Variant = state.get("world", {})
 	var inventory_data: Variant = state.get("inventory", {})
 	var bestiary_data: Variant = state.get("bestiary", {})
+	var survival_data: Variant = state.get("survival", {})
+	var knowledge_data: Variant = state.get("knowledge", {})
 	if not (world_data is Dictionary):
 		return false
 	if not (inventory_data is Dictionary):
 		return false
 	if not (bestiary_data is Dictionary):
+		return false
+	if not (survival_data is Dictionary):
+		return false
+	if not (knowledge_data is Dictionary):
+		return false
+	var zhuyu_knowledge_data: Variant = knowledge_data.get("zhuyu", {})
+	if not (zhuyu_knowledge_data is Dictionary):
 		return false
 
 	var inventory_counts := _build_loaded_inventory_counts(inventory_data)
@@ -1181,17 +1397,25 @@ func _apply_demo_save_state(state: Dictionary) -> bool:
 
 	current_step = saved_step
 	zhuyu_collected = world_data.get("pickup_collected", false) == true
+	zhuyu_consumed = world_data.get(
+		"zhuyu_consumed",
+		_step_is_after_zhuyu_eaten(current_step)
+	) == true
 	stone_activated = world_data.get("stone_activated", false) == true
 	shensheng_discovered = world_data.get("creature_discovered", false) == true
+	_apply_survival_save_state(survival_data)
+	_apply_zhuyu_knowledge_save_state(zhuyu_knowledge_data)
 	recent_optional_completion_name = ""
 	var optional_data: Variant = world_data.get("optional", {})
 	if not (optional_data is Dictionary):
 		return false
 	_apply_optional_save_state(optional_data)
 	_apply_legacy_optional_save_state(world_data, optional_data)
-	if current_step >= DemoStep.ACTIVATE_STONE:
+	if _step_has_collected_zhuyu(current_step):
 		zhuyu_collected = true
-	if current_step >= DemoStep.OBSERVE_SHENSHENG:
+	if _step_is_after_zhuyu_eaten(current_step):
+		zhuyu_consumed = true
+	if current_step == DemoStep.OBSERVE_SHENSHENG or current_step == DemoStep.COMPLETE:
 		stone_activated = true
 	if current_step == DemoStep.COMPLETE:
 		shensheng_discovered = true
@@ -1204,6 +1428,7 @@ func _apply_demo_save_state(state: Dictionary) -> bool:
 	if current_step == DemoStep.COMPLETE:
 		_refresh_completion_summary()
 	_refresh_status()
+	_refresh_survival_status()
 	_update_objective_ui()
 	_update_objective_guidance()
 	return true
@@ -1281,14 +1506,20 @@ func _reset_demo_state(history_message := "Demo 已重置") -> void:
 	player_animation_state_machine.reset_to_idle()
 	current_step = DemoStep.COLLECT_ZHUYU
 	zhuyu_collected = false
+	zhuyu_consumed = false
 	stone_activated = false
 	shensheng_discovered = false
+	demo_hunger = demo_hunger_max
+	zhuyu_satiety_remaining = 0.0
+	hunger_warning_level = 0
+	_reset_zhuyu_knowledge_state()
 	recent_optional_completion_name = ""
 	_reset_optional_state()
 	_close_demo_menu()
 	completion_panel.visible = false
 	_apply_world_visual_state()
 	_refresh_status()
+	_refresh_survival_status()
 	_update_objective_ui()
 	_update_objective_guidance()
 	interaction_history.clear()
@@ -1299,7 +1530,10 @@ func _reset_demo_state(history_message := "Demo 已重置") -> void:
 func _apply_world_visual_state() -> void:
 	zhuyu_pickup.visible = not zhuyu_collected
 	zhuyu_label.visible = not zhuyu_collected
-	zhuyu_label.text = "祝余叶"
+	if _has_zhuyu_knowledge(ZHUYU_KNOWLEDGE_APPEARANCE):
+		zhuyu_label.text = "祝余"
+	else:
+		zhuyu_label.text = "陌生青华草"
 
 	if stone_activated:
 		guidance_stone.modulate.a = 0.55
@@ -1335,7 +1569,7 @@ func _show_completion_panel() -> void:
 
 
 func _refresh_completion_summary() -> void:
-	completion_summary_label.text = "已完成 Demo 流程\n\n已采集：祝余叶\n已激活：山海石碑\n已发现：狌狌\n%s\n\n%s\n\n验证服务：\n- DataRegistry\n- InteractionService\n- InventoryService\n- BestiaryService\n- SaveService（菜单保存 / 读取）" % [
+	completion_summary_label.text = "已完成 Demo 流程\n\n已采集：祝余\n已食用：祝余（食之不饥）\n已激活：山海石碑\n已发现：狌狌\n%s\n\n%s\n\n验证服务：\n- DataRegistry\n- InteractionService\n- InventoryService\n- BestiaryService\n- SaveService（菜单保存 / 读取）" % [
 		_format_optional_completion_summary(),
 		_format_completion_history()
 	]
@@ -1662,6 +1896,34 @@ func _refresh_status() -> void:
 	]
 
 
+func _refresh_survival_status() -> void:
+	if survival_status_label == null:
+		return
+
+	var satiety_text := "未发动"
+	if zhuyu_satiety_remaining > 0.0:
+		satiety_text = "%d 秒" % int(ceil(zhuyu_satiety_remaining))
+	survival_status_label.text = "饥饿：%d / %d\n祝余效力：%s\n祝余知识：%s" % [
+		int(round(demo_hunger)),
+		int(round(demo_hunger_max)),
+		satiety_text,
+		_format_zhuyu_knowledge_status()
+	]
+
+
+func _format_zhuyu_knowledge_status() -> String:
+	var unlocked: Array[String] = []
+	if _has_zhuyu_knowledge(ZHUYU_KNOWLEDGE_APPEARANCE):
+		unlocked.append("外观")
+	if _has_zhuyu_knowledge(ZHUYU_KNOWLEDGE_TYPE):
+		unlocked.append("类型")
+	if _has_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT):
+		unlocked.append("食之不饥")
+	if unlocked.is_empty():
+		return "未知"
+	return "、".join(unlocked)
+
+
 func _format_inventory_status(main_item_count: int) -> String:
 	var formatted := "%s x%d" % [ITEM_ID, main_item_count]
 	for config in optional_collectibles:
@@ -1676,7 +1938,9 @@ func _format_inventory_status(main_item_count: int) -> String:
 func _update_objective_ui() -> void:
 	match current_step:
 		DemoStep.COLLECT_ZHUYU:
-			objective_label.text = "当前目标：采集祝余叶"
+			objective_label.text = "当前目标：寻找并采集祝余"
+		DemoStep.EAT_ZHUYU:
+			objective_label.text = "当前目标：食用祝余"
 		DemoStep.ACTIVATE_STONE:
 			objective_label.text = "当前目标：前往山海石碑"
 		DemoStep.OBSERVE_SHENSHENG:
@@ -1688,10 +1952,34 @@ func _update_objective_ui() -> void:
 				objective_label.text = "当前目标：Demo 完成，可选探索已解锁"
 
 
+func _is_valid_demo_step(step: int) -> bool:
+	return step in [
+		DemoStep.COLLECT_ZHUYU,
+		DemoStep.EAT_ZHUYU,
+		DemoStep.ACTIVATE_STONE,
+		DemoStep.OBSERVE_SHENSHENG,
+		DemoStep.COMPLETE
+	]
+
+
+func _step_has_collected_zhuyu(step: int) -> bool:
+	return step != DemoStep.COLLECT_ZHUYU and _is_valid_demo_step(step)
+
+
+func _step_is_after_zhuyu_eaten(step: int) -> bool:
+	return step in [
+		DemoStep.ACTIVATE_STONE,
+		DemoStep.OBSERVE_SHENSHENG,
+		DemoStep.COMPLETE
+	]
+
+
 func _get_active_target_node() -> Node2D:
 	match current_step:
 		DemoStep.COLLECT_ZHUYU:
 			return zhuyu_pickup
+		DemoStep.EAT_ZHUYU:
+			return null
 		DemoStep.ACTIVATE_STONE:
 			return guidance_stone
 		DemoStep.OBSERVE_SHENSHENG:
@@ -1713,7 +2001,12 @@ func _update_objective_guidance() -> void:
 			guidance_stone.modulate.a = 0.35
 			shensheng_creature.modulate.a = 0.35
 			_set_optional_content_alpha(0.3)
-			target_hint_label.text = _format_target_hint("祝余叶", "按 E 采集", active_target)
+			target_hint_label.text = _format_target_hint("祝余", "按 E 采集", active_target)
+		DemoStep.EAT_ZHUYU:
+			guidance_stone.modulate.a = 0.35
+			shensheng_creature.modulate.a = 0.35
+			_set_optional_content_alpha(0.3)
+			target_hint_label.text = "目标提示：祝余已采集，按 E 食用"
 		DemoStep.ACTIVATE_STONE:
 			guidance_stone.modulate.a = 1.0
 			guidance_stone.scale = Vector2(1.15, 1.15)

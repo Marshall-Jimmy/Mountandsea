@@ -47,6 +47,12 @@ const SHENSHENG_EXPECTED_POSITION := Vector2(650.0, 260.0)
 const STEP_COLLECT_ZHUYU := 0
 const STEP_OBSERVE_SHENSHENG := 2
 const STEP_COMPLETE := 3
+const STEP_EAT_ZHUYU := 4
+const DEMO_HUNGER_MAX := 100.0
+const ZHUYU_SATIETY_DURATION := 15.0
+const ZHUYU_KNOWLEDGE_APPEARANCE := "appearance"
+const ZHUYU_KNOWLEDGE_TYPE := "type"
+const ZHUYU_KNOWLEDGE_EFFECT := "effect"
 
 var demo: Node
 var player: Node2D
@@ -74,6 +80,8 @@ func _run_test() -> void:
 	player = demo.get_node_or_null("WorldRoot/Player")
 	_assert_true(player != null, "Player node must exist")
 	_assert_true(demo.get("initialized") == true, "Demo must initialize services")
+	if player != null:
+		initial_position = player.position
 	_assert_player_animation_pipeline()
 	_assert_shensheng_idle_pipeline()
 	_assert_history_panel_visible(true)
@@ -81,15 +89,15 @@ func _run_test() -> void:
 	_assert_progress_view_toggle_preserves_history("Demo 开始")
 	_assert_journal_shortcut_handlers_preserve_text("Demo 开始")
 	_assert_reset_preserves_compact_journal_view()
+	_assert_zhuyu_hunger_knowledge_loop()
 	if failed:
 		return
-
-	initial_position = player.position
 
 	var saved_position := initial_position + Vector2(120.0, 80.0)
 	_force_state_after_stone_activation()
 	_assert_state_after_stone_activation()
 	_assert_history_contains("采集祝余叶")
+	_assert_history_contains("食用祝余")
 	_assert_history_contains("激活山海石碑")
 	player.position = saved_position
 
@@ -113,6 +121,7 @@ func _run_test() -> void:
 	_assert_player_facing(PLAYER_FACING_RIGHT, true, "load should restore runtime default facing")
 	_assert_state_after_stone_activation()
 	_assert_history_contains("采集祝余叶")
+	_assert_history_contains("食用祝余")
 	_assert_history_contains("激活山海石碑")
 	_assert_history_contains("保存 Demo")
 	_assert_history_contains("读取 Demo")
@@ -207,6 +216,225 @@ func _run_test() -> void:
 	quit(0)
 
 
+func _assert_zhuyu_hunger_knowledge_loop() -> void:
+	demo.call("_reset_demo_state")
+	_assert_float_near(
+		float(demo.get("demo_hunger")),
+		DEMO_HUNGER_MAX,
+		"reset should start hunger at maximum"
+	)
+	_assert_float_near(
+		float(demo.get("zhuyu_satiety_remaining")),
+		0.0,
+		"reset should clear zhuyu satiety"
+	)
+	_assert_true(demo.get("zhuyu_collected") == false, "zhuyu should start uncollected")
+	_assert_true(demo.get("zhuyu_consumed") == false, "zhuyu should start uneaten")
+	_assert_inventory_count(0)
+	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_APPEARANCE, false)
+	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_TYPE, false)
+	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT, false)
+	_assert_survival_status("饥饿")
+	_assert_survival_status("祝余效力")
+
+	var hunger_before_tick := float(demo.get("demo_hunger"))
+	demo.call("_update_hunger", 2.0)
+	_assert_true(
+		float(demo.get("demo_hunger")) < hunger_before_tick,
+		"hunger should decay during a normal tick"
+	)
+	demo.set("demo_hunger", 1.0)
+	demo.call("_update_hunger", 1000.0)
+	_assert_float_near(
+		float(demo.get("demo_hunger")),
+		0.0,
+		"hunger should never fall below zero"
+	)
+
+	demo.call("_reset_demo_state")
+	_assert_float_near(
+		float(demo.get("demo_hunger")),
+		DEMO_HUNGER_MAX,
+		"reset should restore hunger after decay"
+	)
+
+	var zhuyu_pickup := demo.get_node_or_null("WorldRoot/ZhuyuPickup") as Node2D
+	var zhuyu_label := demo.get_node_or_null("WorldRoot/ZhuyuLabel") as Label
+	_assert_true(zhuyu_pickup != null, "ZhuyuPickup should exist")
+	_assert_true(
+		zhuyu_label != null and zhuyu_label.text == "陌生青华草",
+		"unknown zhuyu should not reveal its name before discovery"
+	)
+	if zhuyu_pickup == null:
+		return
+	player.position = zhuyu_pickup.global_position
+	var unknown_prompt: Variant = demo.call("_format_zhuyu_collect_prompt")
+	_assert_true(
+		unknown_prompt is String and unknown_prompt.contains("陌生青华草"),
+		"unknown zhuyu prompt should describe an unfamiliar plant"
+	)
+	demo.call("_update_prompt")
+	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_APPEARANCE, true)
+	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_TYPE, true)
+	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT, false)
+	_assert_prompt_contains("采集祝余")
+	_assert_log_contains("图鉴更新：祝余 · 外观")
+	_assert_log_contains("图鉴更新：祝余 · 类型")
+
+	var zhuyu_result: Variant = demo.call("_on_zhuyu_interacted", OWNER_ID, ZHUYU_INTERACTABLE_ID, {
+		"item_id": ITEM_ID,
+		"count": 1
+	})
+	_assert_true(zhuyu_result == true, "zhuyu collection should succeed")
+	_assert_true(demo.get("current_step") == STEP_EAT_ZHUYU, "collection should advance to EAT_ZHUYU")
+	_assert_true(demo.get("zhuyu_collected") == true, "zhuyu should be marked collected")
+	_assert_true(zhuyu_pickup.visible == false, "collected zhuyu should be hidden")
+	_assert_inventory_count(1)
+	demo.call("_update_prompt")
+	_assert_prompt_contains("食用祝余")
+	var repeated_collect_result: Variant = demo.call(
+		"_on_zhuyu_interacted",
+		OWNER_ID,
+		ZHUYU_INTERACTABLE_ID,
+		{"item_id": ITEM_ID, "count": 1}
+	)
+	_assert_true(repeated_collect_result == false, "zhuyu should not be collected twice")
+	_assert_inventory_count(1)
+
+	var collected_state: Variant = demo.call("_build_demo_save_state")
+	_assert_true(collected_state is Dictionary, "collected zhuyu state should be serializable")
+	demo.call("_reset_demo_state")
+	var collected_load_result: Variant = demo.call("_apply_demo_save_state", collected_state)
+	_assert_true(collected_load_result == true, "collected zhuyu state should load")
+	_assert_true(demo.get("current_step") == STEP_EAT_ZHUYU, "load should restore EAT_ZHUYU")
+	_assert_true(demo.get("zhuyu_collected") == true, "load should restore collected zhuyu")
+	_assert_true(demo.get("zhuyu_consumed") == false, "collected save should remain uneaten")
+	_assert_inventory_count(1)
+	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_APPEARANCE, true)
+	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_TYPE, true)
+	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT, false)
+
+	demo.set("demo_hunger", 20.0)
+	var eat_result: Variant = demo.call("_eat_zhuyu")
+	_assert_true(eat_result == true, "eating collected zhuyu should succeed")
+	_assert_true(demo.get("zhuyu_consumed") == true, "zhuyu should be marked consumed")
+	_assert_inventory_count(0)
+	_assert_float_near(
+		float(demo.get("demo_hunger")),
+		DEMO_HUNGER_MAX,
+		"eating zhuyu should restore hunger"
+	)
+	_assert_true(
+		float(demo.get("zhuyu_satiety_remaining")) > 0.0,
+		"eating zhuyu should start satiety"
+	)
+	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT, true)
+	_assert_log_contains("食之不饥")
+	var repeated_eat_result: Variant = demo.call("_eat_zhuyu")
+	_assert_true(repeated_eat_result == false, "zhuyu should not be eaten twice")
+	_assert_inventory_count(0)
+
+	var eaten_state: Variant = demo.call("_build_demo_save_state")
+	_assert_true(eaten_state is Dictionary, "eaten zhuyu state should be serializable")
+	if eaten_state is Dictionary:
+		_assert_true(eaten_state.has("survival"), "save should include survival state")
+		_assert_true(eaten_state.has("knowledge"), "save should include knowledge state")
+		var eaten_world: Variant = eaten_state.get("world", {})
+		_assert_true(
+			eaten_world is Dictionary and eaten_world.get("zhuyu_consumed", false) == true,
+			"save should include zhuyu consumed state"
+		)
+
+	demo.call("_reset_demo_state")
+	var eaten_load_result: Variant = demo.call("_apply_demo_save_state", eaten_state)
+	_assert_true(eaten_load_result == true, "eaten zhuyu state should load")
+	_assert_true(demo.get("zhuyu_consumed") == true, "load should restore consumed zhuyu")
+	_assert_inventory_count(0)
+	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT, true)
+	_assert_float_near(
+		float(demo.get("demo_hunger")),
+		DEMO_HUNGER_MAX,
+		"load should restore saved hunger"
+	)
+	var restored_satiety := float(demo.get("zhuyu_satiety_remaining"))
+	_assert_true(restored_satiety > 0.0, "load should restore finite zhuyu satiety")
+	demo.call("_update_prompt")
+	_assert_prompt_not_contains("食用祝余")
+
+	var hunger_during_satiety := float(demo.get("demo_hunger"))
+	var protected_tick := minf(5.0, restored_satiety)
+	demo.call("_update_hunger", protected_tick)
+	_assert_float_near(
+		float(demo.get("demo_hunger")),
+		hunger_during_satiety,
+		"satiety should pause hunger decay"
+	)
+	var remaining_satiety := float(demo.get("zhuyu_satiety_remaining"))
+	demo.call("_update_hunger", remaining_satiety + 1.0)
+	_assert_float_near(
+		float(demo.get("zhuyu_satiety_remaining")),
+		0.0,
+		"satiety should expire"
+	)
+	_assert_true(
+		float(demo.get("demo_hunger")) < hunger_during_satiety,
+		"hunger should resume after satiety expires"
+	)
+
+	demo.set("zhuyu_satiety_remaining", 0.0)
+	demo.set("demo_hunger", 71.0)
+	demo.set("hunger_warning_level", 0)
+	demo.call("_update_hunger", 1.0)
+	_assert_log_contains("你开始感到饥饿。")
+	demo.set("demo_hunger", 36.0)
+	demo.set("hunger_warning_level", 1)
+	demo.call("_update_hunger", 1.0)
+	_assert_log_contains("饥饿加深，应该寻找可食之物。")
+
+	var legacy_state := {
+		"version": 1,
+		"owner_id": OWNER_ID,
+		"current_step": STEP_COLLECT_ZHUYU,
+		"world": {
+			"pickup_collected": false,
+			"stone_activated": false,
+			"creature_discovered": false
+		},
+		"player": {
+			"position": {
+				"x": initial_position.x,
+				"y": initial_position.y
+			}
+		},
+		"inventory": {
+			ITEM_ID: 0
+		},
+		"bestiary": {
+			"items": [],
+			"creatures": []
+		},
+		"history": []
+	}
+	var legacy_result: Variant = demo.call("_apply_demo_save_state", legacy_state)
+	_assert_true(legacy_result == true, "legacy save without hunger or knowledge should load")
+	_assert_float_near(
+		float(demo.get("demo_hunger")),
+		DEMO_HUNGER_MAX,
+		"legacy save should default hunger to maximum"
+	)
+	_assert_float_near(
+		float(demo.get("zhuyu_satiety_remaining")),
+		0.0,
+		"legacy save should default satiety to zero"
+	)
+	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_APPEARANCE, false)
+	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_TYPE, false)
+	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT, false)
+	_assert_true(demo.get("zhuyu_consumed") == false, "legacy initial save should remain uneaten")
+
+	demo.call("_reset_demo_state")
+
+
 func _force_state_after_stone_activation() -> void:
 	demo.call("_reset_demo_state")
 
@@ -215,6 +443,9 @@ func _force_state_after_stone_activation() -> void:
 		"count": 1
 	})
 	_assert_true(zhuyu_result == true, "zhuyu interaction should succeed")
+
+	var eat_result: Variant = demo.call("_eat_zhuyu")
+	_assert_true(eat_result == true, "zhuyu eating should succeed")
 
 	var stone_result: Variant = demo.call("_on_guidance_stone_interacted", OWNER_ID, STONE_INTERACTABLE_ID, {
 		"target": "guidance_stone"
@@ -273,6 +504,7 @@ func _force_one_optional_collectible_complete() -> void:
 func _assert_state_after_stone_activation() -> void:
 	_assert_true(demo.get("current_step") == STEP_OBSERVE_SHENSHENG, "current_step should restore OBSERVE_SHENSHENG")
 	_assert_true(demo.get("zhuyu_collected") == true, "zhuyu should be collected")
+	_assert_true(demo.get("zhuyu_consumed") == true, "zhuyu should be consumed")
 	_assert_true(demo.get("stone_activated") == true, "guidance stone should be activated")
 	_assert_true(demo.get("shensheng_discovered") == false, "shensheng should not be discovered before completion")
 	_assert_optional_state_pending()
@@ -287,9 +519,11 @@ func _assert_state_after_stone_activation() -> void:
 	_assert_true(shensheng_label != null and shensheng_label.text == "狌狌", "ShenshengLabel should stay undiscovered before completion")
 	_assert_true(status_label != null and status_label.text.contains(ITEM_ID), "StatusLabel should include zhuyu item")
 
-	_assert_inventory_count(1)
+	_assert_inventory_count(0)
 	_assert_bestiary_has_item(true)
 	_assert_bestiary_has_creature(false)
+	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT, true)
+	_assert_survival_status("食之不饥")
 
 
 func _assert_state_complete() -> void:
@@ -311,7 +545,7 @@ func _assert_state_complete() -> void:
 	_assert_true(target_hint_label != null and (target_hint_text.contains("可选探索") or target_hint_text.contains("所有 Demo 内容已完成")), "TargetHintLabel should show completion")
 	_assert_true(completion_summary_label != null and completion_summary_label.text.contains("历史记录"), "Completion summary should include history")
 
-	_assert_inventory_count(1)
+	_assert_inventory_count(0)
 	_assert_bestiary_has_item(true)
 	_assert_bestiary_has_creature(true)
 
@@ -422,6 +656,20 @@ func _assert_legacy_optional_save_compatibility() -> void:
 	var legacy_result: Variant = demo.call("_apply_demo_save_state", legacy_state)
 	_assert_true(legacy_result == true, "legacy optional save state should load")
 	_assert_vec2_near(player.position, legacy_position, "legacy optional save should restore player position")
+	_assert_true(demo.get("zhuyu_consumed") == true, "legacy complete save should infer consumed zhuyu")
+	_assert_float_near(
+		float(demo.get("demo_hunger")),
+		DEMO_HUNGER_MAX,
+		"legacy optional save should default hunger to maximum"
+	)
+	_assert_float_near(
+		float(demo.get("zhuyu_satiety_remaining")),
+		0.0,
+		"legacy optional save should default satiety to zero"
+	)
+	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_APPEARANCE, false)
+	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_TYPE, false)
+	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT, false)
 	_assert_optional_done(MIGU_BRANCH_ITEM_ID, true)
 	_assert_optional_done(LUSHU_CREATURE_ID, true)
 	_assert_optional_done(BASIC_ORE_ITEM_ID, false)
@@ -1642,6 +1890,58 @@ func _assert_bestiary_has_creature_id(creature_id: String, expected: bool) -> vo
 	_assert_true(discovered_creatures.has(creature_id) == expected, "bestiary creature state mismatch for %s" % creature_id)
 
 
+func _assert_zhuyu_knowledge(slot: String, expected: bool) -> void:
+	var knowledge_state: Variant = demo.get("zhuyu_knowledge_state")
+	_assert_true(knowledge_state is Dictionary, "zhuyu_knowledge_state should be a Dictionary")
+	if not (knowledge_state is Dictionary):
+		return
+	_assert_true(
+		knowledge_state.get(slot, false) == expected,
+		"zhuyu knowledge mismatch for %s" % slot
+	)
+
+
+func _assert_survival_status(expected: String) -> void:
+	var survival_label := demo.get_node_or_null("CanvasLayer/SurvivalStatusLabel") as Label
+	_assert_true(survival_label != null, "SurvivalStatusLabel should exist")
+	if survival_label != null:
+		_assert_true(
+			survival_label.text.contains(expected),
+			"survival status should contain %s, actual=%s" % [expected, survival_label.text]
+		)
+
+
+func _assert_prompt_contains(expected: String) -> void:
+	var prompt_label := demo.get_node_or_null("CanvasLayer/PromptLabel") as Label
+	_assert_true(prompt_label != null, "PromptLabel should exist")
+	if prompt_label != null:
+		_assert_true(prompt_label.visible, "PromptLabel should be visible")
+		_assert_true(
+			prompt_label.text.contains(expected),
+			"prompt should contain %s, actual=%s" % [expected, prompt_label.text]
+		)
+
+
+func _assert_prompt_not_contains(unexpected: String) -> void:
+	var prompt_label := demo.get_node_or_null("CanvasLayer/PromptLabel") as Label
+	_assert_true(prompt_label != null, "PromptLabel should exist")
+	if prompt_label != null and prompt_label.visible:
+		_assert_true(
+			not prompt_label.text.contains(unexpected),
+			"prompt should not contain %s, actual=%s" % [unexpected, prompt_label.text]
+		)
+
+
+func _assert_log_contains(expected: String) -> void:
+	var log_label := demo.get_node_or_null("CanvasLayer/LogLabel") as RichTextLabel
+	_assert_true(log_label != null, "LogLabel should exist")
+	if log_label != null:
+		_assert_true(
+			log_label.text.contains(expected),
+			"log should contain %s" % expected
+		)
+
+
 func _assert_history_contains(expected: String) -> void:
 	_assert_true(_history_contains(expected), "history should contain %s, actual=%s" % [expected, str(demo.get("interaction_history"))])
 
@@ -1668,6 +1968,11 @@ func _assert_true(condition: bool, message: String) -> void:
 
 func _assert_vec2_near(actual: Vector2, expected: Vector2, message: String) -> void:
 	if actual.distance_to(expected) > 0.01:
+		_fail("%s actual=%s expected=%s" % [message, actual, expected])
+
+
+func _assert_float_near(actual: float, expected: float, message: String) -> void:
+	if absf(actual - expected) > 0.01:
 		_fail("%s actual=%s expected=%s" % [message, actual, expected])
 
 
