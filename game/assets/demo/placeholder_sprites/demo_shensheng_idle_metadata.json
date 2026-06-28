@@ -1,0 +1,118 @@
+{
+  "design": "art_guided_shensheng_idle",
+  "art_source": "deterministic_programmatic_demo_local",
+  "frame_width": 512,
+  "frame_height": 512,
+  "idle_frame_count": 6,
+  "idle_fps": 4.0,
+  "anchor": [
+    256,
+    470
+  ],
+  "visual_traits": [
+    "white_ears",
+    "humanlike_face",
+    "beast_muzzle",
+    "ape_body",
+    "semi_crouched_posture",
+    "forward_shoulders",
+    "long_arms",
+    "dark_teal_grey_fur",
+    "cinnabar_markings",
+    "cyan_eye_and_mark_glow"
+  ],
+  "moving_elements": [
+    "breathing",
+    "shoulders",
+    "ears",
+    "arms",
+    "cyan_glow",
+    "shadow"
+  ],
+  "frames": [
+    {
+      "phase": "neutral",
+      "body_y": 0,
+      "shoulder_y": 0,
+      "left_ear_offset": 0,
+      "right_ear_offset": 0,
+      "arm_sway": 0,
+      "glow_alpha": 150,
+      "shadow_scale": 1.0,
+      "anchor": [
+        256,
+        470
+      ]
+    },
+    {
+      "phase": "inhale",
+      "body_y": 1,
+      "shoulder_y": -1,
+      "left_ear_offset": 1,
+      "right_ear_offset": 0,
+      "arm_sway": 1,
+      "glow_alpha": 180,
+      "shadow_scale": 0.98,
+      "anchor": [
+        256,
+        470
+      ]
+    },
+    {
+      "phase": "breath_peak",
+      "body_y": 2,
+      "shoulder_y": -2,
+      "left_ear_offset": 2,
+      "right_ear_offset": -1,
+      "arm_sway": 2,
+      "glow_alpha": 220,
+      "shadow_scale": 0.96,
+      "anchor": [
+        256,
+        470
+      ]
+    },
+    {
+      "phase": "exhale",
+      "body_y": 1,
+      "shoulder_y": -1,
+      "left_ear_offset": 1,
+      "right_ear_offset": 0,
+      "arm_sway": 1,
+      "glow_alpha": 185,
+      "shadow_scale": 0.98,
+      "anchor": [
+        256,
+        470
+      ]
+    },
+    {
+      "phase": "settle",
+      "body_y": 0,
+      "shoulder_y": 0,
+      "left_ear_offset": 0,
+      "right_ear_offset": 1,
+      "arm_sway": 0,
+      "glow_alpha": 155,
+      "shadow_scale": 1.0,
+      "anchor": [
+        256,
+        470
+      ]
+    },
+    {
+      "phase": "ear_follow_through",
+      "body_y": -1,
+      "shoulder_y": 1,
+      "left_ear_offset": -1,
+      "right_ear_offset": 1,
+      "arm_sway": -1,
+      "glow_alpha": 135,
+      "shadow_scale": 1.02,
+      "anchor": [
+        256,
+        470
+      ]
+    }
+  ]
+}

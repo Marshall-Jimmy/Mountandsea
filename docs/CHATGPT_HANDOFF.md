@@ -93,17 +93,18 @@
 
 ---
 
-## 当前开放 PR
+## 当前已完成里程碑（续）
 
 ### PR #39: game: add art-guided demo animation state machine
-- **状态：** Draft PR / 本次视觉修复后仍待 Godot GUI manual test
+- **状态：** 已合并
 - **Branch：** `game/demo-animation-state-machine`
+- **Merge commit：** eec4d830eb40d3e159e43f847c028f5cdf0c62ab
 - **链接：** https://github.com/Marshall-Jimmy/Mountandsea/pull/39
-- **用户最新 GUI 手测反馈：**
+- **合并前的用户 GUI 手测反馈：**
   - 走路动作还是不连贯。
   - 上半身都不动。
   - 腿的动作很别扭。
-- **本次追加修复目标：**
+- **最终追加修复目标：**
   - replace awkward leg-driven walk with stylized robe walk
   - add subtle upper-body motion
   - make robe / sleeve / talisman / shadow motion continuous
@@ -134,7 +135,26 @@
 - 状态机新增运行时 `last_facing_direction`：素材原始朝左，左移保持 `flip_h = false`，右移使用 `flip_h = true`，停止及纯上下移动保留最近水平朝向，reset/load 恢复默认朝右。
 - `minimal_playable_demo` 使用 `AnimatedSprite2D` 显示 player；移动代码只传入 movement vector，reset/load 回到 idle，动画状态不进入存档。
 - 回归测试覆盖资源路径、8 帧 walk count / loop / 8 FPS、stylized robe metadata、上半身非零小幅运动、robe / sleeve / talisman / shadow 参数连续性、固定 frame canvas / feet baseline / centered anchor、body center 与 bounding box spread、首尾及相邻帧 alpha continuity、低 alpha 残留、sprite scale / filtering / z-index、透明 Polygon2D fallback、左右转身、停止及上下移动保留朝向、状态切换不重复 restart、reset/load、journal/optional/save-load 回归和不新增 save fields。
-- Godot GUI manual test 尚未通过本次修复后的复测，仍由用户完成。
+- 将 player 的 clean cutout、stable idle、stylized robe walk 和 facing direction 修复合入 `master`。
+
+---
+
+## 当前开放 PR
+
+### PR #41: game: add shensheng idle animation
+- **状态：** Draft PR；Godot GUI manual test 保留给用户。
+- **Branch：** `game/shensheng-idle-animation`
+- **链接：** https://github.com/Marshall-Jimmy/Mountandsea/pull/41
+- **基线：** 最新 `origin/master`，包含 PR #39 merge commit `eec4d830eb40d3e159e43f847c028f5cdf0c62ab`。
+- 为 `ShenshengCreature` 新增 demo-local `AnimatedSprite2D`，仅包含 6 帧、4 FPS 的循环 `idle`，不新增 creature state machine。
+- 视觉设计使用白耳、人面兽吻、猿身、半蹲前倾肩、落地长臂、墨青灰毛发、朱砂纹样和青色眼睛 / 胸纹微光。
+- Python 标准库生成器确定性输出横向 `3072×512` RGBA8 atlas 和运动元数据；未调用外部 AI / 网络服务，未引入外部版权素材。
+- 所有帧使用 `512×512` canvas、feet-center anchor `(256, 470)`；呼吸、肩部、耳朵、手臂、青光与阴影以小幅参数闭环变化。
+- 原 `ShenshengCreature` Polygon2D 保持原位置与交互身份，仅改为透明回退；interaction、save/load、reset、journal、optional state 与 player `IDLE/WALK` 状态机保持不变。
+- 自动验证已通过：`python tools/validate_data.py`、`python tools/check_framework.py`、`python tools/validate_minimal_demo.py`、`git diff --check`、`git diff --stat`。
+- atlas reproducibility SHA-256：`C0D4A4A372CCFD1DB82D54CB0B8EF1D093F5C04AB5ECF272320BE10146CA2B13`；metadata reproducibility SHA-256：`3C1C5ECC2EB3AE609FF88BEC895D7019914EE4B18774BBA9D6E7CA2C31F44972`。
+- 显式范围检查确认 `AGENTS.md`、`game/project.godot`、Snowhuman Framework、schemas、CI、`minimal_playable_demo.gd` 均未修改；framework 项目专用关键词扫描无匹配。
+- Draft PR 已创建；不要自动合并。
 
 ---
 
@@ -159,7 +179,8 @@
 - PR #36 已合并：journal 支持 progress counters、compact/detail view toggle、recent completion hint，以及 readability / layout polish。
 - PR #36 已根据用户 GUI 手测反馈修复 journal layout overlap：progress 与 history 分区显示，history UI 只显示最近 5 条但不截断内部 history 数据。
 - PR #37 已合并：journal 支持 `J` / `V` keyboard shortcuts、可见 shortcut hint 和防 overlap layout，并已完成用户 Godot GUI 手测。
-- 当前分支正在根据用户最新 GUI 反馈将 leg-driven walk 替换为同一 silhouette 驱动的 stylized robe walk，以小幅上身 bob、连续袍摆 / 袖口 / 符牌 / 阴影运动弱化 awkward leg pose，同时保留 clean cutout、stable idle 和 facing direction。
+- PR #39 已合并：player 使用同一 silhouette 驱动的 stylized robe walk，并保留 clean cutout、stable idle、`IDLE/WALK` state machine 和 facing direction。
+- 当前 `game/shensheng-idle-animation` 分支只为狌狌增加 art-guided idle：6 帧、4 FPS、统一 feet-center anchor，不增加 walk / attack / creature state machine。
 - PR #36 不改变 optional state 核心结构、不新增 save fields、不改变 data-driven optional content 设计。
 - Snowhuman Framework 保持通用；addon 内没有项目专用内容。
 
@@ -194,34 +215,33 @@ git diff --stat
 
 ## 当前建议的下一项功能
 
-**Current active PR：** `game: add art-guided demo animation state machine`（PR #39）
+**Current active PR：** `game: add shensheng idle animation`（PR #41）
 
 **目标：**
-- 根据 `docs/art-direction-materials.md` 提供清晰、可接受的 demo-local player placeholder sprite sheet。
-- 使用 `AnimatedSprite2D` 接入 idle 2 帧和 walk 8 帧。
-- 使用独立 demo-local animation state machine 管理 `IDLE` / `WALK`，不在移动代码中复制动画状态逻辑。
-- 清理透明边缘并将所有帧对齐到统一 feet anchor，避免 idle / walk 整体瞬移。
-- 使用同一 canonical silhouette 生成 robe-dominant walk，以 8 FPS 播放连续的 8 帧循环；上半身有小幅 bob / tilt，长袍遮住夸张腿部，袍摆 / 袖口 / 符牌 / 阴影按统一周期运动。
-- 左右移动时正确水平翻转，停止和纯上下移动时保持最近水平朝向。
-- reset/load 回 idle，save data 不持久化动画状态。
-- 不改变 optional state、save fields 或 data-driven content。
+- 为 `ShenshengCreature` 增加可见的 demo-local `AnimatedSprite2D` 和单一循环 `idle` 动画。
+- 使用确定性 Python 标准库脚本生成 6 帧、4 FPS、`512×512` 单帧 canvas 的透明 atlas。
+- 以白耳、人面兽吻、猿身、半蹲前倾肩、长臂、墨青灰毛、朱砂纹与青光建立狌狌的山海异兽辨识度。
+- 保持 `(256, 470)` feet-center anchor，使用呼吸、肩部、耳动、臂摆、青光脉冲与阴影收放形成安静闭环。
+- 保留原 Polygon2D 的位置与 interaction identity，只将其视觉设为透明 fallback。
+- 不增加 walk / attack / creature state machine，不改变 player `IDLE/WALK` 状态机。
+- 不改变 interaction、optional state、save fields、save/load、reset、journal 或 data-driven content。
 - 不移动 demo-specific 内容到 Snowhuman Framework。
 
-**状态：** Draft PR 已创建；此前 clean cutout、stable idle 和 facing direction 已修复，用户最新 GUI 手测反馈为 walk 仍不连贯、上半身不动、腿部别扭；本次已替换为参数化 8 帧 stylized robe walk，并调整为 8 FPS；修复后的 Godot GUI manual test 仍由用户完成；不要自动合并。
+**状态：** Draft PR #41 已创建；本地实现、复现性检查、完整 headless 验证与范围审计已通过。Godot GUI manual test 仍由用户完成；不要自动合并。
 
 **验证：**
 - `python tools/validate_data.py` passed
 - `python tools/check_framework.py` passed
 - `python tools/validate_minimal_demo.py` passed，包含 Godot 4.7 headless import、script check-only 和 save/load regression
-- sprite atlas reproducibility：passed，重复整理 SHA-256 均为 `D0EDFC51E91EF41CB55EB2B4D6D05769AB93C52532DA689783D08543FAF4F14C`
-- walk metadata reproducibility：passed，重复生成 SHA-256 均为 `D1B6F9716FED0EB1DFE624BFA50EE90C5E18CF9329CBBBA485D8F9DF2BE7415C`
-- `git diff --check` passed；仅有 Windows line-ending warning
-- `git diff --stat` ran
-- 显式 Snowhuman Framework keyword scan for `zhuyu|shensheng|zaoyaoshan|祝余|狌狌|招摇山`：no matches
-- `AGENTS.md`、`game/project.godot`、Snowhuman Framework、schemas、CI 和无关 tooling 均未修改
+- generator 内建检查 passed：6 帧唯一、3–5 FPS、feet baseline、canvas containment、逐参数闭环连续性和相邻帧 normalized alpha delta。
+- atlas reproducibility SHA-256：`C0D4A4A372CCFD1DB82D54CB0B8EF1D093F5C04AB5ECF272320BE10146CA2B13`
+- metadata reproducibility SHA-256：`3C1C5ECC2EB3AE609FF88BEC895D7019914EE4B18774BBA9D6E7CA2C31F44972`
+- `git diff --check` passed；`git diff --stat` ran。
+- 显式 Snowhuman Framework keyword scan for `zhuyu|shensheng|zaoyaoshan|祝余|狌狌|招摇山`：no matches。
+- `AGENTS.md`、`game/project.godot`、Snowhuman Framework、schemas、CI 和 `minimal_playable_demo.gd` 均未修改。
 
 **下一步：**
-- 用户进行修复后的 Godot GUI manual test，重点检查 stylized robe walk 连续性、上半身 bob、腿部是否被长袍自然弱化、袍摆 / 袖口 / 符牌 / 阴影周期、左右转身后的循环，以及 clean cutout、stable idle、facing、reset/load 和 journal/interaction 行为未回归。
+- 创建 Draft PR 后，由用户在 Godot GUI 检查狌狌的白耳、人面兽吻、半蹲长臂剪影、透明边缘、idle 闭环与稳定锚点，并复核 interaction、save/load、reset、journal 和 player movement 未回归。
 
 ---
 
