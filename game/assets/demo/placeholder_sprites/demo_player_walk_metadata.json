@@ -1,0 +1,154 @@
+{
+  "design": "stylized_robe_walk",
+  "robe_dominant": true,
+  "leg_style": "robe_hidden_with_subtle_foot_tips",
+  "frame_width": 512,
+  "frame_height": 512,
+  "walk_frame_count": 8,
+  "walk_fps": 8.0,
+  "moving_elements": [
+    "torso",
+    "robe",
+    "sleeve",
+    "talisman",
+    "shadow"
+  ],
+  "frames": [
+    {
+      "phase": "neutral",
+      "torso_x": 0,
+      "torso_y": 0,
+      "torso_tilt": 0,
+      "robe_sway": 0,
+      "sleeve_sway": 0,
+      "talisman_x": 0,
+      "talisman_y": 0,
+      "foot_tip_shift": 0,
+      "shadow_offset": 0,
+      "shadow_scale": 1.0,
+      "feet_anchor": [
+        256,
+        488
+      ]
+    },
+    {
+      "phase": "slight_down",
+      "torso_x": 1,
+      "torso_y": 1,
+      "torso_tilt": 1,
+      "robe_sway": 3,
+      "sleeve_sway": 2,
+      "talisman_x": 1,
+      "talisman_y": 1,
+      "foot_tip_shift": 1,
+      "shadow_offset": 1,
+      "shadow_scale": 0.96,
+      "feet_anchor": [
+        256,
+        488
+      ]
+    },
+    {
+      "phase": "passing",
+      "torso_x": 1,
+      "torso_y": 2,
+      "torso_tilt": 1,
+      "robe_sway": 6,
+      "sleeve_sway": 4,
+      "talisman_x": 2,
+      "talisman_y": 2,
+      "foot_tip_shift": 2,
+      "shadow_offset": 2,
+      "shadow_scale": 0.92,
+      "feet_anchor": [
+        256,
+        488
+      ]
+    },
+    {
+      "phase": "slight_up",
+      "torso_x": 0,
+      "torso_y": 1,
+      "torso_tilt": 1,
+      "robe_sway": 3,
+      "sleeve_sway": 2,
+      "talisman_x": 1,
+      "talisman_y": 1,
+      "foot_tip_shift": 1,
+      "shadow_offset": 1,
+      "shadow_scale": 0.96,
+      "feet_anchor": [
+        256,
+        488
+      ]
+    },
+    {
+      "phase": "neutral_opposite",
+      "torso_x": 0,
+      "torso_y": 0,
+      "torso_tilt": 0,
+      "robe_sway": 0,
+      "sleeve_sway": 0,
+      "talisman_x": 0,
+      "talisman_y": 0,
+      "foot_tip_shift": 0,
+      "shadow_offset": 0,
+      "shadow_scale": 1.0,
+      "feet_anchor": [
+        256,
+        488
+      ]
+    },
+    {
+      "phase": "slight_down_opposite",
+      "torso_x": -1,
+      "torso_y": -1,
+      "torso_tilt": -1,
+      "robe_sway": -3,
+      "sleeve_sway": -2,
+      "talisman_x": -1,
+      "talisman_y": -1,
+      "foot_tip_shift": -1,
+      "shadow_offset": -1,
+      "shadow_scale": 0.96,
+      "feet_anchor": [
+        256,
+        488
+      ]
+    },
+    {
+      "phase": "passing_opposite",
+      "torso_x": -1,
+      "torso_y": -2,
+      "torso_tilt": -1,
+      "robe_sway": -6,
+      "sleeve_sway": -4,
+      "talisman_x": -2,
+      "talisman_y": -2,
+      "foot_tip_shift": -2,
+      "shadow_offset": -2,
+      "shadow_scale": 0.92,
+      "feet_anchor": [
+        256,
+        488
+      ]
+    },
+    {
+      "phase": "slight_up_opposite",
+      "torso_x": 0,
+      "torso_y": -1,
+      "torso_tilt": -1,
+      "robe_sway": -3,
+      "sleeve_sway": -2,
+      "talisman_x": -1,
+      "talisman_y": -1,
+      "foot_tip_shift": -1,
+      "shadow_offset": -1,
+      "shadow_scale": 0.96,
+      "feet_anchor": [
+        256,
+        488
+      ]
+    }
+  ]
+}

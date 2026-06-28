@@ -2,9 +2,9 @@
 
 Source layout: three columns by two rows of 512x512 RGBA frames.
 Reading order: idle 0, idle 1, then four walk key poses.
-Output layout: one horizontal row with two idle frames and an eight-frame walk
-cycle ordered as contact, down, passing, up, opposite contact, opposite down,
-opposite passing, opposite up.
+Output layout: one horizontal row with two idle frames and an eight-frame
+stylized robe walk. The walk reuses one silhouette and applies small,
+parameterized torso, robe, sleeve, talisman, foot-tip, and shadow motion.
 
 The source artwork was generated for this demo, then locally chroma-keyed.
 Every output frame is placed on the same 512x512 transparent canvas with its
@@ -16,8 +16,11 @@ This script is deterministic and uses only the Python standard library.
 
 from __future__ import annotations
 
+import json
+import math
 import struct
 import zlib
+from collections import deque
 from pathlib import Path
 
 
@@ -34,33 +37,133 @@ SOURCE_FRAME_LAYOUT = (
     ("walk", 2, 1, (224, 471)),
 )
 IDLE_SOURCE_INDICES = (0, 1)
-# The original four poses were not authored in cyclic order. This ordering
-# minimizes silhouette jumps while progressing from a wide contact pose through
-# a narrower passing pose into the opposite half of the stride.
-WALK_KEYFRAME_SOURCE_INDICES = (2, 4, 3, 5)
-WALK_CYCLE_PHASES = (
-    "contact",
-    "down",
-    "passing",
-    "up",
-    "opposite_contact",
-    "opposite_down",
-    "opposite_passing",
-    "opposite_up",
+WALK_FRAME_PARAMETERS = (
+    {
+        "phase": "neutral",
+        "torso_x": 0,
+        "torso_y": 0,
+        "torso_tilt": 0,
+        "robe_sway": 0,
+        "sleeve_sway": 0,
+        "talisman_x": 0,
+        "talisman_y": 0,
+        "foot_tip_shift": 0,
+        "shadow_offset": 0,
+        "shadow_scale": 1.0,
+    },
+    {
+        "phase": "slight_down",
+        "torso_x": 1,
+        "torso_y": 1,
+        "torso_tilt": 1,
+        "robe_sway": 3,
+        "sleeve_sway": 2,
+        "talisman_x": 1,
+        "talisman_y": 1,
+        "foot_tip_shift": 1,
+        "shadow_offset": 1,
+        "shadow_scale": 0.96,
+    },
+    {
+        "phase": "passing",
+        "torso_x": 1,
+        "torso_y": 2,
+        "torso_tilt": 1,
+        "robe_sway": 6,
+        "sleeve_sway": 4,
+        "talisman_x": 2,
+        "talisman_y": 2,
+        "foot_tip_shift": 2,
+        "shadow_offset": 2,
+        "shadow_scale": 0.92,
+    },
+    {
+        "phase": "slight_up",
+        "torso_x": 0,
+        "torso_y": 1,
+        "torso_tilt": 1,
+        "robe_sway": 3,
+        "sleeve_sway": 2,
+        "talisman_x": 1,
+        "talisman_y": 1,
+        "foot_tip_shift": 1,
+        "shadow_offset": 1,
+        "shadow_scale": 0.96,
+    },
+    {
+        "phase": "neutral_opposite",
+        "torso_x": 0,
+        "torso_y": 0,
+        "torso_tilt": 0,
+        "robe_sway": 0,
+        "sleeve_sway": 0,
+        "talisman_x": 0,
+        "talisman_y": 0,
+        "foot_tip_shift": 0,
+        "shadow_offset": 0,
+        "shadow_scale": 1.0,
+    },
+    {
+        "phase": "slight_down_opposite",
+        "torso_x": -1,
+        "torso_y": -1,
+        "torso_tilt": -1,
+        "robe_sway": -3,
+        "sleeve_sway": -2,
+        "talisman_x": -1,
+        "talisman_y": -1,
+        "foot_tip_shift": -1,
+        "shadow_offset": -1,
+        "shadow_scale": 0.96,
+    },
+    {
+        "phase": "passing_opposite",
+        "torso_x": -1,
+        "torso_y": -2,
+        "torso_tilt": -1,
+        "robe_sway": -6,
+        "sleeve_sway": -4,
+        "talisman_x": -2,
+        "talisman_y": -2,
+        "foot_tip_shift": -2,
+        "shadow_offset": -2,
+        "shadow_scale": 0.92,
+    },
+    {
+        "phase": "slight_up_opposite",
+        "torso_x": 0,
+        "torso_y": -1,
+        "torso_tilt": -1,
+        "robe_sway": -3,
+        "sleeve_sway": -2,
+        "talisman_x": -1,
+        "talisman_y": -1,
+        "foot_tip_shift": -1,
+        "shadow_offset": -1,
+        "shadow_scale": 0.96,
+    },
 )
 SOURCE_FRAME_COUNT = len(SOURCE_FRAME_LAYOUT)
-WALK_FRAME_COUNT = len(WALK_CYCLE_PHASES)
+WALK_FRAME_COUNT = len(WALK_FRAME_PARAMETERS)
 OUTPUT_FRAME_COUNT = len(IDLE_SOURCE_INDICES) + WALK_FRAME_COUNT
+WALK_FPS = 8.0
 TARGET_FEET_ANCHOR = (256, 488)
 EDGE_ALPHA_CUTOFF = 32
 SOLID_COLOR_ALPHA = 224
 COLOR_REPAIR_RADIUS = 3
 MIN_ALPHA_COMPONENT_PIXELS = 32
-CANONICAL_WALK_BODY_SOURCE_INDEX = WALK_KEYFRAME_SOURCE_INDICES[0]
-STABLE_BODY_END_Y = 260
-VARIABLE_LOWER_BODY_START_Y = 380
-INTERMEDIATE_SPLIT_X = TARGET_FEET_ANCHOR[0]
-INTERMEDIATE_FEATHER_HALF_WIDTH = 12
+CANONICAL_WALK_BODY_SOURCE_INDEX = 2
+TILT_PIVOT_Y = 170
+ROBE_MASK_START_Y = 350
+ROBE_TOP_Y = 292
+ROBE_BOTTOM_Y = 474
+ROBE_TOP_HALF_WIDTH = 70
+ROBE_BOTTOM_HALF_WIDTH = 170
+ROBE_EDGE_FEATHER = 6
+ROBE_TEXTURE_BOUNDS = (170, 250, 380, 410)
+STAFF_PRESERVE_BOUNDS = (100, 300, 128, TARGET_FEET_ANCHOR[1] + 1)
+LEG_MASK_BOUNDS = (55, ROBE_MASK_START_Y, 410, TARGET_FEET_ANCHOR[1] + 1)
+TALISMAN_CENTER = (256, 270)
 BODY_CENTER_REGION = (180, 80, 340, 330)
 MAX_BODY_CENTER_SPREAD = (8.0, 8.0)
 MAX_BOUNDING_BOX_HEIGHT_SPREAD = 16
@@ -69,6 +172,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ASSET_DIRECTORY = ROOT / "game" / "assets" / "demo" / "placeholder_sprites"
 SOURCE_PATH = ASSET_DIRECTORY / "demo_player_idle_walk_source_3x2.png"
 OUTPUT_PATH = ASSET_DIRECTORY / "demo_player_idle_walk.png"
+METADATA_PATH = ASSET_DIRECTORY / "demo_player_walk_metadata.json"
 
 
 def _paeth_predictor(left: int, up: int, upper_left: int) -> int:
@@ -306,116 +410,328 @@ def _align_frame(
     return aligned_pixels
 
 
-def _blend_frames(
-    first_frame: bytearray,
-    second_frame: bytearray,
-    second_weight: float,
-) -> bytearray:
-    first_weight = 1.0 - second_weight
-    blended_pixels = bytearray(len(first_frame))
-    for pixel_index in range(0, len(first_frame), 4):
-        first_alpha = first_frame[pixel_index + 3]
-        second_alpha = second_frame[pixel_index + 3]
-        blended_alpha = round(first_alpha * first_weight + second_alpha * second_weight)
-        if blended_alpha == 0:
-            continue
+def _composite_rgba_pixel(
+    target_pixels: bytearray,
+    pixel_index: int,
+    source_color: tuple[int, int, int],
+    source_alpha: int,
+) -> None:
+    if source_alpha <= 0:
+        return
+    destination_alpha = target_pixels[pixel_index + 3]
+    inverse_source_alpha = 255 - source_alpha
+    output_alpha = source_alpha + round(destination_alpha * inverse_source_alpha / 255)
+    if output_alpha <= 0:
+        return
 
-        for channel in range(3):
-            premultiplied_channel = (
-                first_frame[pixel_index + channel] * first_alpha * first_weight
-                + second_frame[pixel_index + channel] * second_alpha * second_weight
-            )
-            blended_pixels[pixel_index + channel] = min(
-                255,
-                round(premultiplied_channel / blended_alpha),
-            )
-        blended_pixels[pixel_index + 3] = blended_alpha
-    return blended_pixels
-
-
-def _stabilize_walk_body(
-    canonical_frame: bytearray,
-    pose_frame: bytearray,
-) -> bytearray:
-    stabilized_pixels = bytearray(len(canonical_frame))
-    for y in range(FRAME_HEIGHT):
-        if y <= STABLE_BODY_END_Y:
-            pose_weight = 0.0
-        elif y >= VARIABLE_LOWER_BODY_START_Y:
-            pose_weight = 1.0
-        else:
-            progress = (y - STABLE_BODY_END_Y) / (
-                VARIABLE_LOWER_BODY_START_Y - STABLE_BODY_END_Y
-            )
-            pose_weight = progress * progress * (3.0 - 2.0 * progress)
-
-        row_start = y * FRAME_WIDTH * 4
-        row_end = row_start + FRAME_WIDTH * 4
-        stabilized_pixels[row_start:row_end] = _blend_frames(
-            canonical_frame[row_start:row_end],
-            pose_frame[row_start:row_end],
-            pose_weight,
+    for channel in range(3):
+        premultiplied_channel = (
+            source_color[channel] * source_alpha
+            + target_pixels[pixel_index + channel]
+            * destination_alpha
+            * inverse_source_alpha
+            / 255
         )
-    return _normalize_blended_transparency(stabilized_pixels)
+        target_pixels[pixel_index + channel] = min(
+            255,
+            round(premultiplied_channel / output_alpha),
+        )
+    target_pixels[pixel_index + 3] = output_alpha
 
 
-def _splice_walk_poses(
-    first_frame: bytearray,
-    second_frame: bytearray,
-    next_pose_on_left: bool,
+def _composite_frame(target_pixels: bytearray, source_pixels: bytearray) -> None:
+    for pixel_index in range(0, len(target_pixels), 4):
+        source_alpha = source_pixels[pixel_index + 3]
+        if source_alpha == 0:
+            continue
+        _composite_rgba_pixel(
+            target_pixels,
+            pixel_index,
+            tuple(source_pixels[pixel_index : pixel_index + 3]),
+            source_alpha,
+        )
+
+
+def _draw_ellipse(
+    frame_pixels: bytearray,
+    center_x: int,
+    center_y: int,
+    radius_x: int,
+    radius_y: int,
+    color: tuple[int, int, int],
+    alpha: int,
+) -> None:
+    for y in range(max(0, center_y - radius_y), min(FRAME_HEIGHT, center_y + radius_y + 1)):
+        normalized_y = (y - center_y) / radius_y
+        for x in range(max(0, center_x - radius_x), min(FRAME_WIDTH, center_x + radius_x + 1)):
+            normalized_x = (x - center_x) / radius_x
+            distance_squared = normalized_x * normalized_x + normalized_y * normalized_y
+            if distance_squared > 1.0:
+                continue
+            edge_fade = min(1.0, max(0.0, (1.0 - distance_squared) * 3.0))
+            _composite_rgba_pixel(
+                frame_pixels,
+                _frame_pixel_index(x, y),
+                color,
+                round(alpha * edge_fade),
+            )
+
+
+def _transform_subject(
+    canonical_frame: bytearray,
+    parameters: dict[str, object],
 ) -> bytearray:
-    spliced_pixels = bytearray(len(first_frame))
-    feather_left = INTERMEDIATE_SPLIT_X - INTERMEDIATE_FEATHER_HALF_WIDTH
-    feather_right = INTERMEDIATE_SPLIT_X + INTERMEDIATE_FEATHER_HALF_WIDTH
+    transformed_pixels = bytearray(len(canonical_frame))
+    torso_x = int(parameters["torso_x"])
+    torso_y = int(parameters["torso_y"])
+    torso_tilt = int(parameters["torso_tilt"])
+    sleeve_sway = int(parameters["sleeve_sway"])
 
-    for y in range(FRAME_HEIGHT):
-        for x in range(FRAME_WIDTH):
+    for target_y in range(FRAME_HEIGHT):
+        source_y = target_y - torso_y
+        if source_y < 0 or source_y >= FRAME_HEIGHT:
+            continue
+        tilt_progress = (target_y - TILT_PIVOT_Y) / (ROBE_MASK_START_Y - TILT_PIVOT_Y)
+        tilt_offset = round(torso_tilt * max(-1.0, min(1.0, tilt_progress)))
+        for target_x in range(FRAME_WIDTH):
+            sleeve_offset = 0
+            if 300 <= target_x <= 470 and 170 <= target_y <= ROBE_MASK_START_Y:
+                sleeve_progress = (target_x - 300) / 170
+                sleeve_offset = round(sleeve_sway * sleeve_progress)
+            source_x = target_x - torso_x - tilt_offset - sleeve_offset
+            if source_x < 0 or source_x >= FRAME_WIDTH:
+                continue
+            source_index = _frame_pixel_index(source_x, source_y)
+            target_index = _frame_pixel_index(target_x, target_y)
+            transformed_pixels[target_index : target_index + 4] = canonical_frame[
+                source_index : source_index + 4
+            ]
+    return transformed_pixels
+
+
+def _clear_rectangle(
+    frame_pixels: bytearray,
+    bounds: tuple[int, int, int, int],
+) -> None:
+    left, top, right, bottom = bounds
+    for y in range(top, bottom):
+        row_start = _frame_pixel_index(left, y)
+        row_end = _frame_pixel_index(right, y)
+        frame_pixels[row_start:row_end] = b"\x00" * (row_end - row_start)
+
+
+def _copy_region_over(
+    target_pixels: bytearray,
+    source_pixels: bytearray,
+    bounds: tuple[int, int, int, int],
+) -> None:
+    left, top, right, bottom = bounds
+    for y in range(top, bottom):
+        for x in range(left, right):
             pixel_index = _frame_pixel_index(x, y)
-            if x <= feather_left:
-                second_weight = 1.0 if next_pose_on_left else 0.0
-            elif x >= feather_right:
-                second_weight = 0.0 if next_pose_on_left else 1.0
-            else:
-                progress = (x - feather_left) / (feather_right - feather_left)
-                second_weight = 1.0 - progress if next_pose_on_left else progress
+            source_alpha = source_pixels[pixel_index + 3]
+            if source_alpha == 0:
+                continue
+            _composite_rgba_pixel(
+                target_pixels,
+                pixel_index,
+                tuple(source_pixels[pixel_index : pixel_index + 3]),
+                source_alpha,
+            )
 
-            if second_weight <= 0.0:
-                spliced_pixels[pixel_index : pixel_index + 4] = first_frame[
-                    pixel_index : pixel_index + 4
-                ]
-            elif second_weight >= 1.0:
-                spliced_pixels[pixel_index : pixel_index + 4] = second_frame[
-                    pixel_index : pixel_index + 4
-                ]
-            else:
-                spliced_pixels[pixel_index : pixel_index + 4] = _blend_frames(
-                    first_frame[pixel_index : pixel_index + 4],
-                    second_frame[pixel_index : pixel_index + 4],
-                    second_weight,
-                )
 
-    return _normalize_blended_transparency(spliced_pixels)
+def _is_robe_texture_pixel(red: int, green: int, blue: int, alpha: int) -> bool:
+    if alpha < 128:
+        return False
+    if red > green * 1.25 and red > 48:
+        return False
+    if green > 150 and blue > 150:
+        return False
+    return green >= red * 0.72 and blue >= red * 0.72
+
+
+def _build_robe_texture(
+    canonical_frame: bytearray,
+) -> tuple[int, int, list[tuple[int, int, int]]]:
+    left, top, right, bottom = ROBE_TEXTURE_BOUNDS
+    texture_width = right - left
+    texture_height = bottom - top
+    texture: list[tuple[int, int, int] | None] = [None] * (texture_width * texture_height)
+    pending: deque[tuple[int, int]] = deque()
+
+    for texture_y in range(texture_height):
+        for texture_x in range(texture_width):
+            source_index = _frame_pixel_index(left + texture_x, top + texture_y)
+            red, green, blue, alpha = canonical_frame[source_index : source_index + 4]
+            if not _is_robe_texture_pixel(red, green, blue, alpha):
+                continue
+            texture[texture_y * texture_width + texture_x] = (red, green, blue)
+            pending.append((texture_x, texture_y))
+
+    if not pending:
+        raise ValueError("canonical walk frame must contain robe texture pixels")
+
+    while pending:
+        texture_x, texture_y = pending.popleft()
+        color = texture[texture_y * texture_width + texture_x]
+        for neighbor_x, neighbor_y in (
+            (texture_x - 1, texture_y),
+            (texture_x + 1, texture_y),
+            (texture_x, texture_y - 1),
+            (texture_x, texture_y + 1),
+        ):
+            if (
+                neighbor_x < 0
+                or neighbor_x >= texture_width
+                or neighbor_y < 0
+                or neighbor_y >= texture_height
+            ):
+                continue
+            neighbor_index = neighbor_y * texture_width + neighbor_x
+            if texture[neighbor_index] is not None:
+                continue
+            texture[neighbor_index] = color
+            pending.append((neighbor_x, neighbor_y))
+
+    return texture_width, texture_height, [
+        color if color is not None else (25, 61, 63) for color in texture
+    ]
+
+
+def _draw_robe(
+    frame_pixels: bytearray,
+    robe_texture: tuple[int, int, list[tuple[int, int, int]]],
+    parameters: dict[str, object],
+    frame_index: int,
+) -> None:
+    texture_width, texture_height, texture_colors = robe_texture
+    torso_x = int(parameters["torso_x"])
+    robe_sway = int(parameters["robe_sway"])
+    phase_angle = frame_index * math.tau / WALK_FRAME_COUNT
+
+    for y in range(ROBE_TOP_Y, ROBE_BOTTOM_Y + 5):
+        vertical_progress = (y - ROBE_TOP_Y) / (ROBE_BOTTOM_Y - ROBE_TOP_Y)
+        vertical_progress = max(0.0, min(1.0, vertical_progress))
+        center_x = round(
+            TARGET_FEET_ANCHOR[0]
+            + torso_x * (1.0 - vertical_progress)
+            + robe_sway * vertical_progress
+        )
+        half_width = round(
+            ROBE_TOP_HALF_WIDTH
+            + (ROBE_BOTTOM_HALF_WIDTH - ROBE_TOP_HALF_WIDTH) * vertical_progress
+        )
+        texture_y = min(texture_height - 1, round(vertical_progress * (texture_height - 1)))
+
+        for x in range(max(0, center_x - half_width), min(FRAME_WIDTH, center_x + half_width + 1)):
+            horizontal_progress = (x - (center_x - half_width)) / max(1, half_width * 2)
+            hem_wave = round(2.0 * math.sin((x - center_x) / 24.0 + phase_angle))
+            if y > ROBE_BOTTOM_Y + hem_wave:
+                continue
+            edge_distance = half_width - abs(x - center_x)
+            edge_alpha = min(1.0, edge_distance / ROBE_EDGE_FEATHER)
+            top_alpha = min(1.0, max(0.0, (y - ROBE_TOP_Y + 1) / 12.0))
+            source_alpha = round(245 * edge_alpha * top_alpha)
+            if source_alpha < EDGE_ALPHA_CUTOFF:
+                continue
+
+            texture_x = min(
+                texture_width - 1,
+                max(0, round(horizontal_progress * (texture_width - 1))),
+            )
+            red, green, blue = texture_colors[texture_y * texture_width + texture_x]
+            fabric_light = 0.96 + 0.04 * math.sin(horizontal_progress * math.tau + phase_angle)
+            color = (
+                min(255, round(red * fabric_light)),
+                min(255, round(green * fabric_light)),
+                min(255, round(blue * fabric_light)),
+            )
+            _composite_rgba_pixel(
+                frame_pixels,
+                _frame_pixel_index(x, y),
+                color,
+                source_alpha,
+            )
+
+
+def _render_robe_walk_frame(
+    canonical_frame: bytearray,
+    robe_texture: tuple[int, int, list[tuple[int, int, int]]],
+    parameters: dict[str, object],
+    frame_index: int,
+) -> bytearray:
+    frame_pixels = bytearray(FRAME_WIDTH * FRAME_HEIGHT * 4)
+    shadow_scale = float(parameters["shadow_scale"])
+    shadow_offset = int(parameters["shadow_offset"])
+    foot_tip_shift = int(parameters["foot_tip_shift"])
+
+    _draw_ellipse(
+        frame_pixels,
+        TARGET_FEET_ANCHOR[0] + shadow_offset,
+        TARGET_FEET_ANCHOR[1] - 9,
+        round(76 * shadow_scale),
+        round(9 * shadow_scale),
+        (8, 23, 25),
+        76,
+    )
+    _draw_ellipse(
+        frame_pixels,
+        236 + foot_tip_shift,
+        TARGET_FEET_ANCHOR[1] - 7,
+        18,
+        8,
+        (24, 31, 32),
+        230,
+    )
+    _draw_ellipse(
+        frame_pixels,
+        278 - foot_tip_shift,
+        TARGET_FEET_ANCHOR[1] - 7,
+        16,
+        8,
+        (23, 30, 31),
+        220,
+    )
+
+    transformed_subject = _transform_subject(canonical_frame, parameters)
+    leg_masked_subject = bytearray(transformed_subject)
+    _clear_rectangle(leg_masked_subject, LEG_MASK_BOUNDS)
+    _composite_frame(frame_pixels, leg_masked_subject)
+    _draw_robe(frame_pixels, robe_texture, parameters, frame_index)
+    _copy_region_over(
+        frame_pixels,
+        transformed_subject,
+        STAFF_PRESERVE_BOUNDS,
+    )
+
+    _draw_ellipse(
+        frame_pixels,
+        TALISMAN_CENTER[0] + int(parameters["torso_x"]) + int(parameters["talisman_x"]),
+        TALISMAN_CENTER[1] + int(parameters["torso_y"]) + int(parameters["talisman_y"]),
+        7,
+        10,
+        (76, 225, 221),
+        46,
+    )
+    _clear_rectangle(
+        frame_pixels,
+        (0, TARGET_FEET_ANCHOR[1] + 1, FRAME_WIDTH, FRAME_HEIGHT),
+    )
+    return _normalize_blended_transparency(frame_pixels)
 
 
 def _build_walk_cycle(aligned_source_frames: list[bytearray]) -> list[bytearray]:
     canonical_frame = aligned_source_frames[CANONICAL_WALK_BODY_SOURCE_INDEX]
-    keyframes = [
-        _stabilize_walk_body(canonical_frame, aligned_source_frames[source_index])
-        for source_index in WALK_KEYFRAME_SOURCE_INDICES
-    ]
-
-    walk_cycle: list[bytearray] = []
-    for keyframe_index, keyframe in enumerate(keyframes):
-        next_keyframe = keyframes[(keyframe_index + 1) % len(keyframes)]
-        walk_cycle.append(keyframe)
-        walk_cycle.append(
-            _splice_walk_poses(
-                keyframe,
-                next_keyframe,
-                next_pose_on_left=keyframe_index % 2 == 1,
-            )
+    robe_texture = _build_robe_texture(canonical_frame)
+    return [
+        _render_robe_walk_frame(
+            canonical_frame,
+            robe_texture,
+            parameters,
+            frame_index,
         )
-    return walk_cycle
+        for frame_index, parameters in enumerate(WALK_FRAME_PARAMETERS)
+    ]
 
 
 def _visible_bounds(frame_pixels: bytearray) -> tuple[int, int, int, int]:
@@ -455,7 +771,57 @@ def _normalized_alpha_difference(first_frame: bytearray, second_frame: bytearray
     return alpha_difference / (FRAME_WIDTH * FRAME_HEIGHT * 255)
 
 
+def _cyclic_parameter_delta(frame_index: int, parameter_name: str) -> float:
+    current_value = float(WALK_FRAME_PARAMETERS[frame_index][parameter_name])
+    next_value = float(
+        WALK_FRAME_PARAMETERS[(frame_index + 1) % WALK_FRAME_COUNT][parameter_name]
+    )
+    return abs(current_value - next_value)
+
+
+def _validate_walk_parameters() -> None:
+    if len(WALK_FRAME_PARAMETERS) != 8:
+        raise ValueError("stylized robe walk must contain exactly eight parameter frames")
+
+    if max(abs(int(frame["torso_x"])) for frame in WALK_FRAME_PARAMETERS) > 2:
+        raise ValueError("walk torso_x must stay within two pixels")
+    if max(abs(int(frame["torso_y"])) for frame in WALK_FRAME_PARAMETERS) > 5:
+        raise ValueError("walk torso_y must stay within five pixels")
+    if not any(int(frame["torso_y"]) != 0 for frame in WALK_FRAME_PARAMETERS):
+        raise ValueError("walk torso must include non-zero vertical motion")
+    if not any(int(frame["robe_sway"]) != 0 for frame in WALK_FRAME_PARAMETERS):
+        raise ValueError("walk robe must include cyclic sway")
+    if not any(int(frame["sleeve_sway"]) != 0 for frame in WALK_FRAME_PARAMETERS):
+        raise ValueError("walk sleeve must include follow-through")
+    if not any(
+        int(frame["talisman_x"]) != 0 or int(frame["talisman_y"]) != 0
+        for frame in WALK_FRAME_PARAMETERS
+    ):
+        raise ValueError("walk talisman must include cyclic motion")
+
+    continuity_limits = {
+        "torso_x": 1.0,
+        "torso_y": 1.0,
+        "torso_tilt": 1.0,
+        "robe_sway": 3.0,
+        "sleeve_sway": 2.0,
+        "talisman_x": 1.0,
+        "talisman_y": 1.0,
+        "foot_tip_shift": 1.0,
+        "shadow_offset": 1.0,
+        "shadow_scale": 0.05,
+    }
+    for frame_index in range(WALK_FRAME_COUNT):
+        for parameter_name, maximum_delta in continuity_limits.items():
+            if _cyclic_parameter_delta(frame_index, parameter_name) > maximum_delta:
+                raise ValueError(
+                    f"walk parameter {parameter_name} changes too abruptly "
+                    f"after frame {frame_index}"
+                )
+
+
 def _validate_walk_cycle(walk_cycle: list[bytearray]) -> None:
+    _validate_walk_parameters()
     if len(walk_cycle) != WALK_FRAME_COUNT:
         raise ValueError(f"walk cycle must contain {WALK_FRAME_COUNT} frames")
 
@@ -489,13 +855,37 @@ def _validate_walk_cycle(walk_cycle: list[bytearray]) -> None:
     if max(frame_deltas) > MAX_NORMALIZED_ALPHA_FRAME_DELTA:
         raise ValueError("walk cycle contains an abrupt silhouette transition")
 
-    for frame_index, phase_name in enumerate(WALK_CYCLE_PHASES):
+    for frame_index, parameters in enumerate(WALK_FRAME_PARAMETERS):
         center_x, center_y = body_centers[frame_index]
         print(
-            f"walk[{frame_index}] {phase_name}: bounds={bounds[frame_index]}, "
+            f"walk[{frame_index}] {parameters['phase']}: bounds={bounds[frame_index]}, "
             f"body_center=({center_x:.1f}, {center_y:.1f}), "
             f"next_alpha_delta={frame_deltas[frame_index]:.4f}"
         )
+
+
+def _write_walk_metadata() -> None:
+    metadata = {
+        "design": "stylized_robe_walk",
+        "robe_dominant": True,
+        "leg_style": "robe_hidden_with_subtle_foot_tips",
+        "frame_width": FRAME_WIDTH,
+        "frame_height": FRAME_HEIGHT,
+        "walk_frame_count": WALK_FRAME_COUNT,
+        "walk_fps": WALK_FPS,
+        "moving_elements": ["torso", "robe", "sleeve", "talisman", "shadow"],
+        "frames": [
+            {
+                **parameters,
+                "feet_anchor": list(TARGET_FEET_ANCHOR),
+            }
+            for parameters in WALK_FRAME_PARAMETERS
+        ],
+    }
+    METADATA_PATH.write_text(
+        json.dumps(metadata, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
 
 def main() -> None:
@@ -518,6 +908,8 @@ def main() -> None:
         )
         cleaned_frame = _clean_frame_transparency(source_frame)
         aligned_source_frames.append(_align_frame(cleaned_frame, source_anchor))
+    if len(aligned_source_frames) != SOURCE_FRAME_COUNT:
+        raise ValueError("source frame layout did not produce the expected frame count")
 
     walk_cycle = _build_walk_cycle(aligned_source_frames)
     _validate_walk_cycle(walk_cycle)
@@ -539,11 +931,13 @@ def main() -> None:
             ]
 
     _write_rgba_png(OUTPUT_PATH, output_width, FRAME_HEIGHT, output_pixels)
+    _write_walk_metadata()
     print(
         f"generated {OUTPUT_PATH} "
         f"({output_width}x{FRAME_HEIGHT}, frames: idle=0-1 walk=2-9, "
         f"feet anchor={TARGET_FEET_ANCHOR})"
     )
+    print(f"generated {METADATA_PATH} (stylized robe walk metadata)")
 
 
 if __name__ == "__main__":

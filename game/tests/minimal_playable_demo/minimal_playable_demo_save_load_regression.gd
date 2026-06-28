@@ -17,6 +17,7 @@ const BASIC_ORE_INTERACTABLE_ID := "collect_basic_ore"
 const LUSHU_INTERACTABLE_ID := "observe_lushu"
 const GENERIC_BEAST_INTERACTABLE_ID := "observe_generic_beast"
 const PLAYER_SPRITE_SHEET_PATH := "res://assets/demo/placeholder_sprites/demo_player_idle_walk.png"
+const PLAYER_WALK_METADATA_PATH := "res://assets/demo/placeholder_sprites/demo_player_walk_metadata.json"
 const PLAYER_ANIMATION_STATE_IDLE := 0
 const PLAYER_ANIMATION_STATE_WALK := 1
 const PLAYER_FACING_LEFT := -1
@@ -27,8 +28,8 @@ const PLAYER_WALK_FRAME_COUNT := 8
 const PLAYER_TOTAL_FRAME_COUNT := PLAYER_IDLE_FRAME_COUNT + PLAYER_WALK_FRAME_COUNT
 const PLAYER_FEET_BASELINE_Y := 488
 const PLAYER_EDGE_ALPHA_CUTOFF := 32
-const PLAYER_WALK_FPS_MIN := 8.0
-const PLAYER_WALK_FPS_MAX := 10.0
+const PLAYER_WALK_FPS_MIN := 7.0
+const PLAYER_WALK_FPS_MAX := 8.0
 const PLAYER_BODY_CENTER_REGION := Rect2i(180, 80, 160, 250)
 const PLAYER_BODY_CENTER_MAX_SPREAD := Vector2(8.0, 8.0)
 const PLAYER_WALK_BOUNDS_MAX_SPREAD := Vector2i(16, 16)
@@ -511,6 +512,7 @@ func _assert_player_animation_pipeline() -> void:
 		"walk animation FPS must stay between %.1f and %.1f" % [PLAYER_WALK_FPS_MIN, PLAYER_WALK_FPS_MAX]
 	)
 	_assert_true(sprite_frames.get_animation_loop(&"walk"), "walk animation must loop")
+	_assert_stylized_robe_walk_metadata(sprite_frames)
 	_assert_animation_frame_sources(sprite_frames, &"idle")
 	_assert_animation_frame_sources(sprite_frames, &"walk")
 	_assert_player_sprite_sheet_readability()
@@ -558,6 +560,108 @@ func _assert_player_animation_pipeline() -> void:
 	animation_state_machine.call("reset_to_idle")
 	_assert_player_facing(PLAYER_FACING_RIGHT, true, "animation reset should restore default facing")
 	_assert_player_animation_save_fields_absent()
+
+
+func _assert_stylized_robe_walk_metadata(sprite_frames: SpriteFrames) -> void:
+	var metadata_path := ProjectSettings.globalize_path(PLAYER_WALK_METADATA_PATH)
+	_assert_true(FileAccess.file_exists(metadata_path), "stylized robe walk metadata must exist")
+	if not FileAccess.file_exists(metadata_path):
+		return
+
+	var parsed_metadata: Variant = JSON.parse_string(FileAccess.get_file_as_string(metadata_path))
+	_assert_true(parsed_metadata is Dictionary, "stylized robe walk metadata must be a Dictionary")
+	if not (parsed_metadata is Dictionary):
+		return
+	var metadata: Dictionary = parsed_metadata
+	_assert_true(metadata.get("design") == "stylized_robe_walk", "walk metadata must declare stylized robe design")
+	_assert_true(metadata.get("robe_dominant") == true, "walk metadata must declare robe-dominant motion")
+	_assert_true(
+		metadata.get("leg_style") == "robe_hidden_with_subtle_foot_tips",
+		"walk metadata must hide awkward leg poses behind the robe"
+	)
+	_assert_true(
+		int(metadata.get("frame_width", 0)) == PLAYER_FRAME_SIZE.x
+		and int(metadata.get("frame_height", 0)) == PLAYER_FRAME_SIZE.y,
+		"walk metadata canvas must remain 512x512"
+	)
+	_assert_true(
+		int(metadata.get("walk_frame_count", 0)) == PLAYER_WALK_FRAME_COUNT,
+		"walk metadata frame count must match SpriteFrames"
+	)
+	_assert_true(
+		is_equal_approx(
+			float(metadata.get("walk_fps", 0.0)),
+			sprite_frames.get_animation_speed(&"walk")
+		),
+		"walk metadata FPS must match SpriteFrames"
+	)
+
+	var moving_elements: Variant = metadata.get("moving_elements", [])
+	_assert_true(moving_elements is Array, "walk metadata moving_elements must be an Array")
+	if moving_elements is Array:
+		for expected_element in ["torso", "robe", "sleeve", "talisman", "shadow"]:
+			_assert_true(
+				moving_elements.has(expected_element),
+				"walk metadata must include %s motion" % expected_element
+			)
+
+	var frames: Variant = metadata.get("frames", [])
+	_assert_true(frames is Array, "walk metadata frames must be an Array")
+	if not (frames is Array):
+		return
+	_assert_true(frames.size() == PLAYER_WALK_FRAME_COUNT, "walk metadata must contain eight frames")
+	if frames.size() != PLAYER_WALK_FRAME_COUNT:
+		return
+
+	var has_torso_motion := false
+	var has_robe_motion := false
+	var has_follow_through := false
+	for frame_index in PLAYER_WALK_FRAME_COUNT:
+		var frame: Variant = frames[frame_index]
+		_assert_true(frame is Dictionary, "walk metadata frame %d must be a Dictionary" % frame_index)
+		if not (frame is Dictionary):
+			continue
+		var feet_anchor: Variant = frame.get("feet_anchor", [])
+		_assert_true(
+			feet_anchor is Array
+			and feet_anchor.size() == 2
+			and int(feet_anchor[0]) == 256
+			and int(feet_anchor[1]) == PLAYER_FEET_BASELINE_Y,
+			"walk metadata frame %d must keep the shared feet anchor" % frame_index
+		)
+		_assert_true(abs(float(frame.get("torso_x", 99))) <= 2.0, "walk torso_x must stay subtle")
+		_assert_true(abs(float(frame.get("torso_y", 99))) <= 5.0, "walk torso_y must stay subtle")
+		_assert_true(abs(float(frame.get("foot_tip_shift", 99))) <= 2.0, "walk foot tips must stay subtle")
+		has_torso_motion = has_torso_motion or float(frame.get("torso_y", 0.0)) != 0.0
+		has_robe_motion = has_robe_motion or float(frame.get("robe_sway", 0.0)) != 0.0
+		has_follow_through = (
+			has_follow_through
+			or float(frame.get("sleeve_sway", 0.0)) != 0.0
+			or float(frame.get("talisman_x", 0.0)) != 0.0
+			or float(frame.get("talisman_y", 0.0)) != 0.0
+		)
+
+		var next_frame: Dictionary = frames[(frame_index + 1) % PLAYER_WALK_FRAME_COUNT]
+		_assert_true(
+			abs(float(frame.get("torso_y", 0.0)) - float(next_frame.get("torso_y", 0.0))) <= 1.0,
+			"walk torso bob must remain continuous after frame %d" % frame_index
+		)
+		_assert_true(
+			abs(float(frame.get("robe_sway", 0.0)) - float(next_frame.get("robe_sway", 0.0))) <= 3.0,
+			"walk robe sway must remain continuous after frame %d" % frame_index
+		)
+		_assert_true(
+			abs(float(frame.get("shadow_offset", 0.0)) - float(next_frame.get("shadow_offset", 0.0))) <= 1.0,
+			"walk shadow offset must remain continuous after frame %d" % frame_index
+		)
+		_assert_true(
+			abs(float(frame.get("shadow_scale", 1.0)) - float(next_frame.get("shadow_scale", 1.0))) <= 0.05,
+			"walk shadow scale must remain continuous after frame %d" % frame_index
+		)
+
+	_assert_true(has_torso_motion, "stylized robe walk must include non-zero upper-body motion")
+	_assert_true(has_robe_motion, "stylized robe walk must include cyclic robe sway")
+	_assert_true(has_follow_through, "stylized robe walk must include sleeve or talisman follow-through")
 
 
 func _assert_animation_frame_sources(sprite_frames: SpriteFrames, animation_name: StringName) -> void:
