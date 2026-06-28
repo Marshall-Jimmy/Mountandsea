@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "default_seed": 20260628,
+  "regions": [
+    {
+      "id": "south_mountain",
+      "name": "南山",
+      "display_name": "南山经",
+      "mvp": true,
+      "region_file": "res://data/world/regions/south_mountain.json"
+    }
+  ],
+  "starting_regions": [
+    "south_mountain"
+  ]
+}

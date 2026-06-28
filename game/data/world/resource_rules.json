@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "resource_id": "zhuyu",
+      "region_id": "south_mountain",
+      "mountain_id": "zhaoyao",
+      "spawn_weight": 80,
+      "min_count": 2,
+      "max_count": 5
+    },
+    {
+      "resource_id": "migu",
+      "region_id": "south_mountain",
+      "mountain_id": "zhaoyao",
+      "spawn_weight": 30,
+      "min_count": 1,
+      "max_count": 2
+    }
+  ]
+}

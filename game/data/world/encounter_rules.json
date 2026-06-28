@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "creature_id": "shensheng",
+      "region_id": "south_mountain",
+      "mountain_id": "zhaoyao",
+      "spawn_weight": 50,
+      "min_count": 1,
+      "max_count": 3,
+      "behavior_hint": "wander_then_flee"
+    }
+  ]
+}
