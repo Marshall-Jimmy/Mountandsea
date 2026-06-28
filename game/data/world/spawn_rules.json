@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "spawn_id": "zhaoyao_village",
+      "region_id": "south_mountain",
+      "mountain_id": "zhaoyao",
+      "spawn_weight": 100,
+      "tags": [
+        "mvp",
+        "safe_start"
+      ]
+    }
+  ]
+}

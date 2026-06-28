@@ -192,13 +192,10 @@
 - 不新增美术，不修改 `.tscn`，不实现完整全局图鉴或新 gameplay loop。
 - 完整自动验证和范围审计已通过；合并前的 Godot GUI manual test 未在本文件中记录为已通过。
 
----
-
-## 当前开放 PR
-
 ### PR #45: game: add campfire cooking loop and Migu auto-equip
-- **状态：** Draft PR；pending GUI manual test。
+- **状态：** 已合并
 - **Branch：** `game/campfire-cooking-migu-auto-equip`
+- **Merge commit：** 301f31d3f77f0f11d2ed4b547c285ba40a739d34
 - **链接：** https://github.com/Marshall-Jimmy/Mountandsea/pull/45
 - **目标：** 在同一个小范围 gameplay / UX PR 中完成 Migu auto-equip 与 campfire cooking preparation loop。
 - 迷穀采集后自动设置 `navigation.migu_equipped = true`，立即解锁 `knowledge.migu.effect` 并启用归向 HUD；原迷穀位置不再提供二次佩戴交互。
@@ -207,8 +204,24 @@
 - 祝余图鉴新增 `cooking` 槽位；首次成功烹饪后解锁“熟祝余：食之不饥更久”。
 - save version 更新为 `4`；raw 祝余继续复用 `inventory.zhuyu_leaf`，新增 `world.cooked_zhuyu_count` 与 `knowledge.zhuyu.cooking`，并保持 legacy save 缺失字段时安全默认。
 - 不新增完整背包、装备、烹饪 UI、燃料、火候或多个配方；不修改美术、`game/project.godot` 或 Snowhuman Framework。
-- 自动验证已通过：`python tools/validate_minimal_demo.py`（包含 data、framework、Godot import、script check-only、save/load regression 与 framework keyword scan）。
-- Godot GUI manual test 保留给用户；本 PR 不允许自动合并。
+- 合并前自动验证已通过；Godot GUI manual test 未在本文件中记录为已通过。
+
+---
+
+## 当前开放 PR
+
+### PR #46: game: add data-driven world map foundation
+- **状态：** Draft PR；pending review。
+- **Branch：** `game/world-map-foundation`
+- **链接：** https://github.com/Marshall-Jimmy/Mountandsea/pull/46
+- **目标：** 在 Mountandsea 游戏层建立 data-driven world map foundation，为后续随机出生、区域资源、异兽刷新、远征和地图生成提供可测试基础。
+- 新增 `world_map.json`、`south_mountain` region、spawn rules、resource rules 与 encounter rules；当前 MVP 覆盖 `south_mountain / zhaoyao`、祝余、迷穀、狌狌和 `zhaoyao_village` 出生候选点。
+- 新增游戏层 deterministic seeded RNG、weighted table、world map / region 轻量模型与 world generator。
+- generator 同时支持从 `res://` 文件加载和从已解析 Dictionary 生成；结果包含 seed、starting region/mountain、player spawn 和各 mountain 的 resources / encounters，可 JSON 序列化且同 seed 同输入完全一致。
+- 新增独立 headless world generation regression，并扩展 `tools/validate_data.py` 的 world 字段和跨文件引用校验。
+- 未修改 Snowhuman Framework；未实现正式地图渲染或完整出生系统；未修改 demo gameplay loop、scene 或 save fields。
+- 自动验证已通过：`python tools/validate_data.py`、`python tools/check_framework.py`、`python tools/validate_minimal_demo.py`、world generator check-only、world generation regression、`git diff --check` 和范围审计。
+- 本 PR 不接入正式场景，Godot GUI manual test 不是核心验证；仍保留给用户，且未标记为已通过。本 PR 不允许自动合并。
 
 ---
 
@@ -240,9 +253,10 @@
 - PR #43 已合并：demo 复用现有迷穀 optional collectible，增加迷失压力、采集后佩戴、`佩之不迷` 知识和实时 origin 归向 HUD。
 - 迷穀未佩戴时只显示方向感压力；佩戴后显示 8 方向、距离或“已接近起点”。
 - PR #44 已合并：demo-local 图鉴使用 `K` 查看祝余 / 迷穀 knowledge，live log、prompt、生存、navigation 与 optional journal 已分区；window / viewport 显式配置为 `1440 × 810`。
-- 当前 `game/campfire-cooking-migu-auto-equip` 分支让迷穀采集后自动佩戴并立即启用归向 HUD；已采集迷穀不再是原地佩戴交互点。
-- 当前分支新增 demo-local primitive 篝火与“生祝余 → 熟祝余 → 45 秒长效不饥”准备循环；祝余图鉴新增 `cooking` 槽位。
-- 当前分支 save version 为 `4`，raw 祝余沿用 `inventory.zhuyu_leaf`，熟祝余使用 `world.cooked_zhuyu_count`，并兼容缺少新字段的 legacy save。
+- PR #45 已合并：迷穀采集后自动佩戴并立即启用归向 HUD；已采集迷穀不再是原地佩戴交互点。
+- PR #45 已合并：demo-local primitive 篝火提供“生祝余 → 熟祝余 → 45 秒长效不饥”准备循环；祝余图鉴新增 `cooking` 槽位。
+- 当前 demo save version 为 `4`，raw 祝余沿用 `inventory.zhuyu_leaf`，熟祝余使用 `world.cooked_zhuyu_count`，并兼容缺少新字段的 legacy save。
+- PR #46 的 world map foundation 尚未接入 demo gameplay、scene、正式出生系统或 save data。
 - PR #36 不改变 optional state 核心结构、不新增 save fields、不改变 data-driven optional content 设计。
 - Snowhuman Framework 保持通用；addon 内没有项目专用内容。
 
@@ -277,28 +291,30 @@ git diff --stat
 
 ## 当前建议的下一项功能
 
-**Current active PR：** `game: add campfire cooking loop and Migu auto-equip`（PR #45）
+**Current active PR：** `game: add data-driven world map foundation`（PR #46）
 
 **目标：**
-- 迷穀采集后自动佩戴，立即解锁“佩之不迷”并显示归向 HUD。
-- 在 `minimal_playable_demo` 内增加 primitive 篝火，让生祝余可烹饪成熟祝余。
-- 生祝余保持 15 秒短效“不饥”；熟祝余提供 45 秒长效“不饥”。
-- 祝余图鉴新增 `knowledge.zhuyu.cooking` 槽位，并保存 cooked count、satiety 与 cooking knowledge。
-- 不新增完整背包 / 装备 / 烹饪系统，不新增美术。
-- 不移动 demo-specific 内容到 Snowhuman Framework。
+- 在游戏层读取 world skeleton、south mountain region 和 spawn/resource/encounter rules。
+- 使用 seed 生成稳定的 starting region/mountain、player spawn、resource counts 与 encounter counts。
+- 提供独立的 deterministic seeded RNG、weighted table、轻量 world/region validation 和 JSON-safe generation result。
+- 不修改 Snowhuman Framework，不接入正式地图渲染、完整出生系统、demo gameplay 或 save fields。
 
-**状态：** Draft PR #45 已创建；本地实现和 headless regression 已通过。Godot GUI manual test 仍由用户完成；不要自动合并。
+**状态：** Draft PR #46 已创建；本地实现、world generation regression 和现有 minimal demo regression 已通过。Godot GUI manual test 仍由用户完成；不要自动合并。
 
 **验证：**
 - `python tools/validate_data.py` passed
 - `python tools/check_framework.py` passed
 - `python tools/validate_minimal_demo.py` passed，包含 Godot 4.7 headless import、script check-only 和 save/load regression
-- `git diff --check` passed；最终 `git diff --stat` 将在发布前复核。
-- 显式 Snowhuman Framework keyword scan for `zhuyu|shensheng|zaoyaoshan|migu|祝余|狌狌|招摇山|迷穀|迷榖`：no matches。
-- 未修改 `AGENTS.md`、`game/project.godot`、Snowhuman Framework、schemas、CI、tooling 或美术资产；`.tscn` 只新增 demo-local primitive 篝火。
+- `godot --headless --path game --check-only --script res://scripts/world/world_generator.gd` passed
+- `godot --headless --path game --script res://tests/world/world_generation_regression.gd` passed
+- `python -m py_compile tools/validate_data.py` passed
+- `git diff --check` passed；`git diff --stat` 已运行并确认范围。
+- 显式 Snowhuman Framework keyword scan for `zhuyu|shensheng|zaoyaoshan|migu|south_mountain|zhaoyao|祝余|狌狌|招摇山|迷穀|迷榖|南山经`：no matches。
+- 未修改 `AGENTS.md`、`game/project.godot`、Snowhuman Framework、schemas、CI、美术资产、demo scene 或 demo gameplay；tooling 仅扩展 world data validation。
 
 **下一步：**
-- 创建 Draft PR 后，由用户在 Godot GUI 检查迷穀采集后自动佩戴、归向 HUD 即时出现、篝火位置与 prompt、生 / 熟祝余选择、45 秒熟祝余效力、K 图鉴 cooking 槽位，并复核 J / V / K、player animation 和 shensheng idle 未回归。
+- 用户 review PR #46；由于本 PR 不接入场景，GUI 手测不是核心，但仍不得标记为已通过。
+- 后续 PR 可基于稳定数据结果选择一个窄范围入口，例如 debug world summary 或正式出生候选消费；不要在 PR #46 内扩展地图渲染、远征或完整刷新系统。
 
 ---
 
@@ -307,7 +323,12 @@ git diff --stat
 - `game/scenes/demo/minimal_playable_demo.gd`
 - `game/scenes/demo/minimal_playable_demo.tscn`
 - `game/tests/minimal_playable_demo/minimal_playable_demo_save_load_regression.gd`
+- `game/data/world/world_map.json`
+- `game/data/world/regions/south_mountain.json`
+- `game/scripts/world/world_generator.gd`
+- `game/tests/world/world_generation_regression.gd`
 - `tools/validate_minimal_demo.py`
+- `tools/validate_data.py`
 - `AGENTS.md`
 - `docs/CHATGPT_HANDOFF.md`
 

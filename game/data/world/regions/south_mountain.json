@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "id": "south_mountain",
+  "name": "南山经",
+  "mvp_mountains": [
+    {
+      "id": "zhaoyao",
+      "name": "招摇山",
+      "biomes": [
+        "forest",
+        "mountain",
+        "grassland"
+      ],
+      "resources": [
+        "zhuyu",
+        "migu",
+        "yupei"
+      ],
+      "creatures": [
+        "shensheng"
+      ],
+      "spawn_weight": 100
+    }
+  ]
+}
