@@ -22,8 +22,17 @@ const PLAYER_ANIMATION_STATE_WALK := 1
 const PLAYER_FACING_LEFT := -1
 const PLAYER_FACING_RIGHT := 1
 const PLAYER_FRAME_SIZE := Vector2i(512, 512)
+const PLAYER_IDLE_FRAME_COUNT := 2
+const PLAYER_WALK_FRAME_COUNT := 8
+const PLAYER_TOTAL_FRAME_COUNT := PLAYER_IDLE_FRAME_COUNT + PLAYER_WALK_FRAME_COUNT
 const PLAYER_FEET_BASELINE_Y := 488
 const PLAYER_EDGE_ALPHA_CUTOFF := 32
+const PLAYER_WALK_FPS_MIN := 8.0
+const PLAYER_WALK_FPS_MAX := 10.0
+const PLAYER_BODY_CENTER_REGION := Rect2i(180, 80, 160, 250)
+const PLAYER_BODY_CENTER_MAX_SPREAD := Vector2(8.0, 8.0)
+const PLAYER_WALK_BOUNDS_MAX_SPREAD := Vector2i(16, 16)
+const PLAYER_WALK_MAX_NORMALIZED_ALPHA_DELTA := 0.08
 const STEP_COLLECT_ZHUYU := 0
 const STEP_OBSERVE_SHENSHENG := 2
 const STEP_COMPLETE := 3
@@ -488,8 +497,20 @@ func _assert_player_animation_pipeline() -> void:
 
 	_assert_true(sprite_frames.has_animation(&"idle"), "player sprite frames must include idle")
 	_assert_true(sprite_frames.has_animation(&"walk"), "player sprite frames must include walk")
-	_assert_true(sprite_frames.get_frame_count(&"idle") == 2, "idle animation must include exactly 2 frames")
-	_assert_true(sprite_frames.get_frame_count(&"walk") == 4, "walk animation must include exactly 4 frames")
+	_assert_true(
+		sprite_frames.get_frame_count(&"idle") == PLAYER_IDLE_FRAME_COUNT,
+		"idle animation must include exactly %d frames" % PLAYER_IDLE_FRAME_COUNT
+	)
+	_assert_true(
+		sprite_frames.get_frame_count(&"walk") == PLAYER_WALK_FRAME_COUNT,
+		"walk animation must include exactly %d frames" % PLAYER_WALK_FRAME_COUNT
+	)
+	var walk_fps := sprite_frames.get_animation_speed(&"walk")
+	_assert_true(
+		walk_fps >= PLAYER_WALK_FPS_MIN and walk_fps <= PLAYER_WALK_FPS_MAX,
+		"walk animation FPS must stay between %.1f and %.1f" % [PLAYER_WALK_FPS_MIN, PLAYER_WALK_FPS_MAX]
+	)
+	_assert_true(sprite_frames.get_animation_loop(&"walk"), "walk animation must loop")
 	_assert_animation_frame_sources(sprite_frames, &"idle")
 	_assert_animation_frame_sources(sprite_frames, &"walk")
 	_assert_player_sprite_sheet_readability()
@@ -563,8 +584,8 @@ func _assert_player_sprite_sheet_readability() -> void:
 	if sprite_sheet == null:
 		return
 	_assert_true(
-		sprite_sheet.get_width() == PLAYER_FRAME_SIZE.x * 6,
-		"player sprite sheet must contain six horizontal frames"
+		sprite_sheet.get_width() == PLAYER_FRAME_SIZE.x * PLAYER_TOTAL_FRAME_COUNT,
+		"player sprite sheet must contain %d horizontal frames" % PLAYER_TOTAL_FRAME_COUNT
 	)
 	_assert_true(
 		sprite_sheet.get_height() == PLAYER_FRAME_SIZE.y,
@@ -573,8 +594,9 @@ func _assert_player_sprite_sheet_readability() -> void:
 	_assert_true(sprite_sheet.get_format() == Image.FORMAT_RGBA8, "player sprite sheet must use RGBA8 transparency")
 
 	var frame_data: Array[PackedByteArray] = []
+	var frame_images: Array[Image] = []
 	var used_rects: Array[Rect2i] = []
-	for frame_index in 6:
+	for frame_index in PLAYER_TOTAL_FRAME_COUNT:
 		var frame_image := sprite_sheet.get_region(
 			Rect2i(frame_index * PLAYER_FRAME_SIZE.x, 0, PLAYER_FRAME_SIZE.x, PLAYER_FRAME_SIZE.y)
 		)
@@ -594,6 +616,7 @@ func _assert_player_sprite_sheet_readability() -> void:
 			and used_rect.end.y < PLAYER_FRAME_SIZE.y,
 			"player frame %d cutout must stay inside its transparent canvas" % frame_index
 		)
+		frame_images.append(frame_image)
 		used_rects.append(used_rect)
 		frame_data.append(frame_image.get_data())
 
@@ -611,17 +634,93 @@ func _assert_player_sprite_sheet_readability() -> void:
 			_assert_true(false, "player sprite cutout must not contain low-alpha matte residue")
 			break
 
+	_assert_walk_frame_continuity(frame_images, used_rects)
 	_assert_true(frame_data[0] != frame_data[1], "idle frames must contain visible motion or glow changes")
-	for walk_frame_index in range(2, 6):
+	for walk_frame_index in range(PLAYER_IDLE_FRAME_COUNT, PLAYER_TOTAL_FRAME_COUNT):
 		_assert_true(
 			frame_data[walk_frame_index] != frame_data[0] and frame_data[walk_frame_index] != frame_data[1],
-			"walk frame %d must differ from idle frames" % (walk_frame_index - 2)
+			"walk frame %d must differ from idle frames" % (walk_frame_index - PLAYER_IDLE_FRAME_COUNT)
 		)
-		for previous_walk_frame_index in range(2, walk_frame_index):
+		for previous_walk_frame_index in range(PLAYER_IDLE_FRAME_COUNT, walk_frame_index):
 			_assert_true(
 				frame_data[walk_frame_index] != frame_data[previous_walk_frame_index],
-				"walk frame %d must differ from earlier walk frames" % (walk_frame_index - 2)
+				"walk frame %d must differ from earlier walk frames" % (
+					walk_frame_index - PLAYER_IDLE_FRAME_COUNT
+				)
 			)
+
+
+func _assert_walk_frame_continuity(frame_images: Array[Image], used_rects: Array[Rect2i]) -> void:
+	var min_body_center := Vector2(INF, INF)
+	var max_body_center := Vector2(-INF, -INF)
+	var min_bounds_size := Vector2i(PLAYER_FRAME_SIZE.x, PLAYER_FRAME_SIZE.y)
+	var max_bounds_size := Vector2i.ZERO
+	var walk_frames: Array[Image] = []
+
+	for walk_index in PLAYER_WALK_FRAME_COUNT:
+		var atlas_index := PLAYER_IDLE_FRAME_COUNT + walk_index
+		var frame_image := frame_images[atlas_index]
+		var body_center := _calculate_alpha_weighted_center(frame_image, PLAYER_BODY_CENTER_REGION)
+		var bounds_size := used_rects[atlas_index].size
+		min_body_center.x = min(min_body_center.x, body_center.x)
+		min_body_center.y = min(min_body_center.y, body_center.y)
+		max_body_center.x = max(max_body_center.x, body_center.x)
+		max_body_center.y = max(max_body_center.y, body_center.y)
+		min_bounds_size.x = min(min_bounds_size.x, bounds_size.x)
+		min_bounds_size.y = min(min_bounds_size.y, bounds_size.y)
+		max_bounds_size.x = max(max_bounds_size.x, bounds_size.x)
+		max_bounds_size.y = max(max_bounds_size.y, bounds_size.y)
+		walk_frames.append(frame_image)
+
+	var body_center_spread := max_body_center - min_body_center
+	_assert_true(
+		body_center_spread.x <= PLAYER_BODY_CENTER_MAX_SPREAD.x
+		and body_center_spread.y <= PLAYER_BODY_CENTER_MAX_SPREAD.y,
+		"walk frame body centers must stay within the configured stability range"
+	)
+	var bounds_spread := max_bounds_size - min_bounds_size
+	_assert_true(
+		bounds_spread.x <= PLAYER_WALK_BOUNDS_MAX_SPREAD.x
+		and bounds_spread.y <= PLAYER_WALK_BOUNDS_MAX_SPREAD.y,
+		"walk frame bounding boxes must remain visually consistent"
+	)
+
+	for walk_index in PLAYER_WALK_FRAME_COUNT:
+		var next_walk_index := (walk_index + 1) % PLAYER_WALK_FRAME_COUNT
+		var alpha_delta := _normalized_alpha_difference(
+			walk_frames[walk_index],
+			walk_frames[next_walk_index]
+		)
+		_assert_true(
+			alpha_delta <= PLAYER_WALK_MAX_NORMALIZED_ALPHA_DELTA,
+			"walk frame %d transition must remain continuous, actual alpha delta=%.4f" % [
+				walk_index,
+				alpha_delta
+			]
+		)
+
+
+func _calculate_alpha_weighted_center(frame_image: Image, region: Rect2i) -> Vector2:
+	var weighted_position := Vector2.ZERO
+	var total_alpha := 0.0
+	for y in range(region.position.y, region.end.y):
+		for x in range(region.position.x, region.end.x):
+			var alpha := frame_image.get_pixel(x, y).a
+			weighted_position += Vector2(x, y) * alpha
+			total_alpha += alpha
+	_assert_true(total_alpha > 0.0, "walk frame body center region must contain visible pixels")
+	if total_alpha <= 0.0:
+		return Vector2.ZERO
+	return weighted_position / total_alpha
+
+
+func _normalized_alpha_difference(first_frame: Image, second_frame: Image) -> float:
+	var first_data := first_frame.get_data()
+	var second_data := second_frame.get_data()
+	var alpha_difference := 0
+	for alpha_index in range(3, first_data.size(), 4):
+		alpha_difference += abs(int(first_data[alpha_index]) - int(second_data[alpha_index]))
+	return float(alpha_difference) / float(PLAYER_FRAME_SIZE.x * PLAYER_FRAME_SIZE.y * 255)
 
 
 func _assert_player_animation_state(expected_state: int, expected_animation: StringName) -> void:
