@@ -19,28 +19,40 @@ const DEMO_SAVE_SLOT := 0
 const PLAYER_START_POSITION := Vector2(220, 260)
 const MAX_HISTORY_EVENTS := 8
 const HISTORY_UI_RECENT_LIMIT := 5
+const LIVE_LOG_UI_RECENT_LIMIT := 3
 const OPTIONAL_PROGRESS_DETAIL_LINE_LIMIT := 10
 const OPTIONAL_PROGRESS_COMPACT_LINE_LIMIT := 6
 const JOURNAL_SHORTCUT_HINT_TEXT := "快捷键：J 隐藏/显示，V 简洁/详细"
 const JOURNAL_SHORTCUT_HINT_FONT_SIZE := 13
-const JOURNAL_PANEL_TOP := 248.0
-const JOURNAL_PANEL_BOTTOM := 600.0
+const TITLE_RECT := Rect2(480, 16, 220, 24)
+const INSTRUCTION_RECT := Rect2(420, 44, 520, 24)
+const OBJECTIVE_RECT := Rect2(420, 76, 300, 24)
+const TARGET_HINT_RECT := Rect2(720, 76, 340, 24)
+const STATUS_RECT := Rect2(24, 104, 396, 68)
+const SURVIVAL_HUD_RECT := Rect2(24, 16, 336, 80)
+const NAVIGATION_HUD_RECT := Rect2(1080, 16, 336, 80)
+const LIVE_LOG_RECT := Rect2(24, 650, 476, 136)
+const PROMPT_RECT := Rect2(520, 750, 520, 36)
+const DEMO_MENU_RECT := Rect2(1080, 16, 336, 208)
+const JOURNAL_PANEL_RECT := Rect2(1080, 144, 336, 576)
+const JOURNAL_TOGGLE_RECT := Rect2(1270, 104, 146, 32)
+const COMPLETION_PANEL_RECT := Rect2(500, 140, 440, 500)
+const KNOWLEDGE_CODEX_PANEL_RECT := Rect2(360, 160, 620, 460)
+const KNOWLEDGE_CODEX_CONTENT_RECT := Rect2(20, 56, 580, 340)
+const KNOWLEDGE_CODEX_TITLE_RECT := Rect2(20, 16, 580, 28)
+const KNOWLEDGE_CODEX_HINT_RECT := Rect2(20, 410, 580, 28)
 const JOURNAL_CONTENT_LEFT := 16.0
-const JOURNAL_CONTENT_RIGHT := 250.0
-const JOURNAL_TITLE_RIGHT := 148.0
-const JOURNAL_VIEW_BUTTON_LEFT := 154.0
+const JOURNAL_CONTENT_RIGHT := 320.0
+const JOURNAL_TITLE_RIGHT := 196.0
+const JOURNAL_VIEW_BUTTON_LEFT := 208.0
 const JOURNAL_TITLE_TOP := 8.0
 const JOURNAL_TITLE_BOTTOM := 36.0
 const JOURNAL_HINT_TOP := 44.0
 const JOURNAL_HINT_BOTTOM := 68.0
 const JOURNAL_PROGRESS_TOP := 76.0
-const JOURNAL_PROGRESS_BOTTOM := 224.0
-const JOURNAL_HISTORY_TOP := 238.0
-const JOURNAL_HISTORY_BOTTOM := 340.0
-const JOURNAL_TOGGLE_BUTTON_LEFT := 884.0
-const JOURNAL_TOGGLE_BUTTON_TOP := 208.0
-const JOURNAL_TOGGLE_BUTTON_RIGHT := 1010.0
-const JOURNAL_TOGGLE_BUTTON_BOTTOM := 240.0
+const JOURNAL_PROGRESS_BOTTOM := 260.0
+const JOURNAL_HISTORY_TOP := 276.0
+const JOURNAL_HISTORY_BOTTOM := 560.0
 const DEMO_HUNGER_MAX := 100.0
 const DEMO_HUNGER_DECAY_PER_SECOND := 2.0
 const DEMO_HUNGER_WARNING_THRESHOLD := 70.0
@@ -77,6 +89,8 @@ enum DemoStep {
 @onready var migu_branch_label: Label = $WorldRoot/MiguBranchLabel
 @onready var lushu_creature: Node2D = %LushuCreature
 @onready var lushu_label: Label = $WorldRoot/LushuLabel
+@onready var title_label: Label = %TitleLabel
+@onready var instruction_label: Label = %InstructionLabel
 @onready var objective_label: Label = %ObjectiveLabel
 @onready var target_hint_label: Label = %TargetHintLabel
 @onready var prompt_label: Label = %PromptLabel
@@ -108,6 +122,7 @@ var initialized := false
 var save_provider_registered := false
 var menu_open := false
 var interaction_history: Array[String] = []
+var live_log_entries: Array[String] = []
 var zhuyu_collected := false
 var stone_activated := false
 var shensheng_discovered := false
@@ -120,6 +135,10 @@ var optional_progress_view_toggle_button: Button
 var optional_progress_shortcut_hint_label: Label
 var survival_status_label: Label
 var navigation_status_label: Label
+var knowledge_codex_panel: Panel
+var knowledge_codex_title_label: Label
+var knowledge_codex_content_label: Label
+var knowledge_codex_hint_label: Label
 var optional_progress_detail_view := true
 var recent_optional_completion_name := ""
 var interaction_history_panel_visible := true
@@ -149,17 +168,21 @@ var was_interact_key_pressed := false
 var was_menu_toggle_key_pressed := false
 var was_journal_toggle_key_pressed := false
 var was_progress_view_toggle_key_pressed := false
+var was_codex_toggle_key_pressed := false
 
 
 func _ready() -> void:
 	_init_optional_content_config()
+	_configure_hud_layout()
 	_configure_interaction_history_panel()
 	_configure_survival_status_label()
 	_configure_navigation_status_label()
+	_configure_knowledge_codex_panel()
 	_connect_button_signals()
 	demo_menu_panel.visible = false
 	completion_panel.visible = false
 	prompt_label.visible = false
+	_set_knowledge_codex_visible(false)
 	_set_interaction_history_panel_visible(true)
 	_apply_world_visual_state()
 	_update_history_ui()
@@ -331,6 +354,7 @@ func _create_optional_label(label_name: String, label_position: Vector2, text: S
 
 func _process(delta: float) -> void:
 	_handle_menu_toggle_input()
+	_handle_codex_shortcut_input()
 
 	if not initialized:
 		_set_player_animation_movement(Vector2.ZERO)
@@ -382,6 +406,40 @@ func _connect_button_signals() -> void:
 		optional_progress_view_toggle_button.pressed.connect(progress_view_toggle_callable)
 
 
+func _configure_hud_layout() -> void:
+	_apply_control_rect(title_label, TITLE_RECT)
+	_apply_control_rect(instruction_label, INSTRUCTION_RECT)
+	_apply_control_rect(objective_label, OBJECTIVE_RECT)
+	_apply_control_rect(target_hint_label, TARGET_HINT_RECT)
+	_apply_control_rect(status_label, STATUS_RECT)
+	_apply_control_rect(prompt_label, PROMPT_RECT)
+	_apply_control_rect(log_label, LIVE_LOG_RECT)
+	_apply_control_rect(demo_menu_panel, DEMO_MENU_RECT)
+	_apply_control_rect(completion_panel, COMPLETION_PANEL_RECT)
+
+	instruction_label.text = "WASD / 方向键移动，E 交互，K 图鉴"
+	status_label.visible = false
+	prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	prompt_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	prompt_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	prompt_label.clip_text = true
+	log_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	log_label.scroll_active = false
+	log_label.scroll_following = false
+	log_label.fit_content = false
+	log_label.clip_contents = true
+	_refresh_live_log_ui()
+
+
+func _apply_control_rect(control: Control, rect: Rect2) -> void:
+	if control == null:
+		return
+	control.offset_left = rect.position.x
+	control.offset_top = rect.position.y
+	control.offset_right = rect.end.x
+	control.offset_bottom = rect.end.y
+
+
 func _configure_interaction_history_panel() -> void:
 	if interaction_history_panel == null:
 		return
@@ -401,10 +459,7 @@ func _configure_survival_status_label() -> void:
 		survival_status_label.name = "SurvivalStatusLabel"
 		survival_status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		$CanvasLayer.add_child(survival_status_label)
-	survival_status_label.offset_left = 744.0
-	survival_status_label.offset_top = 16.0
-	survival_status_label.offset_right = 1010.0
-	survival_status_label.offset_bottom = 104.0
+	_apply_control_rect(survival_status_label, SURVIVAL_HUD_RECT)
 	_refresh_survival_status()
 
 
@@ -414,16 +469,47 @@ func _configure_navigation_status_label() -> void:
 		navigation_status_label.name = "NavigationStatusLabel"
 		navigation_status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		$CanvasLayer.add_child(navigation_status_label)
-	navigation_status_label.offset_left = 744.0
-	navigation_status_label.offset_top = 112.0
-	navigation_status_label.offset_right = 1010.0
-	navigation_status_label.offset_bottom = 200.0
+	_apply_control_rect(navigation_status_label, NAVIGATION_HUD_RECT)
 	_refresh_navigation_status()
 
 
+func _configure_knowledge_codex_panel() -> void:
+	if knowledge_codex_panel == null:
+		knowledge_codex_panel = Panel.new()
+		knowledge_codex_panel.name = "KnowledgeCodexPanel"
+		$CanvasLayer.add_child(knowledge_codex_panel)
+	_apply_control_rect(knowledge_codex_panel, KNOWLEDGE_CODEX_PANEL_RECT)
+
+	if knowledge_codex_title_label == null:
+		knowledge_codex_title_label = Label.new()
+		knowledge_codex_title_label.name = "KnowledgeCodexTitleLabel"
+		knowledge_codex_panel.add_child(knowledge_codex_title_label)
+	knowledge_codex_title_label.text = "图鉴 / Knowledge Codex"
+	knowledge_codex_title_label.add_theme_font_size_override("font_size", 20)
+	_apply_control_rect(knowledge_codex_title_label, KNOWLEDGE_CODEX_TITLE_RECT)
+
+	if knowledge_codex_content_label == null:
+		knowledge_codex_content_label = Label.new()
+		knowledge_codex_content_label.name = "KnowledgeCodexContentLabel"
+		knowledge_codex_panel.add_child(knowledge_codex_content_label)
+	knowledge_codex_content_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	knowledge_codex_content_label.clip_text = true
+	knowledge_codex_content_label.add_theme_font_size_override("font_size", 16)
+	_apply_control_rect(knowledge_codex_content_label, KNOWLEDGE_CODEX_CONTENT_RECT)
+
+	if knowledge_codex_hint_label == null:
+		knowledge_codex_hint_label = Label.new()
+		knowledge_codex_hint_label.name = "KnowledgeCodexHintLabel"
+		knowledge_codex_panel.add_child(knowledge_codex_hint_label)
+	knowledge_codex_hint_label.text = "K 打开/关闭图鉴"
+	knowledge_codex_hint_label.add_theme_font_size_override("font_size", 13)
+	knowledge_codex_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_apply_control_rect(knowledge_codex_hint_label, KNOWLEDGE_CODEX_HINT_RECT)
+	_refresh_knowledge_codex()
+
+
 func _configure_interaction_history_panel_bounds() -> void:
-	interaction_history_panel.offset_top = JOURNAL_PANEL_TOP
-	interaction_history_panel.offset_bottom = JOURNAL_PANEL_BOTTOM
+	_apply_control_rect(interaction_history_panel, JOURNAL_PANEL_RECT)
 
 
 func _configure_interaction_history_title() -> void:
@@ -494,10 +580,7 @@ func _configure_interaction_history_label() -> void:
 func _configure_interaction_history_toggle_button() -> void:
 	if interaction_history_toggle_button == null:
 		return
-	interaction_history_toggle_button.offset_left = JOURNAL_TOGGLE_BUTTON_LEFT
-	interaction_history_toggle_button.offset_top = JOURNAL_TOGGLE_BUTTON_TOP
-	interaction_history_toggle_button.offset_right = JOURNAL_TOGGLE_BUTTON_RIGHT
-	interaction_history_toggle_button.offset_bottom = JOURNAL_TOGGLE_BUTTON_BOTTOM
+	_apply_control_rect(interaction_history_toggle_button, JOURNAL_TOGGLE_RECT)
 	interaction_history_toggle_button.visible = true
 	_update_interaction_history_toggle_text()
 
@@ -519,6 +602,78 @@ func _update_optional_progress_view_toggle_text() -> void:
 
 func _on_interaction_history_toggle_pressed() -> void:
 	_set_interaction_history_panel_visible(not interaction_history_panel_visible)
+
+
+func _handle_codex_shortcut_input() -> void:
+	var codex_toggle_key_pressed := Input.is_key_pressed(KEY_K)
+	if (
+		codex_toggle_key_pressed
+		and not was_codex_toggle_key_pressed
+		and _can_toggle_knowledge_codex()
+	):
+		_on_knowledge_codex_toggle_pressed()
+	was_codex_toggle_key_pressed = codex_toggle_key_pressed
+
+
+func _can_toggle_knowledge_codex() -> bool:
+	return (
+		initialized
+		and not demo_menu_panel.visible
+		and not completion_panel.visible
+	)
+
+
+func _on_knowledge_codex_toggle_pressed() -> void:
+	var should_show := knowledge_codex_panel != null and not knowledge_codex_panel.visible
+	_set_knowledge_codex_visible(should_show)
+
+
+func _set_knowledge_codex_visible(is_visible: bool) -> void:
+	if knowledge_codex_panel == null:
+		return
+	knowledge_codex_panel.visible = is_visible
+	if is_visible:
+		_refresh_knowledge_codex()
+		prompt_label.visible = false
+
+
+func _refresh_knowledge_codex() -> void:
+	if knowledge_codex_content_label == null:
+		return
+	knowledge_codex_content_label.text = (
+		"祝余\n"
+		+ "- 外观：%s\n" % _format_codex_slot(
+			_has_zhuyu_knowledge(ZHUYU_KNOWLEDGE_APPEARANCE),
+			"其状如韭而青华"
+		)
+		+ "- 类型：%s\n" % _format_codex_slot(
+			_has_zhuyu_knowledge(ZHUYU_KNOWLEDGE_TYPE),
+			"草"
+		)
+		+ "- 效果：%s\n\n" % _format_codex_slot(
+			_has_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT),
+			"食之不饥"
+		)
+		+ "迷穀\n"
+		+ "- 外观：%s\n" % _format_codex_slot(
+			_has_migu_knowledge(MIGU_KNOWLEDGE_APPEARANCE),
+			"其状如榖而黑理，其华自照"
+		)
+		+ "- 类型：%s\n" % _format_codex_slot(
+			_has_migu_knowledge(MIGU_KNOWLEDGE_TYPE),
+			"木"
+		)
+		+ "- 效果：%s" % _format_codex_slot(
+			_has_migu_knowledge(MIGU_KNOWLEDGE_EFFECT),
+			"佩之不迷"
+		)
+	)
+
+
+func _format_codex_slot(is_unlocked: bool, unlocked_text: String) -> String:
+	if is_unlocked:
+		return unlocked_text
+	return "???"
 
 
 func _handle_journal_shortcut_input() -> void:
@@ -720,10 +875,15 @@ func _handle_menu_toggle_input() -> void:
 
 
 func _is_ui_blocking_gameplay() -> bool:
-	return demo_menu_panel.visible or completion_panel.visible
+	return (
+		demo_menu_panel.visible
+		or completion_panel.visible
+		or (knowledge_codex_panel != null and knowledge_codex_panel.visible)
+	)
 
 
 func _open_demo_menu() -> void:
+	_set_knowledge_codex_visible(false)
 	demo_menu_panel.visible = true
 	menu_open = true
 	prompt_label.visible = false
@@ -1279,6 +1439,7 @@ func _unlock_migu_knowledge(slot: String, feedback: String) -> bool:
 		migu_branch_label.text = "迷穀"
 	_log(feedback)
 	_refresh_navigation_status()
+	_refresh_knowledge_codex()
 	return true
 
 
@@ -1361,6 +1522,7 @@ func _unlock_zhuyu_knowledge(slot: String, feedback: String) -> bool:
 		zhuyu_label.text = "祝余"
 	_log(feedback)
 	_refresh_survival_status()
+	_refresh_knowledge_codex()
 	return true
 
 
@@ -1703,6 +1865,7 @@ func _apply_demo_save_state(state: Dictionary) -> bool:
 	_refresh_status()
 	_refresh_survival_status()
 	_update_navigation_state()
+	_refresh_knowledge_codex()
 	_update_objective_ui()
 	_update_objective_guidance()
 	return true
@@ -1791,6 +1954,8 @@ func _reset_demo_state(history_message := "Demo 已重置") -> void:
 	migu_equipped = false
 	navigation_pressure_level = 0
 	_reset_migu_knowledge_state()
+	_set_knowledge_codex_visible(false)
+	was_codex_toggle_key_pressed = false
 	recent_optional_completion_name = ""
 	_reset_optional_state()
 	_close_demo_menu()
@@ -1799,6 +1964,7 @@ func _reset_demo_state(history_message := "Demo 已重置") -> void:
 	_refresh_status()
 	_refresh_survival_status()
 	_refresh_navigation_status()
+	_refresh_knowledge_codex()
 	_update_objective_ui()
 	_update_objective_guidance()
 	interaction_history.clear()
@@ -1839,6 +2005,7 @@ func _apply_world_visual_state() -> void:
 
 
 func _show_completion_panel() -> void:
+	_set_knowledge_codex_visible(false)
 	_refresh_completion_summary()
 	completion_panel.visible = true
 	prompt_label.visible = false
@@ -2379,4 +2546,18 @@ func _log_error(message: String) -> void:
 
 func _log(message: String) -> void:
 	var line := "%s  %s" % [Time.get_time_string_from_system(), message]
-	log_label.text += line + "\n"
+	live_log_entries.append(line)
+	_refresh_live_log_ui()
+
+
+func _refresh_live_log_ui() -> void:
+	if log_label == null:
+		return
+	var first_visible_index: int = max(
+		0,
+		live_log_entries.size() - LIVE_LOG_UI_RECENT_LIMIT
+	)
+	var visible_lines: Array[String] = []
+	for index in range(first_visible_index, live_log_entries.size()):
+		visible_lines.append(live_log_entries[index])
+	log_label.text = "\n".join(visible_lines)

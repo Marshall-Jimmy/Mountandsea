@@ -158,13 +158,10 @@
 - save version 更新为 `2`，保存 `world.zhuyu_consumed`、`survival.*` 和 `knowledge.zhuyu`，并兼容 legacy save。
 - 完整 headless regression 和范围审计通过；Godot GUI manual test 未在本文件中记录为已通过。
 
----
-
-## 当前开放 PR
-
 ### PR #43: game: add Migu navigation knowledge loop
-- **状态：** Draft PR；Godot GUI manual test 保留给用户。
+- **状态：** 已合并
 - **Branch：** `game/migu-navigation-knowledge-loop`
+- **Merge commit：** 2933b80760961875e1269ecf71ee83bca5e7311b
 - **链接：** https://github.com/Marshall-Jimmy/Mountandsea/pull/43
 - **目标：** 增加“远离 origin → 迷失压力 → 发现 / 采集 / 佩戴迷穀 → 解锁佩之不迷 → 获得归向指引”的第二个知识驱动 gameplay loop。
 - 复用现有 data-driven optional `migu_branch`，不创建第二个迷穀对象，也不改变 optional state 核心结构。
@@ -175,7 +172,24 @@
 - 右侧脚本 HUD 位于 hunger HUD 与 journal toggle 之间；打开 Demo 菜单时隐藏，不遮挡 optional journal。
 - 回归测试覆盖 origin、两级迷失压力、发现 / 采集 / 防重复 / 佩戴、8 方向、距离更新、原点零向量、save/load、legacy 默认值，以及 hunger、祝余、journal、J / V 和动画回归。
 - 不新增美术，不修改 `.tscn`，不做完整背包、装备、地图、minimap、寻路或图鉴 UI。
-- 当前自动验证已通过：`python tools/validate_minimal_demo.py`（包含 data、framework、Godot import、script check-only、save/load regression 和 framework keyword scan）。
+- 合并前自动验证已通过：`python tools/validate_minimal_demo.py`（包含 data、framework、Godot import、script check-only、save/load regression 和 framework keyword scan）。
+
+---
+
+## 当前开放 PR
+
+### PR #44: game: add demo knowledge codex and HUD layout polish
+- **状态：** Draft PR；Godot GUI manual test 保留给用户。
+- **Branch：** `game/demo-knowledge-codex-hud-polish`
+- **链接：** https://github.com/Marshall-Jimmy/Mountandsea/pull/44
+- **目标：** 增加 demo-local Knowledge Codex，并整理 HUD / live log 布局以减少画面遮挡。
+- 图鉴仅显示祝余与迷穀，每项包含 `appearance`、`type`、`effect` 三个槽位；未解锁槽位显示 `???`。
+- 使用 `K` 打开 / 关闭图鉴；不新增 Input Map action，不改变 `J` / `V` journal 状态，也不写入 save data。
+- 图鉴只读取现有 `knowledge.zhuyu` 和 `knowledge.migu`，save/load 后同步显示；legacy save 缺少 knowledge 时保持 unknown。
+- HUD 调整为左上生存状态、右上 navigation、右侧 optional journal、左下最近 3 条 live log、底部中间 prompt；live log 保留内部历史并启用固定尺寸、换行和 clipping。
+- `game/project.godot` 原先未显式配置 window / viewport 尺寸；本 PR 仅增加 `viewport_width`、`viewport_height`、`window_width_override`、`window_height_override` 四项，统一设为 `1440 × 810`（16:9）。
+- 不新增美术，不修改 `.tscn`，不实现完整全局图鉴或新 gameplay loop。
+- 完整自动验证和范围审计已通过；PR 链接将在发布后补充。
 - 本 PR 不允许自动合并。
 
 ---
@@ -205,8 +219,10 @@
 - PR #41 已合并：狌狌使用 6 帧、4 FPS、统一 feet-center anchor 的 art-guided idle；未增加 walk / attack / creature state machine。
 - PR #42 已合并：demo 包含饥饿、祝余采集 / 食用、`appearance` / `type` / `effect` 知识解锁和右上角生存 HUD。
 - 祝余食用后恢复满饥饿并提供 15 秒“食之不饥”效力；状态支持 reset、save/load 与 legacy save 默认值。
-- 当前 `game/migu-navigation-knowledge-loop` 分支复用现有迷穀 optional collectible，增加迷失压力、采集后佩戴、`佩之不迷` 知识和实时 origin 归向 HUD。
+- PR #43 已合并：demo 复用现有迷穀 optional collectible，增加迷失压力、采集后佩戴、`佩之不迷` 知识和实时 origin 归向 HUD。
 - 迷穀未佩戴时只显示方向感压力；佩戴后显示 8 方向、距离或“已接近起点”。
+- 当前 `game/demo-knowledge-codex-hud-polish` 分支新增 demo-local 图鉴：使用 `K` 查看祝余 / 迷穀的 `appearance`、`type`、`effect`，未解锁槽位显示 `???`。
+- 当前分支将 live log 移到左下并只显示最近 3 条，将 prompt 放到底部中间，同时把生存、navigation 与 optional journal 分区；window / viewport 显式配置为 `1440 × 810`。
 - PR #36 不改变 optional state 核心结构、不新增 save fields、不改变 data-driven optional content 设计。
 - Snowhuman Framework 保持通用；addon 内没有项目专用内容。
 
@@ -241,28 +257,28 @@ git diff --stat
 
 ## 当前建议的下一项功能
 
-**Current active PR：** `game: add Migu navigation knowledge loop`（PR #43）
+**Current active PR：** `game: add demo knowledge codex and HUD layout polish`（PR #44）
 
 **目标：**
-- 玩家离出生点越远，方向感从稳定变为不稳 / 模糊。
-- 复用现有迷穀 optional content；发现、采集并佩戴后解锁“佩之不迷”。
-- 佩戴后显示返回 origin 的 8 方向与距离，接近 origin 时显示明确状态。
-- 保留 PR #42 的 hunger、祝余、save fields 与知识状态。
-- 不增加美术、完整装备、完整地图 / minimap、寻路或图鉴 UI。
+- 把现有 `knowledge.zhuyu` / `knowledge.migu` 呈现为可长期查看的 demo-local 图鉴。
+- 使用 `K` 切换图鉴，不影响 `J` / `V` journal、`E` interaction、菜单或 completion panel。
+- 将 HUD 分区并限制 live log 为最近 3 条，减少对 player 附近主要画面的遮挡。
+- 仅将 window / viewport 尺寸显式设为 `1440 × 810`，保持 16:9。
+- 不新增 save fields、美术、新 gameplay loop 或完整全局图鉴系统。
 - 不移动 demo-specific 内容到 Snowhuman Framework。
 
-**状态：** Draft PR #43 已创建；本地实现和完整 headless regression 已通过。Godot GUI manual test 仍由用户完成；不要自动合并。
+**状态：** Draft PR #44 已创建；本地实现和 headless regression 已通过。Godot GUI manual test 仍由用户完成；不要自动合并。
 
 **验证：**
 - `python tools/validate_data.py` passed
 - `python tools/check_framework.py` passed
 - `python tools/validate_minimal_demo.py` passed，包含 Godot 4.7 headless import、script check-only 和 save/load regression
-- `git diff --check` passed；`git diff --stat` ran（3 files changed）。
-- 显式 Snowhuman Framework keyword scan for `zhuyu|shensheng|zaoyaoshan|祝余|狌狌|招摇山`：no matches。
-- 未修改 `AGENTS.md`、`game/project.godot`、Snowhuman Framework、schemas、CI、`.tscn` 或美术资产。
+- `git diff --check` passed；`git diff --stat` ran（4 files changed）。
+- 显式 Snowhuman Framework keyword scan for `zhuyu|shensheng|zaoyaoshan|migu|祝余|狌狌|招摇山|迷穀|迷榖`：no matches。
+- 未修改 `AGENTS.md`、Snowhuman Framework、schemas、CI、tooling、`.tscn` 或美术资产；`game/project.godot` diff 仅限四个 window / viewport size 字段。
 
 **下一步：**
-- 创建 Draft PR 后，由用户在 Godot GUI 检查两级迷失压力、迷穀发现 / 采集 / 佩戴 prompt、8 方向 / 距离实时更新和 HUD 不重叠，并复核 hunger、祝余、optional journal、J / V shortcuts、player animation 和 shensheng idle 未回归。
+- 创建 Draft PR 后，由用户在 Godot GUI 检查 `K` 图鉴开关、祝余 / 迷穀 knowledge 解锁呈现、`1440 × 810` 布局与 live log / prompt / journal 不重叠，并复核 hunger、navigation、J / V / E、player animation 和 shensheng idle 未回归。
 
 ---
 
