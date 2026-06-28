@@ -6,7 +6,14 @@ enum PlayerAnimationState {
 	WALK
 }
 
+enum PlayerFacingDirection {
+	LEFT = -1,
+	RIGHT = 1
+}
+
 const MOVEMENT_EPSILON_SQUARED := 0.0001
+const HORIZONTAL_MOVEMENT_EPSILON := 0.01
+const DEFAULT_FACING_DIRECTION := PlayerFacingDirection.RIGHT
 const STATE_ANIMATION_NAMES := {
 	PlayerAnimationState.IDLE: &"idle",
 	PlayerAnimationState.WALK: &"walk"
@@ -17,16 +24,19 @@ const STATE_ANIMATION_NAMES := {
 var current_state := PlayerAnimationState.IDLE
 var current_animation_name: StringName = &"idle"
 var animation_play_count := 0
+var last_facing_direction := DEFAULT_FACING_DIRECTION
 
 
 func _ready() -> void:
 	if animated_sprite == null:
 		push_error("Demo player animation state machine requires an AnimatedSprite2D.")
 		return
+	_apply_facing_direction()
 	_play_current_animation()
 
 
 func set_movement_vector(movement: Vector2) -> void:
+	_update_facing_direction(movement.x)
 	set_moving(movement.length_squared() > MOVEMENT_EPSILON_SQUARED)
 
 
@@ -47,7 +57,30 @@ func transition_to(next_state: int) -> void:
 
 
 func reset_to_idle() -> void:
+	_set_facing_direction(DEFAULT_FACING_DIRECTION)
 	transition_to(PlayerAnimationState.IDLE)
+
+
+func _update_facing_direction(horizontal_movement: float) -> void:
+	if horizontal_movement < -HORIZONTAL_MOVEMENT_EPSILON:
+		_set_facing_direction(PlayerFacingDirection.LEFT)
+	elif horizontal_movement > HORIZONTAL_MOVEMENT_EPSILON:
+		_set_facing_direction(PlayerFacingDirection.RIGHT)
+
+
+func _set_facing_direction(next_direction: int) -> void:
+	if next_direction != PlayerFacingDirection.LEFT and next_direction != PlayerFacingDirection.RIGHT:
+		push_error("Unknown demo player facing direction: %s" % next_direction)
+		return
+	last_facing_direction = next_direction
+	_apply_facing_direction()
+
+
+func _apply_facing_direction() -> void:
+	if animated_sprite == null:
+		return
+	# The source artwork faces left, so right-facing movement uses a horizontal flip.
+	animated_sprite.flip_h = last_facing_direction == PlayerFacingDirection.RIGHT
 
 
 func _play_current_animation() -> void:

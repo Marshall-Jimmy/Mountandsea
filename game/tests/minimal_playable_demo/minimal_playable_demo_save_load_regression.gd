@@ -19,6 +19,11 @@ const GENERIC_BEAST_INTERACTABLE_ID := "observe_generic_beast"
 const PLAYER_SPRITE_SHEET_PATH := "res://assets/demo/placeholder_sprites/demo_player_idle_walk.png"
 const PLAYER_ANIMATION_STATE_IDLE := 0
 const PLAYER_ANIMATION_STATE_WALK := 1
+const PLAYER_FACING_LEFT := -1
+const PLAYER_FACING_RIGHT := 1
+const PLAYER_FRAME_SIZE := Vector2i(512, 512)
+const PLAYER_FEET_BASELINE_Y := 488
+const PLAYER_EDGE_ALPHA_CUTOFF := 32
 const STEP_COLLECT_ZHUYU := 0
 const STEP_OBSERVE_SHENSHENG := 2
 const STEP_COMPLETE := 3
@@ -79,10 +84,12 @@ func _run_test() -> void:
 
 	var animation_state_machine := _get_player_animation_state_machine()
 	if animation_state_machine != null:
-		animation_state_machine.call("set_moving", true)
+		animation_state_machine.call("set_movement_vector", Vector2.LEFT)
+	_assert_player_facing(PLAYER_FACING_LEFT, false, "left movement before load")
 	demo.call("_on_load_demo_pressed")
 	_assert_vec2_near(player.position, saved_position, "load should restore saved player position")
 	_assert_player_animation_state(PLAYER_ANIMATION_STATE_IDLE, &"idle")
+	_assert_player_facing(PLAYER_FACING_RIGHT, true, "load should restore runtime default facing")
 	_assert_state_after_stone_activation()
 	_assert_history_contains("采集祝余叶")
 	_assert_history_contains("激活山海石碑")
@@ -460,6 +467,8 @@ func _assert_player_animation_pipeline() -> void:
 		player_sprite.texture_filter == CanvasItem.TEXTURE_FILTER_LINEAR,
 		"player sprite must use linear filtering for non-pixel art"
 	)
+	_assert_true(player_sprite.centered, "player sprite must use a stable centered canvas anchor")
+	_assert_true(player_sprite.offset == Vector2.ZERO, "player sprite offset must remain constant across animations")
 	var polygon_fallback := player as Polygon2D
 	_assert_true(polygon_fallback != null, "player Polygon2D fallback must exist")
 	if polygon_fallback != null:
@@ -479,17 +488,19 @@ func _assert_player_animation_pipeline() -> void:
 
 	_assert_true(sprite_frames.has_animation(&"idle"), "player sprite frames must include idle")
 	_assert_true(sprite_frames.has_animation(&"walk"), "player sprite frames must include walk")
-	_assert_true(sprite_frames.get_frame_count(&"idle") >= 2, "idle animation must include at least 2 frames")
-	_assert_true(sprite_frames.get_frame_count(&"walk") >= 4, "walk animation must include at least 4 frames")
+	_assert_true(sprite_frames.get_frame_count(&"idle") == 2, "idle animation must include exactly 2 frames")
+	_assert_true(sprite_frames.get_frame_count(&"walk") == 4, "walk animation must include exactly 4 frames")
 	_assert_animation_frame_sources(sprite_frames, &"idle")
 	_assert_animation_frame_sources(sprite_frames, &"walk")
 	_assert_player_sprite_sheet_readability()
 
 	_assert_player_animation_state(PLAYER_ANIMATION_STATE_IDLE, &"idle")
+	_assert_player_facing(PLAYER_FACING_RIGHT, true, "initial facing")
 	_assert_true(player_sprite.is_playing(), "player idle animation should be playing initially")
 
 	animation_state_machine.call("set_movement_vector", Vector2.RIGHT)
 	_assert_player_animation_state(PLAYER_ANIMATION_STATE_WALK, &"walk")
+	_assert_player_facing(PLAYER_FACING_RIGHT, true, "right movement")
 	var walk_play_count := int(animation_state_machine.get("animation_play_count"))
 	animation_state_machine.call("set_movement_vector", Vector2.RIGHT)
 	_assert_true(
@@ -497,8 +508,34 @@ func _assert_player_animation_pipeline() -> void:
 		"setting the same movement state should not restart the walk animation"
 	)
 
+	animation_state_machine.call("set_movement_vector", Vector2.LEFT)
+	_assert_player_animation_state(PLAYER_ANIMATION_STATE_WALK, &"walk")
+	_assert_player_facing(PLAYER_FACING_LEFT, false, "left movement")
+	_assert_true(
+		int(animation_state_machine.get("animation_play_count")) == walk_play_count,
+		"changing facing direction should not restart the walk animation"
+	)
+
 	animation_state_machine.call("set_movement_vector", Vector2.ZERO)
 	_assert_player_animation_state(PLAYER_ANIMATION_STATE_IDLE, &"idle")
+	_assert_player_facing(PLAYER_FACING_LEFT, false, "stopping should preserve left facing")
+
+	animation_state_machine.call("set_movement_vector", Vector2.UP)
+	_assert_player_animation_state(PLAYER_ANIMATION_STATE_WALK, &"walk")
+	_assert_player_facing(PLAYER_FACING_LEFT, false, "up movement should preserve horizontal facing")
+	walk_play_count = int(animation_state_machine.get("animation_play_count"))
+	animation_state_machine.call("set_movement_vector", Vector2.DOWN)
+	_assert_player_facing(PLAYER_FACING_LEFT, false, "down movement should preserve horizontal facing")
+	_assert_true(
+		int(animation_state_machine.get("animation_play_count")) == walk_play_count,
+		"vertical movement should not restart the current walk animation"
+	)
+
+	animation_state_machine.call("set_movement_vector", Vector2.ZERO)
+	_assert_player_animation_state(PLAYER_ANIMATION_STATE_IDLE, &"idle")
+	_assert_player_facing(PLAYER_FACING_LEFT, false, "vertical stop should preserve horizontal facing")
+	animation_state_machine.call("reset_to_idle")
+	_assert_player_facing(PLAYER_FACING_RIGHT, true, "animation reset should restore default facing")
 	_assert_player_animation_save_fields_absent()
 
 
@@ -515,7 +552,7 @@ func _assert_animation_frame_sources(sprite_frames: SpriteFrames, animation_name
 				"%s frame %d should use %s" % [animation_name, frame_index, PLAYER_SPRITE_SHEET_PATH]
 			)
 		_assert_true(
-			frame_texture.region.size == Vector2(512.0, 512.0),
+			frame_texture.region.size == Vector2(PLAYER_FRAME_SIZE.x, PLAYER_FRAME_SIZE.y),
 			"%s frame %d must be 512x512" % [animation_name, frame_index]
 		)
 
@@ -525,18 +562,54 @@ func _assert_player_sprite_sheet_readability() -> void:
 	_assert_true(sprite_sheet != null, "player sprite sheet image must load")
 	if sprite_sheet == null:
 		return
-	_assert_true(sprite_sheet.get_width() == 512 * 6, "player sprite sheet must contain six horizontal frames")
-	_assert_true(sprite_sheet.get_height() == 512, "player sprite sheet frames must be 512 pixels tall")
+	_assert_true(
+		sprite_sheet.get_width() == PLAYER_FRAME_SIZE.x * 6,
+		"player sprite sheet must contain six horizontal frames"
+	)
+	_assert_true(
+		sprite_sheet.get_height() == PLAYER_FRAME_SIZE.y,
+		"player sprite sheet frames must be 512 pixels tall"
+	)
+	_assert_true(sprite_sheet.get_format() == Image.FORMAT_RGBA8, "player sprite sheet must use RGBA8 transparency")
 
 	var frame_data: Array[PackedByteArray] = []
+	var used_rects: Array[Rect2i] = []
 	for frame_index in 6:
-		var frame_image := sprite_sheet.get_region(Rect2i(frame_index * 512, 0, 512, 512))
+		var frame_image := sprite_sheet.get_region(
+			Rect2i(frame_index * PLAYER_FRAME_SIZE.x, 0, PLAYER_FRAME_SIZE.x, PLAYER_FRAME_SIZE.y)
+		)
 		var used_rect := frame_image.get_used_rect()
 		_assert_true(
 			used_rect.size.x >= 240 and used_rect.size.y >= 400,
 			"player frame %d must use enough canvas area to remain readable" % frame_index
 		)
+		_assert_true(
+			used_rect.end.y == PLAYER_FEET_BASELINE_Y + 1,
+			"player frame %d feet must share the configured baseline" % frame_index
+		)
+		_assert_true(
+			used_rect.position.x > 0
+			and used_rect.position.y > 0
+			and used_rect.end.x < PLAYER_FRAME_SIZE.x
+			and used_rect.end.y < PLAYER_FRAME_SIZE.y,
+			"player frame %d cutout must stay inside its transparent canvas" % frame_index
+		)
+		used_rects.append(used_rect)
 		frame_data.append(frame_image.get_data())
+
+	_assert_true(
+		abs(used_rects[0].position.x - used_rects[1].position.x) <= 1
+		and used_rects[0].position.y == used_rects[1].position.y
+		and used_rects[0].end == used_rects[1].end,
+		"idle frame cutouts must share the same visual anchor"
+	)
+
+	var sprite_sheet_data := sprite_sheet.get_data()
+	for alpha_index in range(3, sprite_sheet_data.size(), 4):
+		var alpha := sprite_sheet_data[alpha_index]
+		if alpha > 0 and alpha < PLAYER_EDGE_ALPHA_CUTOFF:
+			_assert_true(false, "player sprite cutout must not contain low-alpha matte residue")
+			break
 
 	_assert_true(frame_data[0] != frame_data[1], "idle frames must contain visible motion or glow changes")
 	for walk_frame_index in range(2, 6):
@@ -571,6 +644,22 @@ func _assert_player_animation_state(expected_state: int, expected_animation: Str
 	)
 
 
+func _assert_player_facing(expected_direction: int, expected_flip_h: bool, context: String) -> void:
+	var player_sprite := demo.get_node_or_null("WorldRoot/Player/PlayerSprite") as AnimatedSprite2D
+	var animation_state_machine := _get_player_animation_state_machine()
+	if player_sprite == null or animation_state_machine == null:
+		return
+
+	_assert_true(
+		int(animation_state_machine.get("last_facing_direction")) == expected_direction,
+		"%s should keep facing direction %d" % [context, expected_direction]
+	)
+	_assert_true(
+		player_sprite.flip_h == expected_flip_h,
+		"%s should set player flip_h to %s" % [context, expected_flip_h]
+	)
+
+
 func _assert_player_animation_save_fields_absent() -> void:
 	var save_data: Variant = demo.call("get_save_data")
 	_assert_true(save_data is Dictionary, "save data should be a Dictionary")
@@ -579,11 +668,14 @@ func _assert_player_animation_save_fields_absent() -> void:
 
 	_assert_true(not save_data.has("player_animation_state"), "save data should not persist player animation state")
 	_assert_true(not save_data.has("current_animation_name"), "save data should not persist player animation name")
+	_assert_true(not save_data.has("player_facing_direction"), "save data should not persist player facing direction")
+	_assert_true(not save_data.has("last_facing_direction"), "save data should not persist last facing direction")
 	var player_data: Variant = save_data.get("player", {})
 	_assert_true(player_data is Dictionary, "player save data should be a Dictionary")
 	if player_data is Dictionary:
 		_assert_true(not player_data.has("animation_state"), "player save data should not persist animation state")
 		_assert_true(not player_data.has("animation"), "player save data should not persist animation name")
+		_assert_true(not player_data.has("facing_direction"), "player save data should not persist facing direction")
 
 
 func _get_player_animation_state_machine() -> Node:
@@ -722,11 +814,13 @@ func _assert_reset_preserves_compact_journal_view() -> void:
 	_assert_true(demo.get("optional_progress_detail_view") == false, "journal should be compact before reset")
 	var animation_state_machine := _get_player_animation_state_machine()
 	if animation_state_machine != null:
-		animation_state_machine.call("set_moving", true)
+		animation_state_machine.call("set_movement_vector", Vector2.LEFT)
 	_assert_player_animation_state(PLAYER_ANIMATION_STATE_WALK, &"walk")
+	_assert_player_facing(PLAYER_FACING_LEFT, false, "left movement before reset")
 
 	demo.call("_reset_demo_state")
 	_assert_player_animation_state(PLAYER_ANIMATION_STATE_IDLE, &"idle")
+	_assert_player_facing(PLAYER_FACING_RIGHT, true, "reset should restore runtime default facing")
 	_assert_true(demo.get("optional_progress_detail_view") == false, "reset should preserve runtime journal view mode")
 	_assert_journal_progress(0, _optional_total_count())
 	_assert_journal_recent("无")

@@ -78,6 +78,8 @@ scale = Vector2(0.2, 0.2)
 z_index = 10
 sprite_frames = SubResource("SpriteFrames_demo_player")
 animation = &"idle"
+centered = true
+offset = Vector2(0, 0)
 
 [node name="PlayerAnimationStateMachine" type="Node" parent="WorldRoot/Player" node_paths=PackedStringArray("animated_sprite")]
 unique_name_in_owner = true
