@@ -173,6 +173,74 @@ ASSET_DIRECTORY = ROOT / "game" / "assets" / "demo" / "placeholder_sprites"
 SOURCE_PATH = ASSET_DIRECTORY / "demo_player_idle_walk_source_3x2.png"
 OUTPUT_PATH = ASSET_DIRECTORY / "demo_player_idle_walk.png"
 METADATA_PATH = ASSET_DIRECTORY / "demo_player_walk_metadata.json"
+SHENSHENG_OUTPUT_PATH = ASSET_DIRECTORY / "demo_shensheng_idle.png"
+SHENSHENG_METADATA_PATH = ASSET_DIRECTORY / "demo_shensheng_idle_metadata.json"
+SHENSHENG_FRAME_PARAMETERS = (
+    {
+        "phase": "neutral",
+        "body_y": 0,
+        "shoulder_y": 0,
+        "left_ear_offset": 0,
+        "right_ear_offset": 0,
+        "arm_sway": 0,
+        "glow_alpha": 150,
+        "shadow_scale": 1.0,
+    },
+    {
+        "phase": "inhale",
+        "body_y": 1,
+        "shoulder_y": -1,
+        "left_ear_offset": 1,
+        "right_ear_offset": 0,
+        "arm_sway": 1,
+        "glow_alpha": 180,
+        "shadow_scale": 0.98,
+    },
+    {
+        "phase": "breath_peak",
+        "body_y": 2,
+        "shoulder_y": -2,
+        "left_ear_offset": 2,
+        "right_ear_offset": -1,
+        "arm_sway": 2,
+        "glow_alpha": 220,
+        "shadow_scale": 0.96,
+    },
+    {
+        "phase": "exhale",
+        "body_y": 1,
+        "shoulder_y": -1,
+        "left_ear_offset": 1,
+        "right_ear_offset": 0,
+        "arm_sway": 1,
+        "glow_alpha": 185,
+        "shadow_scale": 0.98,
+    },
+    {
+        "phase": "settle",
+        "body_y": 0,
+        "shoulder_y": 0,
+        "left_ear_offset": 0,
+        "right_ear_offset": 1,
+        "arm_sway": 0,
+        "glow_alpha": 155,
+        "shadow_scale": 1.0,
+    },
+    {
+        "phase": "ear_follow_through",
+        "body_y": -1,
+        "shoulder_y": 1,
+        "left_ear_offset": -1,
+        "right_ear_offset": 1,
+        "arm_sway": -1,
+        "glow_alpha": 135,
+        "shadow_scale": 1.02,
+    },
+)
+SHENSHENG_FRAME_COUNT = len(SHENSHENG_FRAME_PARAMETERS)
+SHENSHENG_IDLE_FPS = 4.0
+SHENSHENG_ANCHOR = (256, 470)
+SHENSHENG_MAX_NORMALIZED_ALPHA_FRAME_DELTA = 0.055
 
 
 def _paeth_predictor(left: int, up: int, upper_left: int) -> int:
@@ -888,6 +956,469 @@ def _write_walk_metadata() -> None:
     )
 
 
+def _draw_rotated_ellipse(
+    frame_pixels: bytearray,
+    center_x: float,
+    center_y: float,
+    radius_x: float,
+    radius_y: float,
+    angle_radians: float,
+    color: tuple[int, int, int],
+    alpha: int,
+) -> None:
+    cosine = math.cos(angle_radians)
+    sine = math.sin(angle_radians)
+    half_width = abs(radius_x * cosine) + abs(radius_y * sine)
+    half_height = abs(radius_x * sine) + abs(radius_y * cosine)
+    left = max(0, math.floor(center_x - half_width - 1))
+    right = min(FRAME_WIDTH, math.ceil(center_x + half_width + 1))
+    top = max(0, math.floor(center_y - half_height - 1))
+    bottom = min(FRAME_HEIGHT, math.ceil(center_y + half_height + 1))
+
+    for y in range(top, bottom):
+        for x in range(left, right):
+            offset_x = x - center_x
+            offset_y = y - center_y
+            local_x = offset_x * cosine + offset_y * sine
+            local_y = -offset_x * sine + offset_y * cosine
+            distance_squared = (
+                local_x * local_x / (radius_x * radius_x)
+                + local_y * local_y / (radius_y * radius_y)
+            )
+            if distance_squared > 1.0:
+                continue
+            edge_fade = min(1.0, max(0.0, (1.0 - distance_squared) * 4.0))
+            _composite_rgba_pixel(
+                frame_pixels,
+                _frame_pixel_index(x, y),
+                color,
+                round(alpha * edge_fade),
+            )
+
+
+def _draw_tapered_limb(
+    frame_pixels: bytearray,
+    start: tuple[float, float],
+    end: tuple[float, float],
+    start_radius: float,
+    end_radius: float,
+    color: tuple[int, int, int],
+    alpha: int,
+) -> None:
+    distance = math.hypot(end[0] - start[0], end[1] - start[1])
+    steps = max(2, math.ceil(distance / 4.0))
+    for step in range(steps + 1):
+        progress = step / steps
+        center_x = start[0] + (end[0] - start[0]) * progress
+        center_y = start[1] + (end[1] - start[1]) * progress
+        radius = start_radius + (end_radius - start_radius) * progress
+        _draw_ellipse(
+            frame_pixels,
+            round(center_x),
+            round(center_y),
+            max(1, round(radius)),
+            max(1, round(radius * 0.9)),
+            color,
+            alpha,
+        )
+
+
+def _draw_shensheng_fur_strokes(
+    frame_pixels: bytearray,
+    body_y: int,
+) -> None:
+    stroke_color = (104, 120, 113)
+    shadow_color = (20, 38, 40)
+    for row in range(6):
+        y = 260 + row * 30 + body_y
+        half_width = 56 + row * 8
+        for column in range(7):
+            x = 256 - half_width + column * half_width / 3
+            x += ((row + column) % 3 - 1) * 5
+            angle = -0.52 + column * 0.17
+            _draw_rotated_ellipse(
+                frame_pixels,
+                x,
+                y,
+                2.4,
+                15.0,
+                angle,
+                stroke_color if (row + column) % 2 == 0 else shadow_color,
+                92,
+            )
+
+    for side in (-1, 1):
+        for stroke_index in range(5):
+            x = 256 + side * (83 + stroke_index * 10)
+            y = 298 + stroke_index * 28 + body_y
+            _draw_rotated_ellipse(
+                frame_pixels,
+                x,
+                y,
+                2.5,
+                11.0,
+                side * 0.5,
+                stroke_color,
+                64,
+            )
+
+
+def _render_shensheng_idle_frame(parameters: dict[str, object]) -> bytearray:
+    frame_pixels = bytearray(FRAME_WIDTH * FRAME_HEIGHT * 4)
+    body_y = int(parameters["body_y"])
+    shoulder_y = int(parameters["shoulder_y"])
+    left_ear_offset = int(parameters["left_ear_offset"])
+    right_ear_offset = int(parameters["right_ear_offset"])
+    arm_sway = int(parameters["arm_sway"])
+    glow_alpha = int(parameters["glow_alpha"])
+    shadow_scale = float(parameters["shadow_scale"])
+
+    outline = (15, 30, 32)
+    deep_fur = (29, 48, 50)
+    base_fur = (47, 69, 69)
+    light_fur = (79, 96, 92)
+    face_skin = (120, 113, 98)
+    muzzle_skin = (91, 91, 82)
+    ear_white = (218, 225, 213)
+    ear_shadow = (145, 155, 149)
+    cinnabar = (164, 57, 43)
+    cyan = (72, 222, 216)
+
+    _draw_ellipse(
+        frame_pixels,
+        SHENSHENG_ANCHOR[0],
+        SHENSHENG_ANCHOR[1] - 9,
+        round(111 * shadow_scale),
+        round(12 * shadow_scale),
+        (4, 17, 20),
+        90,
+    )
+
+    # Semi-crouched haunches and planted feet keep the shared anchor stable.
+    _draw_rotated_ellipse(frame_pixels, 197, 390, 65, 83, -0.48, outline, 250)
+    _draw_rotated_ellipse(frame_pixels, 314, 394, 68, 84, 0.42, outline, 250)
+    _draw_rotated_ellipse(frame_pixels, 199, 390, 52, 72, -0.48, base_fur, 248)
+    _draw_rotated_ellipse(frame_pixels, 311, 392, 55, 73, 0.42, base_fur, 248)
+    _draw_rotated_ellipse(frame_pixels, 205, 453, 47, 16, -0.12, outline, 250)
+    _draw_rotated_ellipse(frame_pixels, 308, 453, 47, 16, 0.12, outline, 250)
+    _draw_rotated_ellipse(frame_pixels, 207, 450, 37, 10, -0.12, light_fur, 220)
+    _draw_rotated_ellipse(frame_pixels, 306, 450, 37, 10, 0.12, light_fur, 220)
+    for foot_x, direction in ((205, -1), (308, 1)):
+        for claw_index in range(3):
+            _draw_rotated_ellipse(
+                frame_pixels,
+                foot_x + direction * (19 + claw_index * 7),
+                457 + claw_index,
+                8,
+                3,
+                direction * 0.1,
+                (164, 171, 160),
+                205,
+            )
+
+    # Forward shoulders and long arms distinguish the mythical ape silhouette.
+    left_shoulder = (173, 270 + body_y + shoulder_y)
+    right_shoulder = (333, 265 + body_y + shoulder_y)
+    left_elbow = (129 - arm_sway, 350 + body_y)
+    right_elbow = (384 + arm_sway, 347 + body_y)
+    left_hand = (111 + arm_sway, 443)
+    right_hand = (404 - arm_sway, 441)
+    for start, elbow, hand in (
+        (left_shoulder, left_elbow, left_hand),
+        (right_shoulder, right_elbow, right_hand),
+    ):
+        _draw_tapered_limb(frame_pixels, start, elbow, 31, 22, outline, 252)
+        _draw_tapered_limb(frame_pixels, elbow, hand, 23, 15, outline, 252)
+        _draw_tapered_limb(frame_pixels, start, elbow, 23, 16, base_fur, 248)
+        _draw_tapered_limb(frame_pixels, elbow, hand, 17, 10, deep_fur, 248)
+        _draw_tapered_limb(
+            frame_pixels,
+            (start[0] - 4, start[1] - 3),
+            (elbow[0] - 3, elbow[1] - 2),
+            4,
+            2,
+            light_fur,
+            90,
+        )
+    _draw_rotated_ellipse(frame_pixels, left_hand[0], left_hand[1], 23, 13, -0.14, outline, 252)
+    _draw_rotated_ellipse(frame_pixels, right_hand[0], right_hand[1], 23, 13, 0.14, outline, 252)
+    for side, hand_x in ((-1, left_hand[0]), (1, right_hand[0])):
+        for finger in range(3):
+            _draw_rotated_ellipse(
+                frame_pixels,
+                hand_x + side * (4 + finger * 5),
+                448 + finger * 2,
+                11,
+                3,
+                side * 0.15,
+                (170, 178, 168),
+                220,
+            )
+
+    # Broad hunched torso: dark teal-grey layered fur, not a flat cartoon fill.
+    _draw_rotated_ellipse(frame_pixels, 258, 326 + body_y, 112, 139, -0.03, outline, 252)
+    _draw_rotated_ellipse(frame_pixels, 258, 322 + body_y, 100, 127, -0.03, deep_fur, 252)
+    _draw_rotated_ellipse(frame_pixels, 252, 314 + body_y, 76, 112, -0.08, base_fur, 225)
+    _draw_rotated_ellipse(frame_pixels, 218, 286 + body_y, 47, 83, -0.31, light_fur, 66)
+    _draw_rotated_ellipse(frame_pixels, 304, 282 + body_y, 56, 78, 0.31, (21, 39, 41), 115)
+    _draw_shensheng_fur_strokes(frame_pixels, body_y)
+
+    # Long white listening ears flank a forward, asymmetrical humanlike face.
+    ear_y = 197 + body_y
+    _draw_rotated_ellipse(
+        frame_pixels, 169, ear_y + left_ear_offset, 27, 58, -0.62, outline, 252
+    )
+    _draw_rotated_ellipse(
+        frame_pixels, 310, ear_y + right_ear_offset, 25, 56, 0.68, outline, 252
+    )
+    _draw_rotated_ellipse(
+        frame_pixels, 170, ear_y + left_ear_offset, 20, 50, -0.62, ear_white, 250
+    )
+    _draw_rotated_ellipse(
+        frame_pixels, 309, ear_y + right_ear_offset, 18, 48, 0.68, ear_white, 250
+    )
+    _draw_rotated_ellipse(
+        frame_pixels, 175, ear_y + 4 + left_ear_offset, 8, 32, -0.62, ear_shadow, 210
+    )
+    _draw_rotated_ellipse(
+        frame_pixels, 304, ear_y + 4 + right_ear_offset, 8, 31, 0.68, ear_shadow, 210
+    )
+
+    head_y = 205 + body_y + shoulder_y
+    head_x = 239
+    _draw_rotated_ellipse(frame_pixels, head_x, head_y, 64, 84, -0.12, outline, 252)
+    _draw_rotated_ellipse(frame_pixels, head_x, head_y - 3, 56, 75, -0.12, deep_fur, 250)
+    _draw_rotated_ellipse(frame_pixels, head_x - 3, head_y + 9, 40, 61, -0.07, face_skin, 250)
+    _draw_rotated_ellipse(frame_pixels, head_x - 1, head_y + 40, 36, 25, -0.03, muzzle_skin, 248)
+    _draw_rotated_ellipse(frame_pixels, head_x - 2, head_y + 30, 16, 11, 0.0, (45, 47, 44), 245)
+    _draw_rotated_ellipse(frame_pixels, head_x - 2, head_y + 33, 8, 4, 0.0, (15, 24, 25), 250)
+    _draw_rotated_ellipse(frame_pixels, head_x, head_y + 54, 17, 4, -0.03, (48, 38, 34), 235)
+    _draw_rotated_ellipse(frame_pixels, head_x - 15, head_y + 57, 5, 9, -0.22, ear_white, 225)
+    _draw_rotated_ellipse(frame_pixels, head_x + 15, head_y + 57, 5, 9, 0.22, ear_white, 225)
+
+    for side in (-1, 1):
+        for tuft_index in range(4):
+            _draw_rotated_ellipse(
+                frame_pixels,
+                head_x + side * (45 + tuft_index * 4),
+                head_y - 24 + tuft_index * 16,
+                3,
+                13,
+                side * 0.58,
+                light_fur,
+                115,
+            )
+
+    # A strong brow and small cyan eyes keep the face humanoid rather than canine.
+    _draw_rotated_ellipse(frame_pixels, head_x - 22, head_y + 2, 19, 5, -0.18, outline, 245)
+    _draw_rotated_ellipse(frame_pixels, head_x + 21, head_y, 19, 5, 0.18, outline, 245)
+    for eye_x, eye_y in ((head_x - 21, head_y + 10), (head_x + 20, head_y + 8)):
+        _draw_ellipse(frame_pixels, eye_x, round(eye_y), 8, 5, (22, 37, 38), 250)
+        _draw_ellipse(frame_pixels, eye_x, round(eye_y), 4, 2, cyan, min(255, glow_alpha + 25))
+        _draw_ellipse(frame_pixels, eye_x - 1, round(eye_y), 1, 1, (209, 255, 247), 250)
+
+    # Cinnabar ritual marks and a restrained cyan breath pulse are the main accents.
+    _draw_tapered_limb(
+        frame_pixels,
+        (head_x, head_y - 35),
+        (head_x, head_y - 9),
+        5,
+        3,
+        cinnabar,
+        235,
+    )
+    _draw_tapered_limb(
+        frame_pixels,
+        (head_x - 13, head_y - 22),
+        (head_x, head_y - 9),
+        3,
+        3,
+        cinnabar,
+        220,
+    )
+    _draw_tapered_limb(
+        frame_pixels,
+        (head_x + 13, head_y - 22),
+        (head_x, head_y - 9),
+        3,
+        3,
+        cinnabar,
+        220,
+    )
+    chest_y = 324 + body_y
+    _draw_rotated_ellipse(frame_pixels, 254, chest_y, 35, 49, -0.02, (37, 57, 56), 170)
+    _draw_tapered_limb(
+        frame_pixels, (232, chest_y - 25), (254, chest_y + 12), 5, 4, cinnabar, 225
+    )
+    _draw_tapered_limb(
+        frame_pixels, (276, chest_y - 25), (254, chest_y + 12), 5, 4, cinnabar, 225
+    )
+    _draw_ellipse(frame_pixels, 254, chest_y + 9, 14, 14, cyan, round(glow_alpha * 0.38))
+    _draw_ellipse(frame_pixels, 254, chest_y + 9, 6, 6, cyan, glow_alpha)
+    _draw_ellipse(frame_pixels, 252, chest_y + 7, 2, 2, (213, 255, 249), 240)
+
+    _clear_rectangle(
+        frame_pixels,
+        (0, SHENSHENG_ANCHOR[1] + 1, FRAME_WIDTH, FRAME_HEIGHT),
+    )
+    return _normalize_blended_transparency(frame_pixels)
+
+
+def _validate_shensheng_idle_cycle(idle_cycle: list[bytearray]) -> None:
+    if len(idle_cycle) != SHENSHENG_FRAME_COUNT:
+        raise ValueError(
+            f"Shensheng idle cycle must contain {SHENSHENG_FRAME_COUNT} frames"
+        )
+    if SHENSHENG_FRAME_COUNT < 4:
+        raise ValueError("Shensheng idle cycle must contain at least four frames")
+    if not 3.0 <= SHENSHENG_IDLE_FPS <= 5.0:
+        raise ValueError("Shensheng idle FPS must stay between 3 and 5")
+
+    continuity_limits = {
+        "body_y": 1.0,
+        "shoulder_y": 1.0,
+        "left_ear_offset": 1.0,
+        "right_ear_offset": 1.0,
+        "arm_sway": 1.0,
+        "glow_alpha": 50.0,
+        "shadow_scale": 0.03,
+    }
+    for frame_index in range(SHENSHENG_FRAME_COUNT):
+        current = SHENSHENG_FRAME_PARAMETERS[frame_index]
+        following = SHENSHENG_FRAME_PARAMETERS[
+            (frame_index + 1) % SHENSHENG_FRAME_COUNT
+        ]
+        for parameter_name, maximum_delta in continuity_limits.items():
+            if (
+                abs(float(current[parameter_name]) - float(following[parameter_name]))
+                > maximum_delta
+            ):
+                raise ValueError(
+                    f"Shensheng {parameter_name} changes too abruptly "
+                    f"after frame {frame_index}"
+                )
+
+    if not any(int(frame["body_y"]) != 0 for frame in SHENSHENG_FRAME_PARAMETERS):
+        raise ValueError("Shensheng idle must include breathing motion")
+    if not any(
+        int(frame["left_ear_offset"]) != 0
+        or int(frame["right_ear_offset"]) != 0
+        for frame in SHENSHENG_FRAME_PARAMETERS
+    ):
+        raise ValueError("Shensheng idle must include ear motion")
+    if not any(int(frame["arm_sway"]) != 0 for frame in SHENSHENG_FRAME_PARAMETERS):
+        raise ValueError("Shensheng idle must include arm follow-through")
+
+    bounds = [_visible_bounds(frame) for frame in idle_cycle]
+    for frame_index, frame_bounds in enumerate(bounds):
+        if frame_bounds[3] != SHENSHENG_ANCHOR[1] + 1:
+            raise ValueError(
+                f"Shensheng frame {frame_index} feet baseline must be "
+                f"{SHENSHENG_ANCHOR[1]}"
+            )
+        if frame_bounds[0] <= 0 or frame_bounds[2] >= FRAME_WIDTH:
+            raise ValueError(
+                f"Shensheng frame {frame_index} must stay inside the transparent canvas"
+            )
+
+    frame_deltas = [
+        _normalized_alpha_difference(
+            idle_cycle[frame_index],
+            idle_cycle[(frame_index + 1) % SHENSHENG_FRAME_COUNT],
+        )
+        for frame_index in range(SHENSHENG_FRAME_COUNT)
+    ]
+    if max(frame_deltas) > SHENSHENG_MAX_NORMALIZED_ALPHA_FRAME_DELTA:
+        raise ValueError("Shensheng idle contains an abrupt silhouette transition")
+    if len({bytes(frame) for frame in idle_cycle}) != SHENSHENG_FRAME_COUNT:
+        raise ValueError("Every Shensheng idle frame must contain distinct motion")
+
+    for frame_index, parameters in enumerate(SHENSHENG_FRAME_PARAMETERS):
+        print(
+            f"shensheng_idle[{frame_index}] {parameters['phase']}: "
+            f"bounds={bounds[frame_index]}, "
+            f"next_alpha_delta={frame_deltas[frame_index]:.4f}"
+        )
+
+
+def _write_horizontal_atlas(
+    output_path: Path,
+    frames: list[bytearray],
+) -> None:
+    output_width = FRAME_WIDTH * len(frames)
+    output_pixels = bytearray(output_width * FRAME_HEIGHT * 4)
+    output_row_size = output_width * 4
+    frame_row_size = FRAME_WIDTH * 4
+    for frame_index, frame_pixels in enumerate(frames):
+        for frame_y in range(FRAME_HEIGHT):
+            frame_start = frame_y * frame_row_size
+            output_start = frame_y * output_row_size + frame_index * frame_row_size
+            output_pixels[output_start : output_start + frame_row_size] = frame_pixels[
+                frame_start : frame_start + frame_row_size
+            ]
+    _write_rgba_png(output_path, output_width, FRAME_HEIGHT, output_pixels)
+
+
+def _write_shensheng_metadata() -> None:
+    metadata = {
+        "design": "art_guided_shensheng_idle",
+        "art_source": "deterministic_programmatic_demo_local",
+        "frame_width": FRAME_WIDTH,
+        "frame_height": FRAME_HEIGHT,
+        "idle_frame_count": SHENSHENG_FRAME_COUNT,
+        "idle_fps": SHENSHENG_IDLE_FPS,
+        "anchor": list(SHENSHENG_ANCHOR),
+        "visual_traits": [
+            "white_ears",
+            "humanlike_face",
+            "beast_muzzle",
+            "ape_body",
+            "semi_crouched_posture",
+            "forward_shoulders",
+            "long_arms",
+            "dark_teal_grey_fur",
+            "cinnabar_markings",
+            "cyan_eye_and_mark_glow",
+        ],
+        "moving_elements": [
+            "breathing",
+            "shoulders",
+            "ears",
+            "arms",
+            "cyan_glow",
+            "shadow",
+        ],
+        "frames": [
+            {
+                **parameters,
+                "anchor": list(SHENSHENG_ANCHOR),
+            }
+            for parameters in SHENSHENG_FRAME_PARAMETERS
+        ],
+    }
+    SHENSHENG_METADATA_PATH.write_text(
+        json.dumps(metadata, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+
+def _generate_shensheng_idle_assets() -> None:
+    idle_cycle = [
+        _render_shensheng_idle_frame(parameters)
+        for parameters in SHENSHENG_FRAME_PARAMETERS
+    ]
+    _validate_shensheng_idle_cycle(idle_cycle)
+    _write_horizontal_atlas(SHENSHENG_OUTPUT_PATH, idle_cycle)
+    _write_shensheng_metadata()
+    print(
+        f"generated {SHENSHENG_OUTPUT_PATH} "
+        f"({FRAME_WIDTH * SHENSHENG_FRAME_COUNT}x{FRAME_HEIGHT}, "
+        f"frames: idle=0-{SHENSHENG_FRAME_COUNT - 1}, "
+        f"anchor={SHENSHENG_ANCHOR})"
+    )
+    print(f"generated {SHENSHENG_METADATA_PATH} (art-guided idle metadata)")
+
+
 def main() -> None:
     source_width, source_height, source_pixels = _read_rgba_png(SOURCE_PATH)
     expected_width = FRAME_WIDTH * SOURCE_COLUMNS
@@ -938,6 +1469,7 @@ def main() -> None:
         f"feet anchor={TARGET_FEET_ANCHOR})"
     )
     print(f"generated {METADATA_PATH} (stylized robe walk metadata)")
+    _generate_shensheng_idle_assets()
 
 
 if __name__ == "__main__":

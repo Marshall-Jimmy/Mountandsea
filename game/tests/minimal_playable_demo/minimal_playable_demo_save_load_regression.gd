@@ -34,6 +34,16 @@ const PLAYER_BODY_CENTER_REGION := Rect2i(180, 80, 160, 250)
 const PLAYER_BODY_CENTER_MAX_SPREAD := Vector2(8.0, 8.0)
 const PLAYER_WALK_BOUNDS_MAX_SPREAD := Vector2i(16, 16)
 const PLAYER_WALK_MAX_NORMALIZED_ALPHA_DELTA := 0.08
+const SHENSHENG_SPRITE_SHEET_PATH := "res://assets/demo/placeholder_sprites/demo_shensheng_idle.png"
+const SHENSHENG_IDLE_METADATA_PATH := "res://assets/demo/placeholder_sprites/demo_shensheng_idle_metadata.json"
+const SHENSHENG_FRAME_SIZE := Vector2i(512, 512)
+const SHENSHENG_IDLE_FRAME_COUNT := 6
+const SHENSHENG_IDLE_FPS_MIN := 3.0
+const SHENSHENG_IDLE_FPS_MAX := 5.0
+const SHENSHENG_FEET_BASELINE_Y := 470
+const SHENSHENG_EDGE_ALPHA_CUTOFF := 32
+const SHENSHENG_MAX_NORMALIZED_ALPHA_DELTA := 0.055
+const SHENSHENG_EXPECTED_POSITION := Vector2(650.0, 260.0)
 const STEP_COLLECT_ZHUYU := 0
 const STEP_OBSERVE_SHENSHENG := 2
 const STEP_COMPLETE := 3
@@ -65,6 +75,7 @@ func _run_test() -> void:
 	_assert_true(player != null, "Player node must exist")
 	_assert_true(demo.get("initialized") == true, "Demo must initialize services")
 	_assert_player_animation_pipeline()
+	_assert_shensheng_idle_pipeline()
 	_assert_history_panel_visible(true)
 	_assert_initial_journal_state()
 	_assert_progress_view_toggle_preserves_history("Demo 开始")
@@ -457,6 +468,361 @@ func _assert_journal_status(display_name: String, expected_status: String) -> vo
 
 	var expected_text := "%s：%s" % [display_name, expected_status]
 	_assert_true(journal_label.text.contains(expected_text), "journal should contain %s, actual=%s" % [expected_text, journal_label.text])
+
+
+func _assert_shensheng_idle_pipeline() -> void:
+	var shensheng := demo.get_node_or_null("WorldRoot/ShenshengCreature") as Polygon2D
+	var shensheng_sprite := demo.get_node_or_null(
+		"WorldRoot/ShenshengCreature/ShenshengSprite"
+	) as AnimatedSprite2D
+	_assert_true(shensheng != null, "Shensheng interaction Polygon2D must exist")
+	_assert_true(shensheng_sprite != null, "Shensheng AnimatedSprite2D must exist")
+	_assert_true(
+		ResourceLoader.exists(SHENSHENG_SPRITE_SHEET_PATH),
+		"Shensheng idle sprite sheet resource path must exist"
+	)
+	if shensheng == null or shensheng_sprite == null:
+		return
+
+	_assert_true(
+		shensheng.position == SHENSHENG_EXPECTED_POSITION,
+		"Shensheng interaction position must remain unchanged"
+	)
+	_assert_true(
+		shensheng.color.a <= 0.05,
+		"Shensheng Polygon2D fallback must remain visually hidden"
+	)
+	_assert_true(shensheng_sprite.visible, "Shensheng AnimatedSprite2D must be visible")
+	_assert_true(
+		shensheng_sprite.is_visible_in_tree(),
+		"Shensheng AnimatedSprite2D must be visible in the scene tree"
+	)
+	_assert_true(
+		shensheng_sprite.texture_filter == CanvasItem.TEXTURE_FILTER_LINEAR,
+		"Shensheng sprite must use linear filtering for non-pixel art"
+	)
+	_assert_true(
+		shensheng_sprite.centered,
+		"Shensheng sprite must use a stable centered canvas anchor"
+	)
+	_assert_true(
+		shensheng_sprite.offset == Vector2.ZERO,
+		"Shensheng sprite offset must remain constant"
+	)
+	_assert_true(
+		shensheng_sprite.scale == Vector2(0.24, 0.24),
+		"Shensheng sprite must remain readable without dominating the demo"
+	)
+	_assert_true(
+		shensheng_sprite.z_index > shensheng.z_index,
+		"Shensheng sprite must render above its Polygon2D fallback"
+	)
+	var rendered_feet_y := (
+		shensheng_sprite.position.y
+		+ float(SHENSHENG_FEET_BASELINE_Y - SHENSHENG_FRAME_SIZE.y / 2)
+		* shensheng_sprite.scale.y
+	)
+	_assert_true(
+		is_equal_approx(rendered_feet_y, 30.0),
+		"Shensheng frame anchor must preserve the original interaction footprint"
+	)
+
+	var sprite_frames := shensheng_sprite.sprite_frames
+	_assert_true(sprite_frames != null, "Shensheng sprite frames must exist")
+	if sprite_frames == null:
+		return
+	_assert_true(
+		sprite_frames.get_animation_names().size() == 1,
+		"Shensheng SpriteFrames must remain idle-only"
+	)
+	_assert_true(sprite_frames.has_animation(&"idle"), "Shensheng sprite frames must include idle")
+	_assert_true(
+		sprite_frames.get_frame_count(&"idle") == SHENSHENG_IDLE_FRAME_COUNT,
+		"Shensheng idle must contain exactly %d frames" % SHENSHENG_IDLE_FRAME_COUNT
+	)
+	var idle_fps := sprite_frames.get_animation_speed(&"idle")
+	_assert_true(
+		idle_fps >= SHENSHENG_IDLE_FPS_MIN and idle_fps <= SHENSHENG_IDLE_FPS_MAX,
+		"Shensheng idle FPS must stay between %.1f and %.1f" % [
+			SHENSHENG_IDLE_FPS_MIN,
+			SHENSHENG_IDLE_FPS_MAX
+		]
+	)
+	_assert_true(sprite_frames.get_animation_loop(&"idle"), "Shensheng idle animation must loop")
+	_assert_true(shensheng_sprite.animation == &"idle", "Shensheng must select the idle animation")
+	_assert_true(shensheng_sprite.is_playing(), "Shensheng idle animation must autoplay")
+
+	for frame_index in SHENSHENG_IDLE_FRAME_COUNT:
+		var frame_texture := sprite_frames.get_frame_texture(&"idle", frame_index) as AtlasTexture
+		_assert_true(
+			frame_texture != null,
+			"Shensheng idle frame %d must use an AtlasTexture" % frame_index
+		)
+		if frame_texture == null:
+			continue
+		_assert_true(
+			frame_texture.atlas != null
+			and frame_texture.atlas.resource_path == SHENSHENG_SPRITE_SHEET_PATH,
+			"Shensheng idle frame %d must use the generated sprite sheet" % frame_index
+		)
+		_assert_true(
+			frame_texture.region
+			== Rect2(
+				frame_index * SHENSHENG_FRAME_SIZE.x,
+				0,
+				SHENSHENG_FRAME_SIZE.x,
+				SHENSHENG_FRAME_SIZE.y
+			),
+			"Shensheng idle frame %d must use the expected 512x512 atlas region" % frame_index
+		)
+
+	_assert_shensheng_idle_metadata(sprite_frames)
+	_assert_shensheng_sprite_sheet_readability()
+
+
+func _assert_shensheng_idle_metadata(sprite_frames: SpriteFrames) -> void:
+	var metadata_path := ProjectSettings.globalize_path(SHENSHENG_IDLE_METADATA_PATH)
+	_assert_true(FileAccess.file_exists(metadata_path), "Shensheng idle metadata must exist")
+	if not FileAccess.file_exists(metadata_path):
+		return
+
+	var parsed_metadata: Variant = JSON.parse_string(FileAccess.get_file_as_string(metadata_path))
+	_assert_true(parsed_metadata is Dictionary, "Shensheng idle metadata must be a Dictionary")
+	if not (parsed_metadata is Dictionary):
+		return
+	var metadata: Dictionary = parsed_metadata
+	_assert_true(
+		metadata.get("design") == "art_guided_shensheng_idle",
+		"Shensheng metadata must declare the art-guided idle design"
+	)
+	_assert_true(
+		metadata.get("art_source") == "deterministic_programmatic_demo_local",
+		"Shensheng art must remain deterministic and demo-local"
+	)
+	_assert_true(
+		int(metadata.get("frame_width", 0)) == SHENSHENG_FRAME_SIZE.x
+		and int(metadata.get("frame_height", 0)) == SHENSHENG_FRAME_SIZE.y,
+		"Shensheng metadata canvas must remain 512x512"
+	)
+	_assert_true(
+		int(metadata.get("idle_frame_count", 0)) == SHENSHENG_IDLE_FRAME_COUNT,
+		"Shensheng metadata frame count must match SpriteFrames"
+	)
+	_assert_true(
+		is_equal_approx(
+			float(metadata.get("idle_fps", 0.0)),
+			sprite_frames.get_animation_speed(&"idle")
+		),
+		"Shensheng metadata FPS must match SpriteFrames"
+	)
+	var anchor: Variant = metadata.get("anchor", [])
+	_assert_true(
+		anchor is Array
+		and anchor.size() == 2
+		and int(anchor[0]) == SHENSHENG_FRAME_SIZE.x / 2
+		and int(anchor[1]) == SHENSHENG_FEET_BASELINE_Y,
+		"Shensheng metadata must declare the shared feet-center anchor"
+	)
+
+	var visual_traits: Variant = metadata.get("visual_traits", [])
+	_assert_true(visual_traits is Array, "Shensheng visual traits must be an Array")
+	if visual_traits is Array:
+		for expected_trait in [
+			"white_ears",
+			"humanlike_face",
+			"beast_muzzle",
+			"ape_body",
+			"semi_crouched_posture",
+			"forward_shoulders",
+			"long_arms",
+			"dark_teal_grey_fur",
+			"cinnabar_markings",
+			"cyan_eye_and_mark_glow"
+		]:
+			_assert_true(
+				visual_traits.has(expected_trait),
+				"Shensheng metadata must include %s" % expected_trait
+			)
+
+	var moving_elements: Variant = metadata.get("moving_elements", [])
+	_assert_true(moving_elements is Array, "Shensheng moving elements must be an Array")
+	if moving_elements is Array:
+		for expected_element in [
+			"breathing",
+			"shoulders",
+			"ears",
+			"arms",
+			"cyan_glow",
+			"shadow"
+		]:
+			_assert_true(
+				moving_elements.has(expected_element),
+				"Shensheng metadata must include %s motion" % expected_element
+			)
+
+	var frames: Variant = metadata.get("frames", [])
+	_assert_true(frames is Array, "Shensheng metadata frames must be an Array")
+	if not (frames is Array) or frames.size() != SHENSHENG_IDLE_FRAME_COUNT:
+		_assert_true(false, "Shensheng metadata must contain six idle frames")
+		return
+
+	var has_breathing := false
+	var has_ear_motion := false
+	var has_arm_follow_through := false
+	var minimum_glow := INF
+	var maximum_glow := -INF
+	for frame_index in SHENSHENG_IDLE_FRAME_COUNT:
+		var frame: Variant = frames[frame_index]
+		_assert_true(
+			frame is Dictionary,
+			"Shensheng metadata frame %d must be a Dictionary" % frame_index
+		)
+		if not (frame is Dictionary):
+			continue
+		var frame_anchor: Variant = frame.get("anchor", [])
+		_assert_true(
+			frame_anchor is Array
+			and frame_anchor.size() == 2
+			and int(frame_anchor[0]) == SHENSHENG_FRAME_SIZE.x / 2
+			and int(frame_anchor[1]) == SHENSHENG_FEET_BASELINE_Y,
+			"Shensheng metadata frame %d must keep the shared anchor" % frame_index
+		)
+		has_breathing = has_breathing or int(frame.get("body_y", 0)) != 0
+		has_ear_motion = (
+			has_ear_motion
+			or int(frame.get("left_ear_offset", 0)) != 0
+			or int(frame.get("right_ear_offset", 0)) != 0
+		)
+		has_arm_follow_through = (
+			has_arm_follow_through or int(frame.get("arm_sway", 0)) != 0
+		)
+		var glow_alpha := float(frame.get("glow_alpha", 0.0))
+		minimum_glow = min(minimum_glow, glow_alpha)
+		maximum_glow = max(maximum_glow, glow_alpha)
+
+		var next_frame: Dictionary = frames[
+			(frame_index + 1) % SHENSHENG_IDLE_FRAME_COUNT
+		]
+		for parameter_name in [
+			"body_y",
+			"shoulder_y",
+			"left_ear_offset",
+			"right_ear_offset",
+			"arm_sway"
+		]:
+			_assert_true(
+				abs(
+					float(frame.get(parameter_name, 0.0))
+					- float(next_frame.get(parameter_name, 0.0))
+				) <= 1.0,
+				"Shensheng %s must remain continuous after frame %d" % [
+					parameter_name,
+					frame_index
+				]
+			)
+		_assert_true(
+			abs(glow_alpha - float(next_frame.get("glow_alpha", 0.0))) <= 50.0,
+			"Shensheng glow pulse must remain continuous after frame %d" % frame_index
+		)
+		_assert_true(
+			abs(
+				float(frame.get("shadow_scale", 1.0))
+				- float(next_frame.get("shadow_scale", 1.0))
+			) <= 0.03,
+			"Shensheng shadow must remain continuous after frame %d" % frame_index
+		)
+
+	_assert_true(has_breathing, "Shensheng idle must include breathing motion")
+	_assert_true(has_ear_motion, "Shensheng idle must include ear motion")
+	_assert_true(has_arm_follow_through, "Shensheng idle must include arm follow-through")
+	_assert_true(maximum_glow > minimum_glow, "Shensheng idle must include a cyan glow pulse")
+
+
+func _assert_shensheng_sprite_sheet_readability() -> void:
+	var sprite_sheet := Image.load_from_file(
+		ProjectSettings.globalize_path(SHENSHENG_SPRITE_SHEET_PATH)
+	)
+	_assert_true(sprite_sheet != null, "Shensheng sprite sheet image must load")
+	if sprite_sheet == null:
+		return
+	_assert_true(
+		sprite_sheet.get_width() == SHENSHENG_FRAME_SIZE.x * SHENSHENG_IDLE_FRAME_COUNT,
+		"Shensheng sprite sheet must contain six horizontal frames"
+	)
+	_assert_true(
+		sprite_sheet.get_height() == SHENSHENG_FRAME_SIZE.y,
+		"Shensheng sprite sheet frames must be 512 pixels tall"
+	)
+	_assert_true(
+		sprite_sheet.get_format() == Image.FORMAT_RGBA8,
+		"Shensheng sprite sheet must use RGBA8 transparency"
+	)
+
+	var frame_images: Array[Image] = []
+	var frame_data: Array[PackedByteArray] = []
+	var minimum_bounds_size := Vector2i(SHENSHENG_FRAME_SIZE.x, SHENSHENG_FRAME_SIZE.y)
+	var maximum_bounds_size := Vector2i.ZERO
+	for frame_index in SHENSHENG_IDLE_FRAME_COUNT:
+		var frame_image := sprite_sheet.get_region(
+			Rect2i(
+				frame_index * SHENSHENG_FRAME_SIZE.x,
+				0,
+				SHENSHENG_FRAME_SIZE.x,
+				SHENSHENG_FRAME_SIZE.y
+			)
+		)
+		var used_rect := frame_image.get_used_rect()
+		_assert_true(
+			used_rect.size.x >= 300 and used_rect.size.y >= 330,
+			"Shensheng frame %d must remain readable in the demo" % frame_index
+		)
+		_assert_true(
+			used_rect.end.y == SHENSHENG_FEET_BASELINE_Y + 1,
+			"Shensheng frame %d must share the configured feet baseline" % frame_index
+		)
+		_assert_true(
+			used_rect.position.x > 0
+			and used_rect.position.y > 0
+			and used_rect.end.x < SHENSHENG_FRAME_SIZE.x
+			and used_rect.end.y < SHENSHENG_FRAME_SIZE.y,
+			"Shensheng frame %d must stay inside its transparent canvas" % frame_index
+		)
+		minimum_bounds_size.x = min(minimum_bounds_size.x, used_rect.size.x)
+		minimum_bounds_size.y = min(minimum_bounds_size.y, used_rect.size.y)
+		maximum_bounds_size.x = max(maximum_bounds_size.x, used_rect.size.x)
+		maximum_bounds_size.y = max(maximum_bounds_size.y, used_rect.size.y)
+		frame_images.append(frame_image)
+		frame_data.append(frame_image.get_data())
+
+	var bounds_spread := maximum_bounds_size - minimum_bounds_size
+	_assert_true(
+		bounds_spread.x <= 8 and bounds_spread.y <= 2,
+		"Shensheng idle frame bounds must keep a stable canvas anchor"
+	)
+	var sprite_sheet_data := sprite_sheet.get_data()
+	for alpha_index in range(3, sprite_sheet_data.size(), 4):
+		var alpha := sprite_sheet_data[alpha_index]
+		if alpha > 0 and alpha < SHENSHENG_EDGE_ALPHA_CUTOFF:
+			_assert_true(false, "Shensheng cutout must not contain low-alpha matte residue")
+			break
+
+	for frame_index in SHENSHENG_IDLE_FRAME_COUNT:
+		var next_frame_index := (frame_index + 1) % SHENSHENG_IDLE_FRAME_COUNT
+		_assert_true(
+			frame_data[frame_index] != frame_data[next_frame_index],
+			"Shensheng idle frame %d must contain distinct motion" % frame_index
+		)
+		var alpha_delta := _normalized_alpha_difference(
+			frame_images[frame_index],
+			frame_images[next_frame_index]
+		)
+		_assert_true(
+			alpha_delta <= SHENSHENG_MAX_NORMALIZED_ALPHA_DELTA,
+			"Shensheng idle transition %d must remain continuous, actual alpha delta=%.4f" % [
+				frame_index,
+				alpha_delta
+			]
+		)
 
 
 func _assert_player_animation_pipeline() -> void:
