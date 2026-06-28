@@ -51,6 +51,8 @@ enum DemoStep {
 
 @onready var world_root: Node2D = $WorldRoot
 @onready var player: Polygon2D = %Player
+@onready var player_sprite: AnimatedSprite2D = %PlayerSprite
+@onready var player_animation_state_machine: DemoPlayerAnimationStateMachine = %PlayerAnimationStateMachine
 @onready var zhuyu_pickup: Polygon2D = %ZhuyuPickup
 @onready var zhuyu_label: Label = %ZhuyuLabel
 @onready var guidance_stone: Polygon2D = %GuidanceStone
@@ -293,12 +295,14 @@ func _process(delta: float) -> void:
 	_handle_menu_toggle_input()
 
 	if not initialized:
+		_set_player_animation_movement(Vector2.ZERO)
 		_sync_journal_shortcut_key_state()
 		return
 
 	if _is_ui_blocking_gameplay():
 		prompt_label.visible = false
 		was_interact_key_pressed = Input.is_key_pressed(KEY_E)
+		_set_player_animation_movement(Vector2.ZERO)
 		_sync_journal_shortcut_key_state()
 		_update_objective_guidance()
 		return
@@ -676,8 +680,15 @@ func _move_player(delta: float) -> void:
 	if Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT):
 		move_direction.x += 1.0
 
-	if move_direction.length_squared() > 0.0:
-		player.position += move_direction.normalized() * player_speed * delta
+	var movement := move_direction.normalized()
+	if movement.length_squared() > 0.0:
+		player.position += movement * player_speed * delta
+	_set_player_animation_movement(movement)
+
+
+func _set_player_animation_movement(movement: Vector2) -> void:
+	if player_animation_state_machine != null:
+		player_animation_state_machine.set_movement_vector(movement)
 
 
 func _update_prompt() -> void:
@@ -1186,6 +1197,7 @@ func _apply_demo_save_state(state: Dictionary) -> bool:
 		shensheng_discovered = true
 
 	_restore_saved_player_position(state)
+	player_animation_state_machine.reset_to_idle()
 	_restore_saved_history(state)
 	_apply_world_visual_state()
 	completion_panel.visible = false
@@ -1266,6 +1278,7 @@ func _reset_demo_state(history_message := "Demo 已重置") -> void:
 		bestiary_service.clear_owner(OWNER_ID)
 
 	player.position = PLAYER_START_POSITION
+	player_animation_state_machine.reset_to_idle()
 	current_step = DemoStep.COLLECT_ZHUYU
 	zhuyu_collected = false
 	stone_activated = false

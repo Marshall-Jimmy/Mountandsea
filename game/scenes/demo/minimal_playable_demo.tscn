@@ -1,6 +1,91 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://scenes/demo/minimal_playable_demo.gd" id="1_minimal_playable_demo"]
+[ext_resource type="Texture2D" path="res://assets/demo/placeholder_sprites/demo_player_idle_walk.png" id="2_demo_player_sprite_sheet"]
+[ext_resource type="Script" path="res://scenes/demo/demo_player_animation_state_machine.gd" id="3_demo_player_animation_state_machine"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_demo_player_idle_0"]
+atlas = ExtResource("2_demo_player_sprite_sheet")
+region = Rect2(0, 0, 512, 512)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_demo_player_idle_1"]
+atlas = ExtResource("2_demo_player_sprite_sheet")
+region = Rect2(512, 0, 512, 512)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_demo_player_walk_0"]
+atlas = ExtResource("2_demo_player_sprite_sheet")
+region = Rect2(1024, 0, 512, 512)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_demo_player_walk_1"]
+atlas = ExtResource("2_demo_player_sprite_sheet")
+region = Rect2(1536, 0, 512, 512)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_demo_player_walk_2"]
+atlas = ExtResource("2_demo_player_sprite_sheet")
+region = Rect2(2048, 0, 512, 512)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_demo_player_walk_3"]
+atlas = ExtResource("2_demo_player_sprite_sheet")
+region = Rect2(2560, 0, 512, 512)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_demo_player_walk_4"]
+atlas = ExtResource("2_demo_player_sprite_sheet")
+region = Rect2(3072, 0, 512, 512)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_demo_player_walk_5"]
+atlas = ExtResource("2_demo_player_sprite_sheet")
+region = Rect2(3584, 0, 512, 512)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_demo_player_walk_6"]
+atlas = ExtResource("2_demo_player_sprite_sheet")
+region = Rect2(4096, 0, 512, 512)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_demo_player_walk_7"]
+atlas = ExtResource("2_demo_player_sprite_sheet")
+region = Rect2(4608, 0, 512, 512)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_demo_player"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_demo_player_idle_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_demo_player_idle_1")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 2.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_demo_player_walk_0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_demo_player_walk_1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_demo_player_walk_2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_demo_player_walk_3")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_demo_player_walk_4")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_demo_player_walk_5")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_demo_player_walk_6")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_demo_player_walk_7")
+}],
+"loop": true,
+"name": &"walk",
+"speed": 8.0
+}]
 
 [node name="MinimalPlayableDemo" type="Node2D"]
 script = ExtResource("1_minimal_playable_demo")
@@ -10,8 +95,24 @@ script = ExtResource("1_minimal_playable_demo")
 [node name="Player" type="Polygon2D" parent="WorldRoot"]
 unique_name_in_owner = true
 position = Vector2(220, 260)
-color = Color(0.2, 0.55, 1, 1)
+color = Color(0.2, 0.55, 1, 0)
 polygon = PackedVector2Array(-20, -20, 20, -20, 20, 20, -20, 20)
+
+[node name="PlayerSprite" type="AnimatedSprite2D" parent="WorldRoot/Player"]
+unique_name_in_owner = true
+texture_filter = 2
+position = Vector2(0, -12)
+scale = Vector2(0.2, 0.2)
+z_index = 10
+sprite_frames = SubResource("SpriteFrames_demo_player")
+animation = &"idle"
+centered = true
+offset = Vector2(0, 0)
+
+[node name="PlayerAnimationStateMachine" type="Node" parent="WorldRoot/Player" node_paths=PackedStringArray("animated_sprite")]
+unique_name_in_owner = true
+script = ExtResource("3_demo_player_animation_state_machine")
+animated_sprite = NodePath("../PlayerSprite")
 
 [node name="ZhuyuPickup" type="Polygon2D" parent="WorldRoot"]
 unique_name_in_owner = true

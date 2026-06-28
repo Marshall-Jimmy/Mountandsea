@@ -16,6 +16,24 @@ const MIGU_BRANCH_INTERACTABLE_ID := "collect_migu_branch"
 const BASIC_ORE_INTERACTABLE_ID := "collect_basic_ore"
 const LUSHU_INTERACTABLE_ID := "observe_lushu"
 const GENERIC_BEAST_INTERACTABLE_ID := "observe_generic_beast"
+const PLAYER_SPRITE_SHEET_PATH := "res://assets/demo/placeholder_sprites/demo_player_idle_walk.png"
+const PLAYER_WALK_METADATA_PATH := "res://assets/demo/placeholder_sprites/demo_player_walk_metadata.json"
+const PLAYER_ANIMATION_STATE_IDLE := 0
+const PLAYER_ANIMATION_STATE_WALK := 1
+const PLAYER_FACING_LEFT := -1
+const PLAYER_FACING_RIGHT := 1
+const PLAYER_FRAME_SIZE := Vector2i(512, 512)
+const PLAYER_IDLE_FRAME_COUNT := 2
+const PLAYER_WALK_FRAME_COUNT := 8
+const PLAYER_TOTAL_FRAME_COUNT := PLAYER_IDLE_FRAME_COUNT + PLAYER_WALK_FRAME_COUNT
+const PLAYER_FEET_BASELINE_Y := 488
+const PLAYER_EDGE_ALPHA_CUTOFF := 32
+const PLAYER_WALK_FPS_MIN := 7.0
+const PLAYER_WALK_FPS_MAX := 8.0
+const PLAYER_BODY_CENTER_REGION := Rect2i(180, 80, 160, 250)
+const PLAYER_BODY_CENTER_MAX_SPREAD := Vector2(8.0, 8.0)
+const PLAYER_WALK_BOUNDS_MAX_SPREAD := Vector2i(16, 16)
+const PLAYER_WALK_MAX_NORMALIZED_ALPHA_DELTA := 0.08
 const STEP_COLLECT_ZHUYU := 0
 const STEP_OBSERVE_SHENSHENG := 2
 const STEP_COMPLETE := 3
@@ -46,6 +64,7 @@ func _run_test() -> void:
 	player = demo.get_node_or_null("WorldRoot/Player")
 	_assert_true(player != null, "Player node must exist")
 	_assert_true(demo.get("initialized") == true, "Demo must initialize services")
+	_assert_player_animation_pipeline()
 	_assert_history_panel_visible(true)
 	_assert_initial_journal_state()
 	_assert_progress_view_toggle_preserves_history("Demo 开始")
@@ -73,8 +92,14 @@ func _run_test() -> void:
 	_assert_history_contains("Demo 已重置")
 	_assert_history_not_contains("采集祝余叶")
 
+	var animation_state_machine := _get_player_animation_state_machine()
+	if animation_state_machine != null:
+		animation_state_machine.call("set_movement_vector", Vector2.LEFT)
+	_assert_player_facing(PLAYER_FACING_LEFT, false, "left movement before load")
 	demo.call("_on_load_demo_pressed")
 	_assert_vec2_near(player.position, saved_position, "load should restore saved player position")
+	_assert_player_animation_state(PLAYER_ANIMATION_STATE_IDLE, &"idle")
+	_assert_player_facing(PLAYER_FACING_RIGHT, true, "load should restore runtime default facing")
 	_assert_state_after_stone_activation()
 	_assert_history_contains("采集祝余叶")
 	_assert_history_contains("激活山海石碑")
@@ -434,6 +459,434 @@ func _assert_journal_status(display_name: String, expected_status: String) -> vo
 	_assert_true(journal_label.text.contains(expected_text), "journal should contain %s, actual=%s" % [expected_text, journal_label.text])
 
 
+func _assert_player_animation_pipeline() -> void:
+	var player_sprite := demo.get_node_or_null("WorldRoot/Player/PlayerSprite") as AnimatedSprite2D
+	var animation_state_machine := _get_player_animation_state_machine()
+	_assert_true(player_sprite != null, "player AnimatedSprite2D must exist")
+	_assert_true(animation_state_machine != null, "player animation state machine must exist")
+	_assert_true(ResourceLoader.exists(PLAYER_SPRITE_SHEET_PATH), "player sprite sheet resource path must exist")
+	if player_sprite == null or animation_state_machine == null:
+		return
+	_assert_true(player_sprite.visible, "player AnimatedSprite2D must be visible")
+	_assert_true(player_sprite.is_visible_in_tree(), "player AnimatedSprite2D must be visible in the scene tree")
+	_assert_true(
+		player_sprite.scale.x >= 0.18 and player_sprite.scale.y >= 0.18,
+		"player sprite must be large enough to remain readable in the demo"
+	)
+	_assert_true(
+		player_sprite.texture_filter == CanvasItem.TEXTURE_FILTER_LINEAR,
+		"player sprite must use linear filtering for non-pixel art"
+	)
+	_assert_true(player_sprite.centered, "player sprite must use a stable centered canvas anchor")
+	_assert_true(player_sprite.offset == Vector2.ZERO, "player sprite offset must remain constant across animations")
+	var polygon_fallback := player as Polygon2D
+	_assert_true(polygon_fallback != null, "player Polygon2D fallback must exist")
+	if polygon_fallback != null:
+		_assert_true(
+			polygon_fallback.color.a <= 0.05,
+			"player Polygon2D fallback must remain visually hidden"
+		)
+		_assert_true(
+			player_sprite.z_index > polygon_fallback.z_index,
+			"player sprite must render above the Polygon2D fallback"
+		)
+
+	var sprite_frames := player_sprite.sprite_frames
+	_assert_true(sprite_frames != null, "player sprite frames must exist")
+	if sprite_frames == null:
+		return
+
+	_assert_true(sprite_frames.has_animation(&"idle"), "player sprite frames must include idle")
+	_assert_true(sprite_frames.has_animation(&"walk"), "player sprite frames must include walk")
+	_assert_true(
+		sprite_frames.get_frame_count(&"idle") == PLAYER_IDLE_FRAME_COUNT,
+		"idle animation must include exactly %d frames" % PLAYER_IDLE_FRAME_COUNT
+	)
+	_assert_true(
+		sprite_frames.get_frame_count(&"walk") == PLAYER_WALK_FRAME_COUNT,
+		"walk animation must include exactly %d frames" % PLAYER_WALK_FRAME_COUNT
+	)
+	var walk_fps := sprite_frames.get_animation_speed(&"walk")
+	_assert_true(
+		walk_fps >= PLAYER_WALK_FPS_MIN and walk_fps <= PLAYER_WALK_FPS_MAX,
+		"walk animation FPS must stay between %.1f and %.1f" % [PLAYER_WALK_FPS_MIN, PLAYER_WALK_FPS_MAX]
+	)
+	_assert_true(sprite_frames.get_animation_loop(&"walk"), "walk animation must loop")
+	_assert_stylized_robe_walk_metadata(sprite_frames)
+	_assert_animation_frame_sources(sprite_frames, &"idle")
+	_assert_animation_frame_sources(sprite_frames, &"walk")
+	_assert_player_sprite_sheet_readability()
+
+	_assert_player_animation_state(PLAYER_ANIMATION_STATE_IDLE, &"idle")
+	_assert_player_facing(PLAYER_FACING_RIGHT, true, "initial facing")
+	_assert_true(player_sprite.is_playing(), "player idle animation should be playing initially")
+
+	animation_state_machine.call("set_movement_vector", Vector2.RIGHT)
+	_assert_player_animation_state(PLAYER_ANIMATION_STATE_WALK, &"walk")
+	_assert_player_facing(PLAYER_FACING_RIGHT, true, "right movement")
+	var walk_play_count := int(animation_state_machine.get("animation_play_count"))
+	animation_state_machine.call("set_movement_vector", Vector2.RIGHT)
+	_assert_true(
+		int(animation_state_machine.get("animation_play_count")) == walk_play_count,
+		"setting the same movement state should not restart the walk animation"
+	)
+
+	animation_state_machine.call("set_movement_vector", Vector2.LEFT)
+	_assert_player_animation_state(PLAYER_ANIMATION_STATE_WALK, &"walk")
+	_assert_player_facing(PLAYER_FACING_LEFT, false, "left movement")
+	_assert_true(
+		int(animation_state_machine.get("animation_play_count")) == walk_play_count,
+		"changing facing direction should not restart the walk animation"
+	)
+
+	animation_state_machine.call("set_movement_vector", Vector2.ZERO)
+	_assert_player_animation_state(PLAYER_ANIMATION_STATE_IDLE, &"idle")
+	_assert_player_facing(PLAYER_FACING_LEFT, false, "stopping should preserve left facing")
+
+	animation_state_machine.call("set_movement_vector", Vector2.UP)
+	_assert_player_animation_state(PLAYER_ANIMATION_STATE_WALK, &"walk")
+	_assert_player_facing(PLAYER_FACING_LEFT, false, "up movement should preserve horizontal facing")
+	walk_play_count = int(animation_state_machine.get("animation_play_count"))
+	animation_state_machine.call("set_movement_vector", Vector2.DOWN)
+	_assert_player_facing(PLAYER_FACING_LEFT, false, "down movement should preserve horizontal facing")
+	_assert_true(
+		int(animation_state_machine.get("animation_play_count")) == walk_play_count,
+		"vertical movement should not restart the current walk animation"
+	)
+
+	animation_state_machine.call("set_movement_vector", Vector2.ZERO)
+	_assert_player_animation_state(PLAYER_ANIMATION_STATE_IDLE, &"idle")
+	_assert_player_facing(PLAYER_FACING_LEFT, false, "vertical stop should preserve horizontal facing")
+	animation_state_machine.call("reset_to_idle")
+	_assert_player_facing(PLAYER_FACING_RIGHT, true, "animation reset should restore default facing")
+	_assert_player_animation_save_fields_absent()
+
+
+func _assert_stylized_robe_walk_metadata(sprite_frames: SpriteFrames) -> void:
+	var metadata_path := ProjectSettings.globalize_path(PLAYER_WALK_METADATA_PATH)
+	_assert_true(FileAccess.file_exists(metadata_path), "stylized robe walk metadata must exist")
+	if not FileAccess.file_exists(metadata_path):
+		return
+
+	var parsed_metadata: Variant = JSON.parse_string(FileAccess.get_file_as_string(metadata_path))
+	_assert_true(parsed_metadata is Dictionary, "stylized robe walk metadata must be a Dictionary")
+	if not (parsed_metadata is Dictionary):
+		return
+	var metadata: Dictionary = parsed_metadata
+	_assert_true(metadata.get("design") == "stylized_robe_walk", "walk metadata must declare stylized robe design")
+	_assert_true(metadata.get("robe_dominant") == true, "walk metadata must declare robe-dominant motion")
+	_assert_true(
+		metadata.get("leg_style") == "robe_hidden_with_subtle_foot_tips",
+		"walk metadata must hide awkward leg poses behind the robe"
+	)
+	_assert_true(
+		int(metadata.get("frame_width", 0)) == PLAYER_FRAME_SIZE.x
+		and int(metadata.get("frame_height", 0)) == PLAYER_FRAME_SIZE.y,
+		"walk metadata canvas must remain 512x512"
+	)
+	_assert_true(
+		int(metadata.get("walk_frame_count", 0)) == PLAYER_WALK_FRAME_COUNT,
+		"walk metadata frame count must match SpriteFrames"
+	)
+	_assert_true(
+		is_equal_approx(
+			float(metadata.get("walk_fps", 0.0)),
+			sprite_frames.get_animation_speed(&"walk")
+		),
+		"walk metadata FPS must match SpriteFrames"
+	)
+
+	var moving_elements: Variant = metadata.get("moving_elements", [])
+	_assert_true(moving_elements is Array, "walk metadata moving_elements must be an Array")
+	if moving_elements is Array:
+		for expected_element in ["torso", "robe", "sleeve", "talisman", "shadow"]:
+			_assert_true(
+				moving_elements.has(expected_element),
+				"walk metadata must include %s motion" % expected_element
+			)
+
+	var frames: Variant = metadata.get("frames", [])
+	_assert_true(frames is Array, "walk metadata frames must be an Array")
+	if not (frames is Array):
+		return
+	_assert_true(frames.size() == PLAYER_WALK_FRAME_COUNT, "walk metadata must contain eight frames")
+	if frames.size() != PLAYER_WALK_FRAME_COUNT:
+		return
+
+	var has_torso_motion := false
+	var has_robe_motion := false
+	var has_follow_through := false
+	for frame_index in PLAYER_WALK_FRAME_COUNT:
+		var frame: Variant = frames[frame_index]
+		_assert_true(frame is Dictionary, "walk metadata frame %d must be a Dictionary" % frame_index)
+		if not (frame is Dictionary):
+			continue
+		var feet_anchor: Variant = frame.get("feet_anchor", [])
+		_assert_true(
+			feet_anchor is Array
+			and feet_anchor.size() == 2
+			and int(feet_anchor[0]) == 256
+			and int(feet_anchor[1]) == PLAYER_FEET_BASELINE_Y,
+			"walk metadata frame %d must keep the shared feet anchor" % frame_index
+		)
+		_assert_true(abs(float(frame.get("torso_x", 99))) <= 2.0, "walk torso_x must stay subtle")
+		_assert_true(abs(float(frame.get("torso_y", 99))) <= 5.0, "walk torso_y must stay subtle")
+		_assert_true(abs(float(frame.get("foot_tip_shift", 99))) <= 2.0, "walk foot tips must stay subtle")
+		has_torso_motion = has_torso_motion or float(frame.get("torso_y", 0.0)) != 0.0
+		has_robe_motion = has_robe_motion or float(frame.get("robe_sway", 0.0)) != 0.0
+		has_follow_through = (
+			has_follow_through
+			or float(frame.get("sleeve_sway", 0.0)) != 0.0
+			or float(frame.get("talisman_x", 0.0)) != 0.0
+			or float(frame.get("talisman_y", 0.0)) != 0.0
+		)
+
+		var next_frame: Dictionary = frames[(frame_index + 1) % PLAYER_WALK_FRAME_COUNT]
+		_assert_true(
+			abs(float(frame.get("torso_y", 0.0)) - float(next_frame.get("torso_y", 0.0))) <= 1.0,
+			"walk torso bob must remain continuous after frame %d" % frame_index
+		)
+		_assert_true(
+			abs(float(frame.get("robe_sway", 0.0)) - float(next_frame.get("robe_sway", 0.0))) <= 3.0,
+			"walk robe sway must remain continuous after frame %d" % frame_index
+		)
+		_assert_true(
+			abs(float(frame.get("shadow_offset", 0.0)) - float(next_frame.get("shadow_offset", 0.0))) <= 1.0,
+			"walk shadow offset must remain continuous after frame %d" % frame_index
+		)
+		_assert_true(
+			abs(float(frame.get("shadow_scale", 1.0)) - float(next_frame.get("shadow_scale", 1.0))) <= 0.05,
+			"walk shadow scale must remain continuous after frame %d" % frame_index
+		)
+
+	_assert_true(has_torso_motion, "stylized robe walk must include non-zero upper-body motion")
+	_assert_true(has_robe_motion, "stylized robe walk must include cyclic robe sway")
+	_assert_true(has_follow_through, "stylized robe walk must include sleeve or talisman follow-through")
+
+
+func _assert_animation_frame_sources(sprite_frames: SpriteFrames, animation_name: StringName) -> void:
+	for frame_index in sprite_frames.get_frame_count(animation_name):
+		var frame_texture := sprite_frames.get_frame_texture(animation_name, frame_index) as AtlasTexture
+		_assert_true(frame_texture != null, "%s frame %d must use an AtlasTexture" % [animation_name, frame_index])
+		if frame_texture == null:
+			continue
+		_assert_true(frame_texture.atlas != null, "%s frame %d must reference the sprite sheet" % [animation_name, frame_index])
+		if frame_texture.atlas != null:
+			_assert_true(
+				frame_texture.atlas.resource_path == PLAYER_SPRITE_SHEET_PATH,
+				"%s frame %d should use %s" % [animation_name, frame_index, PLAYER_SPRITE_SHEET_PATH]
+			)
+		_assert_true(
+			frame_texture.region.size == Vector2(PLAYER_FRAME_SIZE.x, PLAYER_FRAME_SIZE.y),
+			"%s frame %d must be 512x512" % [animation_name, frame_index]
+		)
+
+
+func _assert_player_sprite_sheet_readability() -> void:
+	var sprite_sheet := Image.load_from_file(ProjectSettings.globalize_path(PLAYER_SPRITE_SHEET_PATH))
+	_assert_true(sprite_sheet != null, "player sprite sheet image must load")
+	if sprite_sheet == null:
+		return
+	_assert_true(
+		sprite_sheet.get_width() == PLAYER_FRAME_SIZE.x * PLAYER_TOTAL_FRAME_COUNT,
+		"player sprite sheet must contain %d horizontal frames" % PLAYER_TOTAL_FRAME_COUNT
+	)
+	_assert_true(
+		sprite_sheet.get_height() == PLAYER_FRAME_SIZE.y,
+		"player sprite sheet frames must be 512 pixels tall"
+	)
+	_assert_true(sprite_sheet.get_format() == Image.FORMAT_RGBA8, "player sprite sheet must use RGBA8 transparency")
+
+	var frame_data: Array[PackedByteArray] = []
+	var frame_images: Array[Image] = []
+	var used_rects: Array[Rect2i] = []
+	for frame_index in PLAYER_TOTAL_FRAME_COUNT:
+		var frame_image := sprite_sheet.get_region(
+			Rect2i(frame_index * PLAYER_FRAME_SIZE.x, 0, PLAYER_FRAME_SIZE.x, PLAYER_FRAME_SIZE.y)
+		)
+		var used_rect := frame_image.get_used_rect()
+		_assert_true(
+			used_rect.size.x >= 240 and used_rect.size.y >= 400,
+			"player frame %d must use enough canvas area to remain readable" % frame_index
+		)
+		_assert_true(
+			used_rect.end.y == PLAYER_FEET_BASELINE_Y + 1,
+			"player frame %d feet must share the configured baseline" % frame_index
+		)
+		_assert_true(
+			used_rect.position.x > 0
+			and used_rect.position.y > 0
+			and used_rect.end.x < PLAYER_FRAME_SIZE.x
+			and used_rect.end.y < PLAYER_FRAME_SIZE.y,
+			"player frame %d cutout must stay inside its transparent canvas" % frame_index
+		)
+		frame_images.append(frame_image)
+		used_rects.append(used_rect)
+		frame_data.append(frame_image.get_data())
+
+	_assert_true(
+		abs(used_rects[0].position.x - used_rects[1].position.x) <= 1
+		and used_rects[0].position.y == used_rects[1].position.y
+		and used_rects[0].end == used_rects[1].end,
+		"idle frame cutouts must share the same visual anchor"
+	)
+
+	var sprite_sheet_data := sprite_sheet.get_data()
+	for alpha_index in range(3, sprite_sheet_data.size(), 4):
+		var alpha := sprite_sheet_data[alpha_index]
+		if alpha > 0 and alpha < PLAYER_EDGE_ALPHA_CUTOFF:
+			_assert_true(false, "player sprite cutout must not contain low-alpha matte residue")
+			break
+
+	_assert_walk_frame_continuity(frame_images, used_rects)
+	_assert_true(frame_data[0] != frame_data[1], "idle frames must contain visible motion or glow changes")
+	for walk_frame_index in range(PLAYER_IDLE_FRAME_COUNT, PLAYER_TOTAL_FRAME_COUNT):
+		_assert_true(
+			frame_data[walk_frame_index] != frame_data[0] and frame_data[walk_frame_index] != frame_data[1],
+			"walk frame %d must differ from idle frames" % (walk_frame_index - PLAYER_IDLE_FRAME_COUNT)
+		)
+		for previous_walk_frame_index in range(PLAYER_IDLE_FRAME_COUNT, walk_frame_index):
+			_assert_true(
+				frame_data[walk_frame_index] != frame_data[previous_walk_frame_index],
+				"walk frame %d must differ from earlier walk frames" % (
+					walk_frame_index - PLAYER_IDLE_FRAME_COUNT
+				)
+			)
+
+
+func _assert_walk_frame_continuity(frame_images: Array[Image], used_rects: Array[Rect2i]) -> void:
+	var min_body_center := Vector2(INF, INF)
+	var max_body_center := Vector2(-INF, -INF)
+	var min_bounds_size := Vector2i(PLAYER_FRAME_SIZE.x, PLAYER_FRAME_SIZE.y)
+	var max_bounds_size := Vector2i.ZERO
+	var walk_frames: Array[Image] = []
+
+	for walk_index in PLAYER_WALK_FRAME_COUNT:
+		var atlas_index := PLAYER_IDLE_FRAME_COUNT + walk_index
+		var frame_image := frame_images[atlas_index]
+		var body_center := _calculate_alpha_weighted_center(frame_image, PLAYER_BODY_CENTER_REGION)
+		var bounds_size := used_rects[atlas_index].size
+		min_body_center.x = min(min_body_center.x, body_center.x)
+		min_body_center.y = min(min_body_center.y, body_center.y)
+		max_body_center.x = max(max_body_center.x, body_center.x)
+		max_body_center.y = max(max_body_center.y, body_center.y)
+		min_bounds_size.x = min(min_bounds_size.x, bounds_size.x)
+		min_bounds_size.y = min(min_bounds_size.y, bounds_size.y)
+		max_bounds_size.x = max(max_bounds_size.x, bounds_size.x)
+		max_bounds_size.y = max(max_bounds_size.y, bounds_size.y)
+		walk_frames.append(frame_image)
+
+	var body_center_spread := max_body_center - min_body_center
+	_assert_true(
+		body_center_spread.x <= PLAYER_BODY_CENTER_MAX_SPREAD.x
+		and body_center_spread.y <= PLAYER_BODY_CENTER_MAX_SPREAD.y,
+		"walk frame body centers must stay within the configured stability range"
+	)
+	var bounds_spread := max_bounds_size - min_bounds_size
+	_assert_true(
+		bounds_spread.x <= PLAYER_WALK_BOUNDS_MAX_SPREAD.x
+		and bounds_spread.y <= PLAYER_WALK_BOUNDS_MAX_SPREAD.y,
+		"walk frame bounding boxes must remain visually consistent"
+	)
+
+	for walk_index in PLAYER_WALK_FRAME_COUNT:
+		var next_walk_index := (walk_index + 1) % PLAYER_WALK_FRAME_COUNT
+		var alpha_delta := _normalized_alpha_difference(
+			walk_frames[walk_index],
+			walk_frames[next_walk_index]
+		)
+		_assert_true(
+			alpha_delta <= PLAYER_WALK_MAX_NORMALIZED_ALPHA_DELTA,
+			"walk frame %d transition must remain continuous, actual alpha delta=%.4f" % [
+				walk_index,
+				alpha_delta
+			]
+		)
+
+
+func _calculate_alpha_weighted_center(frame_image: Image, region: Rect2i) -> Vector2:
+	var weighted_position := Vector2.ZERO
+	var total_alpha := 0.0
+	for y in range(region.position.y, region.end.y):
+		for x in range(region.position.x, region.end.x):
+			var alpha := frame_image.get_pixel(x, y).a
+			weighted_position += Vector2(x, y) * alpha
+			total_alpha += alpha
+	_assert_true(total_alpha > 0.0, "walk frame body center region must contain visible pixels")
+	if total_alpha <= 0.0:
+		return Vector2.ZERO
+	return weighted_position / total_alpha
+
+
+func _normalized_alpha_difference(first_frame: Image, second_frame: Image) -> float:
+	var first_data := first_frame.get_data()
+	var second_data := second_frame.get_data()
+	var alpha_difference := 0
+	for alpha_index in range(3, first_data.size(), 4):
+		alpha_difference += abs(int(first_data[alpha_index]) - int(second_data[alpha_index]))
+	return float(alpha_difference) / float(PLAYER_FRAME_SIZE.x * PLAYER_FRAME_SIZE.y * 255)
+
+
+func _assert_player_animation_state(expected_state: int, expected_animation: StringName) -> void:
+	var player_sprite := demo.get_node_or_null("WorldRoot/Player/PlayerSprite") as AnimatedSprite2D
+	var animation_state_machine := _get_player_animation_state_machine()
+	if player_sprite == null or animation_state_machine == null:
+		return
+
+	_assert_true(
+		int(animation_state_machine.get("current_state")) == expected_state,
+		"player animation state should be %d" % expected_state
+	)
+	_assert_true(
+		animation_state_machine.get("current_animation_name") == expected_animation,
+		"player animation name should be %s" % expected_animation
+	)
+	_assert_true(
+		player_sprite.animation == expected_animation,
+		"AnimatedSprite2D should play %s" % expected_animation
+	)
+
+
+func _assert_player_facing(expected_direction: int, expected_flip_h: bool, context: String) -> void:
+	var player_sprite := demo.get_node_or_null("WorldRoot/Player/PlayerSprite") as AnimatedSprite2D
+	var animation_state_machine := _get_player_animation_state_machine()
+	if player_sprite == null or animation_state_machine == null:
+		return
+
+	_assert_true(
+		int(animation_state_machine.get("last_facing_direction")) == expected_direction,
+		"%s should keep facing direction %d" % [context, expected_direction]
+	)
+	_assert_true(
+		player_sprite.flip_h == expected_flip_h,
+		"%s should set player flip_h to %s" % [context, expected_flip_h]
+	)
+
+
+func _assert_player_animation_save_fields_absent() -> void:
+	var save_data: Variant = demo.call("get_save_data")
+	_assert_true(save_data is Dictionary, "save data should be a Dictionary")
+	if not (save_data is Dictionary):
+		return
+
+	_assert_true(not save_data.has("player_animation_state"), "save data should not persist player animation state")
+	_assert_true(not save_data.has("current_animation_name"), "save data should not persist player animation name")
+	_assert_true(not save_data.has("player_facing_direction"), "save data should not persist player facing direction")
+	_assert_true(not save_data.has("last_facing_direction"), "save data should not persist last facing direction")
+	var player_data: Variant = save_data.get("player", {})
+	_assert_true(player_data is Dictionary, "player save data should be a Dictionary")
+	if player_data is Dictionary:
+		_assert_true(not player_data.has("animation_state"), "player save data should not persist animation state")
+		_assert_true(not player_data.has("animation"), "player save data should not persist animation name")
+		_assert_true(not player_data.has("facing_direction"), "player save data should not persist facing direction")
+
+
+func _get_player_animation_state_machine() -> Node:
+	var animation_state_machine := demo.get_node_or_null("WorldRoot/Player/PlayerAnimationStateMachine")
+	_assert_true(animation_state_machine != null, "player animation state machine must exist")
+	return animation_state_machine
+
+
 func _assert_initial_journal_state() -> void:
 	_ensure_detail_journal_view()
 	_assert_shortcut_hint_label()
@@ -562,8 +1015,15 @@ func _assert_reset_preserves_compact_journal_view() -> void:
 	_ensure_detail_journal_view()
 	demo.call("_on_optional_progress_view_toggle_pressed")
 	_assert_true(demo.get("optional_progress_detail_view") == false, "journal should be compact before reset")
+	var animation_state_machine := _get_player_animation_state_machine()
+	if animation_state_machine != null:
+		animation_state_machine.call("set_movement_vector", Vector2.LEFT)
+	_assert_player_animation_state(PLAYER_ANIMATION_STATE_WALK, &"walk")
+	_assert_player_facing(PLAYER_FACING_LEFT, false, "left movement before reset")
 
 	demo.call("_reset_demo_state")
+	_assert_player_animation_state(PLAYER_ANIMATION_STATE_IDLE, &"idle")
+	_assert_player_facing(PLAYER_FACING_RIGHT, true, "reset should restore runtime default facing")
 	_assert_true(demo.get("optional_progress_detail_view") == false, "reset should preserve runtime journal view mode")
 	_assert_journal_progress(0, _optional_total_count())
 	_assert_journal_recent("无")

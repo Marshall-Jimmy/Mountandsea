@@ -74,13 +74,10 @@
 - 扩展 `minimal_playable_demo_save_load_regression.gd`，覆盖 progress counters、compact/detail toggle、recent completion、history preservation、reset、legacy optional load、不新增 save fields，以及 layout overlap regression。
 - 用户已完成 Godot GUI 复测，并确认 optional journal layout overlap 修复通过。
 
----
-
-## 当前开放 PR
-
 ### PR #37: game: polish optional journal controls
-- **状态：** Draft PR；用户 GUI 手测发现 shortcut hint label 未显示，本次已追加修复，等待用户复测
+- **状态：** 已合并
 - **Branch：** `game/optional-journal-controls-polish`
+- **Merge commit：** 571b2f5fa076c115a774d46c22e9136abb0f9d27
 - **链接：** https://github.com/Marshall-Jimmy/Mountandsea/pull/37
 - 为 `minimal_playable_demo` 的 optional journal 增加 keyboard shortcuts：`J` 切换隐藏 / 显示，`V` 切换简洁 / 详细视图。
 - 用户 GUI 手测发现 journal panel 内未显示快捷键提示。
@@ -91,8 +88,63 @@
 - 保持 PR #36 的 overlap 修复：progress 与 history 分区显示，history UI 只显示最近 5 条，内部 `interaction_history` 不截断。
 - 不改变 optional state、不新增 save fields、不改变 data-driven optional content 设计。
 - 未修改 Snowhuman Framework addon。
-- 本次追加修复验证：`python tools/validate_data.py`、`python tools/check_framework.py`、`python tools/validate_minimal_demo.py`、`git diff --check`、`git diff --stat` passed / ran；显式 Snowhuman Framework keyword scan 无匹配。
-- Godot GUI manual test 仍由用户完成；本 PR 不允许自动合并。
+- 追加修复验证：`python tools/validate_data.py`、`python tools/check_framework.py`、`python tools/validate_minimal_demo.py`、`git diff --check`、`git diff --stat` passed / ran；显式 Snowhuman Framework keyword scan 无匹配。
+- 用户已完成 PR #37 Godot GUI 手动测试。
+
+---
+
+## 当前开放 PR
+
+### PR #39: game: add art-guided demo animation state machine
+- **状态：** Draft PR / 本次视觉修复后仍待 Godot GUI manual test
+- **Branch：** `game/demo-animation-state-machine`
+- **链接：** https://github.com/Marshall-Jimmy/Mountandsea/pull/39
+- **用户最新 GUI 手测反馈：**
+  - 走路动作还是不连贯。
+  - 上半身都不动。
+  - 腿的动作很别扭。
+- **本次追加修复目标：**
+  - replace awkward leg-driven walk with stylized robe walk
+  - add subtle upper-body motion
+  - make robe / sleeve / talisman / shadow motion continuous
+  - preserve clean cutout, stable idle, and facing direction
+- **美术依据：**
+  - `docs/art-direction-materials.md`
+  - `docs/山海经附录5-工程路线图.md`
+  - `docs/山海经游戏设定集.md`
+  - `docs/third-party.md`
+- **美术约束摘要：**
+  - 画风为半写实东方手绘、青绿山水、动漫感、荒野生存、古朴神秘，优先俯视角表达。
+  - 色彩以墨青 `#193d3f`、深绿 `#327345`、雾蓝 `#4f6781` 为主，浅赭/陶土辅助，朱砂与青光作为强调。
+  - 角色使用 512×512 单帧画布，实际轮廓约占 300×450；强调清晰剪影和可读表情。文档未规定更具体的身体比例。
+  - 明确不采用像素风；使用自由缩放和平滑插值。
+  - 文档未规定 idle/walk 精确帧数、FPS 或最终 4/8 方向方案；本 demo 当前使用 idle 2 帧、walk 8 帧，idle 2 FPS、walk 8 FPS。
+  - 禁止现代科幻 UI、纯欧美卡通、克苏鲁/现代怪兽、照片级写实和直接照搬《饥荒》焦黑哥特风格。
+  - 不引入外部版权素材；本次按用户要求使用内置图像生成工具制作 demo-local 原创 placeholder，再在本地完成 chroma-key 去背和 atlas 整理。
+- 使用透明 `1536×1024` 的 `3×2` source sheet，并由 Python 标准库脚本确定性清理、对齐和重排为横向 `5120×512` player sprite sheet：frame `0-1` 为 idle，frame `2-9` 为 8 帧 walk cycle，每帧 `512×512`。
+- 生成脚本显式记录各帧 source layout、source feet anchor 和统一 `TARGET_FEET_ANCHOR = (256, 488)`；所有输出帧使用相同 canvas，脚底 baseline 均为 y=488。
+- 抠图清理会去除 alpha 低于 32 的 matte residue、微小孤立色点，并从邻近实色像素修复半透明边缘颜色；本次追加修复未调用外部 AI，不引入网络素材或外部版权素材。
+- walk 生成管线不再拼接四个不同腿部 pose，而是复用同一个 canonical silhouette，通过 8 帧参数表确定性控制 `torso_x/y`、轻微 tilt、robe / sleeve sway、talisman offset、foot-tip hint 和 shadow offset / scale。
+- walk 改为 stylized robe walk：程序化长袍纹理覆盖夸张腿部，只保留靠近 feet anchor 的轻微暗色足尖；脚步感主要由上半身 bob、袍摆、袖口、青光符牌和阴影的周期变化表达。
+- 新增 `demo_player_walk_metadata.json`，记录 `stylized_robe_walk` design、robe-dominant / leg-style 声明、8 FPS、统一 feet anchor 和逐帧运动参数。
+- 生成脚本会验证逐帧参数连续性、feet baseline、body center spread、bounding box height spread，以及包含首尾闭环在内的相邻帧 normalized alpha delta，拒绝明显跳变。
+- 新图继续使用成年山行者轮廓、分层衣袍、披风、发髻、木杖、朱砂腰带和青光符牌；idle 保持原有稳定呼吸 / 青光变化，walk 改为 8 帧 robe-dominant 连续循环。
+- `PlayerSprite` 放大到 `0.2`，提高到 `z_index = 10`；旧 Polygon2D 保持透明，仅作为 fallback，不再主导画面。
+- demo-local `DemoPlayerAnimationStateMachine` 继续集中管理 `IDLE` / `WALK` 与 `idle` / `walk` 映射；重复状态不会重启动画。
+- 状态机新增运行时 `last_facing_direction`：素材原始朝左，左移保持 `flip_h = false`，右移使用 `flip_h = true`，停止及纯上下移动保留最近水平朝向，reset/load 恢复默认朝右。
+- `minimal_playable_demo` 使用 `AnimatedSprite2D` 显示 player；移动代码只传入 movement vector，reset/load 回到 idle，动画状态不进入存档。
+- 回归测试覆盖资源路径、8 帧 walk count / loop / 8 FPS、stylized robe metadata、上半身非零小幅运动、robe / sleeve / talisman / shadow 参数连续性、固定 frame canvas / feet baseline / centered anchor、body center 与 bounding box spread、首尾及相邻帧 alpha continuity、低 alpha 残留、sprite scale / filtering / z-index、透明 Polygon2D fallback、左右转身、停止及上下移动保留朝向、状态切换不重复 restart、reset/load、journal/optional/save-load 回归和不新增 save fields。
+- Godot GUI manual test 尚未通过本次修复后的复测，仍由用户完成。
+
+---
+
+## 过期 / 关闭 PR
+
+### PR #38: game: add journal keyboard shortcuts and hints
+- **状态：** 已关闭、未合并
+- **Branch：** `game/journal-keyboard-shortcuts`
+- **链接：** https://github.com/Marshall-Jimmy/Mountandsea/pull/38
+- PR #38 是 PR #37 的过期重复 PR，不应继续开发或合并。
 
 ---
 
@@ -106,7 +158,8 @@
 - 显式 `InteractionHistoryToggleButton` 可折叠 / 展开右侧 journal/history panel 和左侧 live log，并保留 text/history。
 - PR #36 已合并：journal 支持 progress counters、compact/detail view toggle、recent completion hint，以及 readability / layout polish。
 - PR #36 已根据用户 GUI 手测反馈修复 journal layout overlap：progress 与 history 分区显示，history UI 只显示最近 5 条但不截断内部 history 数据。
-- PR #37 正在补充 optional journal keyboard shortcuts、shortcut hint label，并整理 layout constants/helper；用户 GUI 手测发现提示未显示，本次已追加修复并等待用户复测。
+- PR #37 已合并：journal 支持 `J` / `V` keyboard shortcuts、可见 shortcut hint 和防 overlap layout，并已完成用户 Godot GUI 手测。
+- 当前分支正在根据用户最新 GUI 反馈将 leg-driven walk 替换为同一 silhouette 驱动的 stylized robe walk，以小幅上身 bob、连续袍摆 / 袖口 / 符牌 / 阴影运动弱化 awkward leg pose，同时保留 clean cutout、stable idle 和 facing direction。
 - PR #36 不改变 optional state 核心结构、不新增 save fields、不改变 data-driven optional content 设计。
 - Snowhuman Framework 保持通用；addon 内没有项目专用内容。
 
@@ -141,29 +194,34 @@ git diff --stat
 
 ## 当前建议的下一项功能
 
-**Current active PR：** `game: polish optional journal controls`（PR #37）
+**Current active PR：** `game: add art-guided demo animation state machine`（PR #39）
 
 **目标：**
-- 为 optional journal 增加 `J` 隐藏 / 显示和 `V` 简洁 / 详细视图 keyboard shortcuts。
-- 在 journal panel 内显示快捷键提示。
-- 将 optional journal layout offsets 提取为常量，并拆分更清晰的配置 helper。
-- 保持 PR #36 的 overlap 修复、progress counters、recent completion hint 和 history UI 最近 5 条展示。
+- 根据 `docs/art-direction-materials.md` 提供清晰、可接受的 demo-local player placeholder sprite sheet。
+- 使用 `AnimatedSprite2D` 接入 idle 2 帧和 walk 8 帧。
+- 使用独立 demo-local animation state machine 管理 `IDLE` / `WALK`，不在移动代码中复制动画状态逻辑。
+- 清理透明边缘并将所有帧对齐到统一 feet anchor，避免 idle / walk 整体瞬移。
+- 使用同一 canonical silhouette 生成 robe-dominant walk，以 8 FPS 播放连续的 8 帧循环；上半身有小幅 bob / tilt，长袍遮住夸张腿部，袍摆 / 袖口 / 符牌 / 阴影按统一周期运动。
+- 左右移动时正确水平翻转，停止和纯上下移动时保持最近水平朝向。
+- reset/load 回 idle，save data 不持久化动画状态。
 - 不改变 optional state、save fields 或 data-driven content。
 - 不移动 demo-specific 内容到 Snowhuman Framework。
 
-**状态：** Draft PR 仍开放；用户 GUI 手测发现 shortcut hint label 未显示，本次已追加修复，等待用户复测；不要自动合并。
+**状态：** Draft PR 已创建；此前 clean cutout、stable idle 和 facing direction 已修复，用户最新 GUI 手测反馈为 walk 仍不连贯、上半身不动、腿部别扭；本次已替换为参数化 8 帧 stylized robe walk，并调整为 8 FPS；修复后的 Godot GUI manual test 仍由用户完成；不要自动合并。
 
 **验证：**
 - `python tools/validate_data.py` passed
 - `python tools/check_framework.py` passed
-- `python tools/validate_minimal_demo.py` passed
+- `python tools/validate_minimal_demo.py` passed，包含 Godot 4.7 headless import、script check-only 和 save/load regression
+- sprite atlas reproducibility：passed，重复整理 SHA-256 均为 `D0EDFC51E91EF41CB55EB2B4D6D05769AB93C52532DA689783D08543FAF4F14C`
+- walk metadata reproducibility：passed，重复生成 SHA-256 均为 `D1B6F9716FED0EB1DFE624BFA50EE90C5E18CF9329CBBBA485D8F9DF2BE7415C`
 - `git diff --check` passed；仅有 Windows line-ending warning
 - `git diff --stat` ran
 - 显式 Snowhuman Framework keyword scan for `zhuyu|shensheng|zaoyaoshan|祝余|狌狌|招摇山`：no matches
+- `AGENTS.md`、`game/project.godot`、Snowhuman Framework、schemas、CI 和无关 tooling 均未修改
 
 **下一步：**
-- 用户进行 Godot GUI manual test 复测，重点检查 `J` / `V` 快捷键、shortcut hint label 和 journal layout 是否正常。
-- GUI 手测通过后，由用户决定是否将 draft 标为 ready、merge 或继续反馈修改。
+- 用户进行修复后的 Godot GUI manual test，重点检查 stylized robe walk 连续性、上半身 bob、腿部是否被长袍自然弱化、袍摆 / 袖口 / 符牌 / 阴影周期、左右转身后的循环，以及 clean cutout、stable idle、facing、reset/load 和 journal/interaction 行为未回归。
 
 ---
 
