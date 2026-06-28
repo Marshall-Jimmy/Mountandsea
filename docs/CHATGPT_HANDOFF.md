@@ -137,24 +137,35 @@
 - 回归测试覆盖资源路径、8 帧 walk count / loop / 8 FPS、stylized robe metadata、上半身非零小幅运动、robe / sleeve / talisman / shadow 参数连续性、固定 frame canvas / feet baseline / centered anchor、body center 与 bounding box spread、首尾及相邻帧 alpha continuity、低 alpha 残留、sprite scale / filtering / z-index、透明 Polygon2D fallback、左右转身、停止及上下移动保留朝向、状态切换不重复 restart、reset/load、journal/optional/save-load 回归和不新增 save fields。
 - 将 player 的 clean cutout、stable idle、stylized robe walk 和 facing direction 修复合入 `master`。
 
+### PR #41: game: add shensheng idle animation
+- **状态：** 已合并
+- **Branch：** `game/shensheng-idle-animation`
+- **Merge commit：** a2b1a165dcd36637e4e5e851bb2f18bc6bb057a8
+- **链接：** https://github.com/Marshall-Jimmy/Mountandsea/pull/41
+- 为 `ShenshengCreature` 新增 demo-local `AnimatedSprite2D`，使用 6 帧、4 FPS 的循环 `idle`。
+- 视觉设计使用白耳、人面兽吻、猿身、半蹲长臂、墨青灰毛发、朱砂纹样和青色眼睛 / 胸纹微光。
+- 保留原 `ShenshengCreature` 的位置与 interaction identity；未新增 walk、attack 或 creature state machine。
+- 完整 headless 验证、生成器复现性检查和范围审计通过；合并前的 Godot GUI manual test 未在本文件中记录为已通过。
+
 ---
 
 ## 当前开放 PR
 
-### PR #41: game: add shensheng idle animation
+### PR #42: game: add Zhuyu hunger and knowledge loop
 - **状态：** Draft PR；Godot GUI manual test 保留给用户。
-- **Branch：** `game/shensheng-idle-animation`
-- **链接：** https://github.com/Marshall-Jimmy/Mountandsea/pull/41
-- **基线：** 最新 `origin/master`，包含 PR #39 merge commit `eec4d830eb40d3e159e43f847c028f5cdf0c62ab`。
-- 为 `ShenshengCreature` 新增 demo-local `AnimatedSprite2D`，仅包含 6 帧、4 FPS 的循环 `idle`，不新增 creature state machine。
-- 视觉设计使用白耳、人面兽吻、猿身、半蹲前倾肩、落地长臂、墨青灰毛发、朱砂纹样和青色眼睛 / 胸纹微光。
-- Python 标准库生成器确定性输出横向 `3072×512` RGBA8 atlas 和运动元数据；未调用外部 AI / 网络服务，未引入外部版权素材。
-- 所有帧使用 `512×512` canvas、feet-center anchor `(256, 470)`；呼吸、肩部、耳朵、手臂、青光与阴影以小幅参数闭环变化。
-- 原 `ShenshengCreature` Polygon2D 保持原位置与交互身份，仅改为透明回退；interaction、save/load、reset、journal、optional state 与 player `IDLE/WALK` 状态机保持不变。
-- 自动验证已通过：`python tools/validate_data.py`、`python tools/check_framework.py`、`python tools/validate_minimal_demo.py`、`git diff --check`、`git diff --stat`。
-- atlas reproducibility SHA-256：`C0D4A4A372CCFD1DB82D54CB0B8EF1D093F5C04AB5ECF272320BE10146CA2B13`；metadata reproducibility SHA-256：`3C1C5ECC2EB3AE609FF88BEC895D7019914EE4B18774BBA9D6E7CA2C31F44972`。
-- 显式范围检查确认 `AGENTS.md`、`game/project.godot`、Snowhuman Framework、schemas、CI、`minimal_playable_demo.gd` 均未修改；framework 项目专用关键词扫描无匹配。
-- Draft PR 已创建；不要自动合并。
+- **Branch：** `game/zhuyu-hunger-knowledge-loop`
+- **链接：** https://github.com/Marshall-Jimmy/Mountandsea/pull/42
+- **目标：** 增加“饥饿压力 → 发现祝余 → 采集 / 食用祝余 → 图鉴知识解锁 → 饥饿压力缓解”的第一个知识驱动 gameplay loop。
+- 饥饿从 `100` 开始，以每秒 `2` 点下降；低于阈值时显示饥饿反馈，不引入 health、death 或 inheritance。
+- 靠近祝余时解锁 `appearance` / `type`；食用后解锁 `effect`，反馈为“食之不饥”。
+- 采集后进入 demo-local `EAT_ZHUYU` 阶段；食用恢复满饥饿并提供 15 秒饥饿暂停，不能重复采集或食用。
+- 右上角脚本创建的小型 HUD 显示饥饿、祝余效力与已知知识；打开 Demo 菜单时隐藏，不遮挡 optional journal。
+- save version 更新为 `2`，新增 `world.zhuyu_consumed`、`survival.demo_hunger`、`survival.zhuyu_satiety_remaining` 和 `knowledge.zhuyu`；旧 save 缺少这些字段时使用安全默认值。
+- 保持旧 `current_step` 数值不变，将 `EAT_ZHUYU` 追加为 `4`，避免旧 save 的步骤含义漂移。
+- 回归测试覆盖 hunger tick / clamp / warning、discovery、collect / eat、防重复、satiety 结束、两个中间状态的 save/load、legacy save 默认值、prompt / HUD，以及既有 optional journal、J / V shortcuts、player animation 与 shensheng idle。
+- 不新增美术，不修改 `.tscn`，不做完整背包、图鉴 UI、死亡传承或 Snowhuman Framework 重构。
+- 当前自动验证已通过：`python tools/validate_minimal_demo.py`（包含 data、framework、Godot import、script check-only、save/load regression 和 framework keyword scan）。
+- 本 PR 不允许自动合并。
 
 ---
 
@@ -180,7 +191,9 @@
 - PR #36 已根据用户 GUI 手测反馈修复 journal layout overlap：progress 与 history 分区显示，history UI 只显示最近 5 条但不截断内部 history 数据。
 - PR #37 已合并：journal 支持 `J` / `V` keyboard shortcuts、可见 shortcut hint 和防 overlap layout，并已完成用户 Godot GUI 手测。
 - PR #39 已合并：player 使用同一 silhouette 驱动的 stylized robe walk，并保留 clean cutout、stable idle、`IDLE/WALK` state machine 和 facing direction。
-- 当前 `game/shensheng-idle-animation` 分支只为狌狌增加 art-guided idle：6 帧、4 FPS、统一 feet-center anchor，不增加 walk / attack / creature state machine。
+- PR #41 已合并：狌狌使用 6 帧、4 FPS、统一 feet-center anchor 的 art-guided idle；未增加 walk / attack / creature state machine。
+- 当前 `game/zhuyu-hunger-knowledge-loop` 分支增加 demo-local 饥饿、祝余采集 / 食用、`appearance` / `type` / `effect` 知识解锁和右上角生存 HUD。
+- 祝余食用后恢复满饥饿并提供 15 秒“食之不饥”效力；状态支持 reset、save/load 与 legacy save 默认值。
 - PR #36 不改变 optional state 核心结构、不新增 save fields、不改变 data-driven optional content 设计。
 - Snowhuman Framework 保持通用；addon 内没有项目专用内容。
 
@@ -215,33 +228,28 @@ git diff --stat
 
 ## 当前建议的下一项功能
 
-**Current active PR：** `game: add shensheng idle animation`（PR #41）
+**Current active PR：** `game: add Zhuyu hunger and knowledge loop`（PR #42）
 
 **目标：**
-- 为 `ShenshengCreature` 增加可见的 demo-local `AnimatedSprite2D` 和单一循环 `idle` 动画。
-- 使用确定性 Python 标准库脚本生成 6 帧、4 FPS、`512×512` 单帧 canvas 的透明 atlas。
-- 以白耳、人面兽吻、猿身、半蹲前倾肩、长臂、墨青灰毛、朱砂纹与青光建立狌狌的山海异兽辨识度。
-- 保持 `(256, 470)` feet-center anchor，使用呼吸、肩部、耳动、臂摆、青光脉冲与阴影收放形成安静闭环。
-- 保留原 Polygon2D 的位置与 interaction identity，只将其视觉设为透明 fallback。
-- 不增加 walk / attack / creature state machine，不改变 player `IDLE/WALK` 状态机。
-- 不改变 interaction、optional state、save fields、save/load、reset、journal 或 data-driven content。
+- 让玩家在饥饿压力下发现、采集并食用祝余，观察“食之不饥”效果后解锁对应知识。
+- 使用 demo-local 状态和现有 inventory / bestiary / save 服务，不抽取全局 manager。
+- 保留现有石碑、狌狌、optional content、journal、J / V shortcuts 与动画行为。
+- 为 hunger、knowledge、collect / eat、satiety、save/load、reset、legacy save 和 prompt / HUD 提供 headless regression。
+- 不增加美术、完整背包、完整图鉴 UI、死亡传承、生火烹饪或新地图。
 - 不移动 demo-specific 内容到 Snowhuman Framework。
 
-**状态：** Draft PR #41 已创建；本地实现、复现性检查、完整 headless 验证与范围审计已通过。Godot GUI manual test 仍由用户完成；不要自动合并。
+**状态：** Draft PR #42 已创建；本地实现和完整 headless regression 已通过。Godot GUI manual test 仍由用户完成；不要自动合并。
 
 **验证：**
 - `python tools/validate_data.py` passed
 - `python tools/check_framework.py` passed
 - `python tools/validate_minimal_demo.py` passed，包含 Godot 4.7 headless import、script check-only 和 save/load regression
-- generator 内建检查 passed：6 帧唯一、3–5 FPS、feet baseline、canvas containment、逐参数闭环连续性和相邻帧 normalized alpha delta。
-- atlas reproducibility SHA-256：`C0D4A4A372CCFD1DB82D54CB0B8EF1D093F5C04AB5ECF272320BE10146CA2B13`
-- metadata reproducibility SHA-256：`3C1C5ECC2EB3AE609FF88BEC895D7019914EE4B18774BBA9D6E7CA2C31F44972`
-- `git diff --check` passed；`git diff --stat` ran。
+- `git diff --check` passed；`git diff --stat` ran（3 files changed）。
 - 显式 Snowhuman Framework keyword scan for `zhuyu|shensheng|zaoyaoshan|祝余|狌狌|招摇山`：no matches。
-- `AGENTS.md`、`game/project.godot`、Snowhuman Framework、schemas、CI 和 `minimal_playable_demo.gd` 均未修改。
+- 未修改 `AGENTS.md`、`game/project.godot`、Snowhuman Framework、schemas、CI、`.tscn` 或美术资产。
 
 **下一步：**
-- 创建 Draft PR 后，由用户在 Godot GUI 检查狌狌的白耳、人面兽吻、半蹲长臂剪影、透明边缘、idle 闭环与稳定锚点，并复核 interaction、save/load、reset、journal 和 player movement 未回归。
+- 创建 Draft PR 后，由用户在 Godot GUI 检查饥饿 HUD、祝余发现 / 采集 / 食用 prompt、“食之不饥”倒计时与恢复，以及 optional journal、J / V shortcuts、player animation 和 shensheng idle 未回归。
 
 ---
 
