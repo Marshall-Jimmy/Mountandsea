@@ -49,6 +49,11 @@ const ZHUYU_SATIETY_DURATION := 15.0
 const ZHUYU_KNOWLEDGE_APPEARANCE := "appearance"
 const ZHUYU_KNOWLEDGE_TYPE := "type"
 const ZHUYU_KNOWLEDGE_EFFECT := "effect"
+const NAVIGATION_NEAR_ORIGIN_DISTANCE := 180.0
+const NAVIGATION_LOST_PRESSURE_DISTANCE := 360.0
+const MIGU_KNOWLEDGE_APPEARANCE := "appearance"
+const MIGU_KNOWLEDGE_TYPE := "type"
+const MIGU_KNOWLEDGE_EFFECT := "effect"
 
 enum DemoStep {
 	COLLECT_ZHUYU = 0,
@@ -114,6 +119,7 @@ var optional_progress_journal_label: Label
 var optional_progress_view_toggle_button: Button
 var optional_progress_shortcut_hint_label: Label
 var survival_status_label: Label
+var navigation_status_label: Label
 var optional_progress_detail_view := true
 var recent_optional_completion_name := ""
 var interaction_history_panel_visible := true
@@ -128,6 +134,14 @@ var zhuyu_knowledge_state := {
 	ZHUYU_KNOWLEDGE_EFFECT: false
 }
 var hunger_warning_level := 0
+var demo_origin_position := PLAYER_START_POSITION
+var migu_equipped := false
+var migu_knowledge_state := {
+	MIGU_KNOWLEDGE_APPEARANCE: false,
+	MIGU_KNOWLEDGE_TYPE: false,
+	MIGU_KNOWLEDGE_EFFECT: false
+}
+var navigation_pressure_level := 0
 var was_near_zhuyu := false
 var was_near_stone := false
 var was_near_shensheng := false
@@ -141,6 +155,7 @@ func _ready() -> void:
 	_init_optional_content_config()
 	_configure_interaction_history_panel()
 	_configure_survival_status_label()
+	_configure_navigation_status_label()
 	_connect_button_signals()
 	demo_menu_panel.visible = false
 	completion_panel.visible = false
@@ -166,12 +181,12 @@ func _init_optional_content_config() -> void:
 			"interaction_type": "pickup",
 			"node": migu_branch,
 			"label": migu_branch_label,
-			"label_default": "迷穀枝",
-			"label_done": "迷穀枝（已采集）",
+			"label_default": "陌生黑理发光之木",
+			"label_done": "迷穀（已采集）",
 			"history": "采集迷穀枝",
 			"prompt_locked": "完成主流程后解锁迷穀枝",
-			"prompt_ready": "按 E 采集迷穀枝",
-			"prompt_done": "迷穀枝已采集",
+			"prompt_ready": "按 E 采集迷穀",
+			"prompt_done": "迷穀已采集",
 			"locked_log": "完成主流程后解锁迷穀枝。",
 			"already_done_log": "迷穀枝已经采集。",
 			"success_log": "采集迷穀枝成功",
@@ -333,6 +348,7 @@ func _process(delta: float) -> void:
 	_update_hunger(delta)
 	_handle_journal_shortcut_input()
 	_move_player(delta)
+	_update_navigation_state()
 	_update_prompt()
 	_handle_interaction_input()
 	_update_objective_guidance()
@@ -390,6 +406,19 @@ func _configure_survival_status_label() -> void:
 	survival_status_label.offset_right = 1010.0
 	survival_status_label.offset_bottom = 104.0
 	_refresh_survival_status()
+
+
+func _configure_navigation_status_label() -> void:
+	if navigation_status_label == null:
+		navigation_status_label = Label.new()
+		navigation_status_label.name = "NavigationStatusLabel"
+		navigation_status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		$CanvasLayer.add_child(navigation_status_label)
+	navigation_status_label.offset_left = 744.0
+	navigation_status_label.offset_top = 112.0
+	navigation_status_label.offset_right = 1010.0
+	navigation_status_label.offset_bottom = 200.0
+	_refresh_navigation_status()
 
 
 func _configure_interaction_history_panel_bounds() -> void:
@@ -700,6 +729,8 @@ func _open_demo_menu() -> void:
 	prompt_label.visible = false
 	if survival_status_label != null:
 		survival_status_label.visible = false
+	if navigation_status_label != null:
+		navigation_status_label.visible = false
 
 
 func _close_demo_menu() -> void:
@@ -707,6 +738,8 @@ func _close_demo_menu() -> void:
 	menu_open = false
 	if survival_status_label != null:
 		survival_status_label.visible = true
+	if navigation_status_label != null:
+		navigation_status_label.visible = true
 
 
 func _move_player(delta: float) -> void:
@@ -774,6 +807,92 @@ func _get_hunger_warning_level() -> int:
 	return 0
 
 
+func _update_navigation_state() -> void:
+	var next_pressure_level := _get_navigation_pressure_level()
+	if not migu_equipped and next_pressure_level > navigation_pressure_level:
+		if next_pressure_level >= 2:
+			_log("你离起点越来越远，方向感开始模糊。")
+		else:
+			_log("你已远离起点，方向感开始不稳。")
+	navigation_pressure_level = next_pressure_level
+	_refresh_navigation_status()
+
+
+func _get_navigation_pressure_level() -> int:
+	var distance_to_origin := player.global_position.distance_to(demo_origin_position)
+	if distance_to_origin > NAVIGATION_LOST_PRESSURE_DISTANCE:
+		return 2
+	if distance_to_origin > NAVIGATION_NEAR_ORIGIN_DISTANCE:
+		return 1
+	return 0
+
+
+func _refresh_navigation_status() -> void:
+	if navigation_status_label == null:
+		return
+
+	var guidance_text := "方向感：稳定"
+	if migu_equipped:
+		guidance_text = _format_migu_origin_guidance()
+	else:
+		match _get_navigation_pressure_level():
+			1:
+				guidance_text = "方向感：不稳"
+			2:
+				guidance_text = "方向感：模糊"
+
+	var equipped_text := "未佩戴"
+	if migu_equipped:
+		equipped_text = "已佩戴"
+	navigation_status_label.text = "%s\n迷穀：%s\n迷穀知识：%s" % [
+		guidance_text,
+		equipped_text,
+		_format_migu_knowledge_status()
+	]
+
+
+func _format_migu_origin_guidance() -> String:
+	var origin_vector := demo_origin_position - player.global_position
+	var distance_to_origin := origin_vector.length()
+	if distance_to_origin <= NAVIGATION_NEAR_ORIGIN_DISTANCE:
+		return "迷穀归向：已接近起点"
+	return "迷穀归向：%s · %d" % [
+		_format_eight_direction(origin_vector),
+		int(round(distance_to_origin))
+	]
+
+
+func _format_eight_direction(direction: Vector2) -> String:
+	if direction.length_squared() <= 0.0001:
+		return "原地"
+	var directions: Array[String] = [
+		"东",
+		"东南",
+		"南",
+		"西南",
+		"西",
+		"西北",
+		"北",
+		"东北"
+	]
+	var angle_degrees := wrapf(rad_to_deg(direction.angle()), 0.0, 360.0)
+	var direction_index := int(round(angle_degrees / 45.0)) % directions.size()
+	return directions[direction_index]
+
+
+func _format_migu_knowledge_status() -> String:
+	var unlocked: Array[String] = []
+	if _has_migu_knowledge(MIGU_KNOWLEDGE_APPEARANCE):
+		unlocked.append("外观")
+	if _has_migu_knowledge(MIGU_KNOWLEDGE_TYPE):
+		unlocked.append("类型")
+	if _has_migu_knowledge(MIGU_KNOWLEDGE_EFFECT):
+		unlocked.append("佩之不迷")
+	if unlocked.is_empty():
+		return "未知"
+	return "、".join(unlocked)
+
+
 func _update_prompt() -> void:
 	var near_zhuyu := _is_near_zhuyu()
 	var near_stone := _is_near_stone()
@@ -782,6 +901,13 @@ func _update_prompt() -> void:
 	var near_optional := not nearest_optional.is_empty()
 	if near_zhuyu:
 		_discover_zhuyu_appearance_and_type()
+	if (
+		current_step == DemoStep.COMPLETE
+		and near_optional
+		and str(nearest_optional.get("id", "")) == MIGU_BRANCH_ITEM_ID
+		and not _is_optional_done(nearest_optional)
+	):
+		_discover_migu_appearance_and_type()
 
 	match current_step:
 		DemoStep.COLLECT_ZHUYU:
@@ -817,7 +943,9 @@ func _update_prompt() -> void:
 				prompt_label.visible = false
 		DemoStep.COMPLETE:
 			if near_optional:
-				if _is_optional_done(nearest_optional):
+				if str(nearest_optional.get("id", "")) == MIGU_BRANCH_ITEM_ID:
+					_show_prompt(_format_migu_prompt(nearest_optional))
+				elif _is_optional_done(nearest_optional):
 					_show_prompt(str(nearest_optional.get("prompt_done", "")))
 				else:
 					_show_prompt(str(nearest_optional.get("prompt_ready", "")))
@@ -862,6 +990,15 @@ func _try_interact() -> void:
 
 	if current_step == DemoStep.COMPLETE:
 		if near_optional:
+			if (
+				str(nearest_optional.get("id", "")) == MIGU_BRANCH_ITEM_ID
+				and _is_optional_done(nearest_optional)
+			):
+				if migu_equipped:
+					_log("迷穀已经佩戴。")
+				else:
+					_equip_migu()
+				return
 			var interactable_id := str(nearest_optional.get("interactable_id", ""))
 			var optional_interacted := interaction_service.interact(OWNER_ID, interactable_id)
 			if not optional_interacted:
@@ -1090,6 +1227,8 @@ func _on_optional_content_interacted(actor_id: String, interactable_id: String, 
 		if not bestiary_service.discover_item(actor_id, content_id):
 			_log_error("图鉴发现 %s 失败。" % content_id)
 			return false
+		if content_id == MIGU_BRANCH_ITEM_ID:
+			_discover_migu_appearance_and_type()
 	elif expected_type == "creature":
 		if not bestiary_service.discover_creature(actor_id, content_id):
 			_log_error("图鉴发现 %s 失败。" % content_id)
@@ -1102,12 +1241,98 @@ func _on_optional_content_interacted(actor_id: String, interactable_id: String, 
 	recent_optional_completion_name = str(config.get("display_name", content_id))
 	_update_optional_content_visuals()
 	prompt_label.visible = false
-	_log_ok(str(config.get("success_log", "")))
+	if content_id == MIGU_BRANCH_ITEM_ID:
+		_log_ok("你采集了迷穀。")
+		_log("迷穀之华自照，似可佩戴以辨方向。")
+	else:
+		_log_ok(str(config.get("success_log", "")))
 	_append_history_event(str(config.get("history", "")))
 	_refresh_status()
 	_refresh_completion_summary()
 	_update_objective_ui()
 	_update_objective_guidance()
+	return true
+
+
+func _discover_migu_appearance_and_type() -> void:
+	_unlock_migu_knowledge(
+		MIGU_KNOWLEDGE_APPEARANCE,
+		"图鉴更新：迷穀 · 外观"
+	)
+	_unlock_migu_knowledge(
+		MIGU_KNOWLEDGE_TYPE,
+		"图鉴更新：迷穀 · 类型"
+	)
+
+
+func _unlock_migu_knowledge(slot: String, feedback: String) -> bool:
+	if not migu_knowledge_state.has(slot):
+		return false
+	if migu_knowledge_state.get(slot, false) == true:
+		return false
+
+	migu_knowledge_state[slot] = true
+	if migu_branch_label != null and (
+		slot == MIGU_KNOWLEDGE_APPEARANCE
+		or slot == MIGU_KNOWLEDGE_TYPE
+	):
+		migu_branch_label.text = "迷穀"
+	_log(feedback)
+	_refresh_navigation_status()
+	return true
+
+
+func _has_migu_knowledge(slot: String) -> bool:
+	return migu_knowledge_state.get(slot, false) == true
+
+
+func _reset_migu_knowledge_state() -> void:
+	migu_knowledge_state = {
+		MIGU_KNOWLEDGE_APPEARANCE: false,
+		MIGU_KNOWLEDGE_TYPE: false,
+		MIGU_KNOWLEDGE_EFFECT: false
+	}
+
+
+func _format_migu_prompt(config: Dictionary) -> String:
+	if _is_optional_done(config):
+		if migu_equipped:
+			return "迷穀已佩戴"
+		return "按 E 佩戴迷穀"
+	if (
+		_has_migu_knowledge(MIGU_KNOWLEDGE_APPEARANCE)
+		and _has_migu_knowledge(MIGU_KNOWLEDGE_TYPE)
+	):
+		return "按 E 采集迷穀"
+	return "按 E 采集陌生黑理发光之木"
+
+
+func _equip_migu() -> bool:
+	if migu_equipped:
+		_log("迷穀已经佩戴。")
+		return false
+	var migu_config := _find_optional_config_by_id(MIGU_BRANCH_ITEM_ID)
+	if migu_config.is_empty() or not _is_optional_done(migu_config):
+		_log_error("佩戴迷穀失败：尚未采集迷穀。")
+		return false
+	if (
+		inventory_service == null
+		or inventory_service.get_item_count(OWNER_ID, MIGU_BRANCH_ITEM_ID) <= 0
+	):
+		_log_error("佩戴迷穀失败：背包中没有迷穀。")
+		return false
+
+	migu_equipped = true
+	_unlock_migu_knowledge(
+		MIGU_KNOWLEDGE_EFFECT,
+		"图鉴更新：迷穀 · 效果：佩之不迷"
+	)
+	_log_ok("迷穀效力发动：佩之不迷")
+	_append_history_event("佩戴迷穀")
+	prompt_label.visible = false
+	_update_optional_content_visuals()
+	_refresh_navigation_status()
+	_refresh_completion_summary()
 	return true
 
 
@@ -1239,7 +1464,7 @@ func _build_demo_save_state() -> Dictionary:
 		return {}
 
 	return {
-		"version": 2,
+		"version": 3,
 		"owner_id": OWNER_ID,
 		"current_step": int(current_step),
 		"world": {
@@ -1253,8 +1478,16 @@ func _build_demo_save_state() -> Dictionary:
 			"demo_hunger": demo_hunger,
 			"zhuyu_satiety_remaining": zhuyu_satiety_remaining
 		},
+		"navigation": {
+			"migu_equipped": migu_equipped,
+			"origin_position": {
+				"x": demo_origin_position.x,
+				"y": demo_origin_position.y
+			}
+		},
 		"knowledge": {
-			"zhuyu": zhuyu_knowledge_state.duplicate(true)
+			"zhuyu": zhuyu_knowledge_state.duplicate(true),
+			"migu": migu_knowledge_state.duplicate(true)
 		},
 		"player": {
 			"position": {
@@ -1300,6 +1533,28 @@ func _apply_zhuyu_knowledge_save_state(state: Dictionary) -> void:
 		ZHUYU_KNOWLEDGE_EFFECT
 	]:
 		zhuyu_knowledge_state[slot] = state.get(slot, false) == true
+
+
+func _apply_navigation_save_state(state: Dictionary) -> void:
+	migu_equipped = state.get("migu_equipped", false) == true
+	demo_origin_position = PLAYER_START_POSITION
+	var origin_data: Variant = state.get("origin_position", {})
+	if not (origin_data is Dictionary):
+		return
+	demo_origin_position = Vector2(
+		_to_float_or_default(origin_data.get("x"), PLAYER_START_POSITION.x),
+		_to_float_or_default(origin_data.get("y"), PLAYER_START_POSITION.y)
+	)
+
+
+func _apply_migu_knowledge_save_state(state: Dictionary) -> void:
+	_reset_migu_knowledge_state()
+	for slot in [
+		MIGU_KNOWLEDGE_APPEARANCE,
+		MIGU_KNOWLEDGE_TYPE,
+		MIGU_KNOWLEDGE_EFFECT
+	]:
+		migu_knowledge_state[slot] = state.get(slot, false) == true
 
 
 func _apply_optional_save_state(state: Dictionary) -> void:
@@ -1366,6 +1621,7 @@ func _apply_demo_save_state(state: Dictionary) -> bool:
 	var inventory_data: Variant = state.get("inventory", {})
 	var bestiary_data: Variant = state.get("bestiary", {})
 	var survival_data: Variant = state.get("survival", {})
+	var navigation_data: Variant = state.get("navigation", {})
 	var knowledge_data: Variant = state.get("knowledge", {})
 	if not (world_data is Dictionary):
 		return false
@@ -1375,10 +1631,15 @@ func _apply_demo_save_state(state: Dictionary) -> bool:
 		return false
 	if not (survival_data is Dictionary):
 		return false
+	if not (navigation_data is Dictionary):
+		return false
 	if not (knowledge_data is Dictionary):
 		return false
 	var zhuyu_knowledge_data: Variant = knowledge_data.get("zhuyu", {})
+	var migu_knowledge_data: Variant = knowledge_data.get("migu", {})
 	if not (zhuyu_knowledge_data is Dictionary):
+		return false
+	if not (migu_knowledge_data is Dictionary):
 		return false
 
 	var inventory_counts := _build_loaded_inventory_counts(inventory_data)
@@ -1404,13 +1665,25 @@ func _apply_demo_save_state(state: Dictionary) -> bool:
 	stone_activated = world_data.get("stone_activated", false) == true
 	shensheng_discovered = world_data.get("creature_discovered", false) == true
 	_apply_survival_save_state(survival_data)
+	_apply_navigation_save_state(navigation_data)
 	_apply_zhuyu_knowledge_save_state(zhuyu_knowledge_data)
+	_apply_migu_knowledge_save_state(migu_knowledge_data)
 	recent_optional_completion_name = ""
 	var optional_data: Variant = world_data.get("optional", {})
 	if not (optional_data is Dictionary):
 		return false
 	_apply_optional_save_state(optional_data)
 	_apply_legacy_optional_save_state(world_data, optional_data)
+	var migu_config := _find_optional_config_by_id(MIGU_BRANCH_ITEM_ID)
+	if (
+		migu_equipped
+		and (
+			migu_config.is_empty()
+			or not _is_optional_done(migu_config)
+			or inventory_service.get_item_count(OWNER_ID, MIGU_BRANCH_ITEM_ID) <= 0
+		)
+	):
+		migu_equipped = false
 	if _step_has_collected_zhuyu(current_step):
 		zhuyu_collected = true
 	if _step_is_after_zhuyu_eaten(current_step):
@@ -1429,6 +1702,7 @@ func _apply_demo_save_state(state: Dictionary) -> bool:
 		_refresh_completion_summary()
 	_refresh_status()
 	_refresh_survival_status()
+	_update_navigation_state()
 	_update_objective_ui()
 	_update_objective_guidance()
 	return true
@@ -1513,6 +1787,10 @@ func _reset_demo_state(history_message := "Demo 已重置") -> void:
 	zhuyu_satiety_remaining = 0.0
 	hunger_warning_level = 0
 	_reset_zhuyu_knowledge_state()
+	demo_origin_position = PLAYER_START_POSITION
+	migu_equipped = false
+	navigation_pressure_level = 0
+	_reset_migu_knowledge_state()
 	recent_optional_completion_name = ""
 	_reset_optional_state()
 	_close_demo_menu()
@@ -1520,6 +1798,7 @@ func _reset_demo_state(history_message := "Demo 已重置") -> void:
 	_apply_world_visual_state()
 	_refresh_status()
 	_refresh_survival_status()
+	_refresh_navigation_status()
 	_update_objective_ui()
 	_update_objective_guidance()
 	interaction_history.clear()
@@ -1828,6 +2107,7 @@ func _update_optional_near_state_logs() -> void:
 
 func _update_optional_content_visuals() -> void:
 	for config in _all_optional_content():
+		var content_id := str(config.get("id", ""))
 		var node: Node2D = config.get("node", null) as Node2D
 		var label: Label = config.get("label", null) as Label
 		if node == null or label == null:
@@ -1839,8 +2119,15 @@ func _update_optional_content_visuals() -> void:
 		if _is_optional_done(config):
 			node.modulate.a = _to_float_or_default(config.get("done_alpha", 1.0), 1.0)
 			label.text = str(config.get("label_done", ""))
+			if content_id == MIGU_BRANCH_ITEM_ID and migu_equipped:
+				label.text = "迷穀（已佩戴）"
 		elif current_step == DemoStep.COMPLETE:
 			node.modulate.a = _to_float_or_default(config.get("ready_alpha", 1.0), 1.0)
+			if (
+				content_id == MIGU_BRANCH_ITEM_ID
+				and _has_migu_knowledge(MIGU_KNOWLEDGE_APPEARANCE)
+			):
+				label.text = "迷穀"
 		else:
 			node.modulate.a = _to_float_or_default(config.get("locked_alpha", 0.3), 0.3)
 

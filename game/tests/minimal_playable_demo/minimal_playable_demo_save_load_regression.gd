@@ -53,6 +53,11 @@ const ZHUYU_SATIETY_DURATION := 15.0
 const ZHUYU_KNOWLEDGE_APPEARANCE := "appearance"
 const ZHUYU_KNOWLEDGE_TYPE := "type"
 const ZHUYU_KNOWLEDGE_EFFECT := "effect"
+const NAVIGATION_NEAR_ORIGIN_DISTANCE := 180.0
+const NAVIGATION_LOST_PRESSURE_DISTANCE := 360.0
+const MIGU_KNOWLEDGE_APPEARANCE := "appearance"
+const MIGU_KNOWLEDGE_TYPE := "type"
+const MIGU_KNOWLEDGE_EFFECT := "effect"
 
 var demo: Node
 var player: Node2D
@@ -90,6 +95,7 @@ func _run_test() -> void:
 	_assert_journal_shortcut_handlers_preserve_text("Demo 开始")
 	_assert_reset_preserves_compact_journal_view()
 	_assert_zhuyu_hunger_knowledge_loop()
+	_assert_migu_navigation_knowledge_loop()
 	if failed:
 		return
 
@@ -435,6 +441,210 @@ func _assert_zhuyu_hunger_knowledge_loop() -> void:
 	demo.call("_reset_demo_state")
 
 
+func _assert_migu_navigation_knowledge_loop() -> void:
+	demo.call("_reset_demo_state")
+	var origin: Vector2 = demo.get("demo_origin_position")
+	_assert_vec2_near(origin, initial_position, "navigation origin should start at player spawn")
+	_assert_true(demo.get("migu_equipped") == false, "migu should start unequipped")
+	_assert_optional_done(MIGU_BRANCH_ITEM_ID, false)
+	_assert_migu_knowledge(MIGU_KNOWLEDGE_APPEARANCE, false)
+	_assert_migu_knowledge(MIGU_KNOWLEDGE_TYPE, false)
+	_assert_migu_knowledge(MIGU_KNOWLEDGE_EFFECT, false)
+
+	player.position = origin + Vector2(NAVIGATION_NEAR_ORIGIN_DISTANCE - 10.0, 0.0)
+	demo.call("_update_navigation_state")
+	_assert_navigation_status_contains("方向感：稳定")
+	_assert_navigation_status_not_contains("迷穀归向：")
+
+	player.position = origin + Vector2(NAVIGATION_NEAR_ORIGIN_DISTANCE + 20.0, 0.0)
+	demo.call("_update_navigation_state")
+	_assert_navigation_status_contains("方向感：不稳")
+	_assert_navigation_status_not_contains("迷穀归向：")
+
+	player.position = origin + Vector2(NAVIGATION_LOST_PRESSURE_DISTANCE + 20.0, 0.0)
+	demo.call("_update_navigation_state")
+	_assert_navigation_status_contains("方向感：模糊")
+	_assert_navigation_status_not_contains("迷穀归向：")
+	_assert_log_contains("你离起点越来越远，方向感开始模糊。")
+
+	demo.call("_reset_demo_state")
+	_assert_vec2_near(
+		demo.get("demo_origin_position"),
+		initial_position,
+		"reset should restore navigation origin"
+	)
+	_assert_true(demo.get("migu_equipped") == false, "reset should clear migu equipped state")
+	_assert_migu_knowledge(MIGU_KNOWLEDGE_APPEARANCE, false)
+	_assert_navigation_status_not_contains("迷穀归向：")
+
+	_force_state_complete()
+	demo.call("_on_close_completion_pressed")
+	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT, true)
+	_assert_float_near(
+		float(demo.get("demo_hunger")),
+		DEMO_HUNGER_MAX,
+		"migu loop setup should preserve zhuyu hunger recovery"
+	)
+	_assert_true(
+		float(demo.get("zhuyu_satiety_remaining")) > 0.0,
+		"migu loop setup should preserve zhuyu satiety"
+	)
+
+	var migu_node := demo.get_node_or_null("WorldRoot/MiguBranch") as Node2D
+	var migu_label := demo.get_node_or_null("WorldRoot/MiguBranchLabel") as Label
+	_assert_true(migu_node != null, "MiguBranch should exist")
+	_assert_true(
+		migu_label != null and migu_label.text == "陌生黑理发光之木",
+		"migu should remain unknown before discovery"
+	)
+	if migu_node == null:
+		return
+
+	player.position = migu_node.global_position
+	demo.call("_update_prompt")
+	_assert_migu_knowledge(MIGU_KNOWLEDGE_APPEARANCE, true)
+	_assert_migu_knowledge(MIGU_KNOWLEDGE_TYPE, true)
+	_assert_migu_knowledge(MIGU_KNOWLEDGE_EFFECT, false)
+	_assert_prompt_contains("采集迷穀")
+	_assert_log_contains("图鉴更新：迷穀 · 外观")
+	_assert_log_contains("图鉴更新：迷穀 · 类型")
+
+	var collect_result: Variant = demo.call(
+		"_on_optional_collectible_interacted",
+		OWNER_ID,
+		MIGU_BRANCH_INTERACTABLE_ID,
+		{"item_id": MIGU_BRANCH_ITEM_ID, "count": 1}
+	)
+	_assert_true(collect_result == true, "migu collection should succeed")
+	_assert_optional_done(MIGU_BRANCH_ITEM_ID, true)
+	_assert_inventory_item_count(MIGU_BRANCH_ITEM_ID, 1)
+	_assert_true(
+		migu_label != null and migu_label.text.contains("已采集"),
+		"collected migu should show collected state"
+	)
+	_assert_log_contains("你采集了迷穀。")
+	_assert_log_contains("迷穀之华自照，似可佩戴以辨方向。")
+
+	var repeated_collect_result: Variant = demo.call(
+		"_on_optional_collectible_interacted",
+		OWNER_ID,
+		MIGU_BRANCH_INTERACTABLE_ID,
+		{"item_id": MIGU_BRANCH_ITEM_ID, "count": 1}
+	)
+	_assert_true(repeated_collect_result == true, "repeated migu collection should be harmless")
+	_assert_inventory_item_count(MIGU_BRANCH_ITEM_ID, 1)
+	demo.call("_update_prompt")
+	_assert_prompt_contains("佩戴迷穀")
+
+	demo.call("_try_interact")
+	_assert_true(demo.get("migu_equipped") == true, "migu should equip through interaction")
+	_assert_migu_knowledge(MIGU_KNOWLEDGE_EFFECT, true)
+	_assert_log_contains("佩之不迷")
+	_assert_history_contains("佩戴迷穀")
+	_assert_true(
+		migu_label != null and migu_label.text.contains("已佩戴"),
+		"equipped migu should show equipped state"
+	)
+	demo.call("_update_prompt")
+	_assert_prompt_not_contains("按 E 佩戴迷穀")
+
+	demo.call("_update_navigation_state")
+	_assert_navigation_status_contains("迷穀归向：")
+	_assert_navigation_status_has_direction()
+	var first_guidance := _navigation_status_text()
+	player.position = origin + Vector2(420.0, 120.0)
+	demo.call("_update_navigation_state")
+	var moved_guidance := _navigation_status_text()
+	_assert_true(
+		first_guidance != moved_guidance,
+		"migu direction guidance should update after player movement"
+	)
+	_assert_navigation_status_has_direction()
+
+	player.position = origin
+	demo.call("_update_navigation_state")
+	_assert_navigation_status_contains("已接近起点")
+	_assert_true(
+		demo.call("_format_eight_direction", Vector2.ZERO) == "原地",
+		"zero-length direction should be handled safely"
+	)
+	_assert_true(demo.call("_format_eight_direction", Vector2.RIGHT) == "东", "right should map east")
+	_assert_true(demo.call("_format_eight_direction", Vector2.UP) == "北", "up should map north")
+	_assert_true(demo.call("_format_eight_direction", Vector2.LEFT) == "西", "left should map west")
+	_assert_true(demo.call("_format_eight_direction", Vector2.DOWN) == "南", "down should map south")
+	_assert_true(
+		demo.call("_format_eight_direction", Vector2(-1.0, -1.0)) == "西北",
+		"up-left should map northwest"
+	)
+
+	player.position = origin + Vector2(420.0, 120.0)
+	demo.call("_update_navigation_state")
+	var equipped_state_value: Variant = demo.call("_build_demo_save_state")
+	_assert_true(equipped_state_value is Dictionary, "equipped migu state should be serializable")
+	if not (equipped_state_value is Dictionary):
+		return
+	var equipped_state: Dictionary = equipped_state_value
+	var navigation_data: Variant = equipped_state.get("navigation", {})
+	var knowledge_data: Variant = equipped_state.get("knowledge", {})
+	_assert_true(navigation_data is Dictionary, "save should include navigation state")
+	_assert_true(knowledge_data is Dictionary, "save should include knowledge state")
+	if navigation_data is Dictionary:
+		_assert_true(
+			navigation_data.get("migu_equipped", false) == true,
+			"save should persist migu equipped state"
+		)
+		_assert_true(
+			navigation_data.get("origin_position", {}) is Dictionary,
+			"save should persist navigation origin"
+		)
+	if knowledge_data is Dictionary:
+		_assert_true(knowledge_data.get("migu", {}) is Dictionary, "save should include knowledge.migu")
+		_assert_true(knowledge_data.get("zhuyu", {}) is Dictionary, "save should preserve knowledge.zhuyu")
+
+	demo.call("_reset_demo_state")
+	var equipped_load_result: Variant = demo.call("_apply_demo_save_state", equipped_state)
+	_assert_true(equipped_load_result == true, "equipped migu state should load")
+	_assert_vec2_near(
+		demo.get("demo_origin_position"),
+		origin,
+		"load should restore navigation origin"
+	)
+	_assert_optional_done(MIGU_BRANCH_ITEM_ID, true)
+	_assert_true(demo.get("migu_equipped") == true, "load should restore equipped migu")
+	_assert_inventory_item_count(MIGU_BRANCH_ITEM_ID, 1)
+	_assert_migu_knowledge(MIGU_KNOWLEDGE_APPEARANCE, true)
+	_assert_migu_knowledge(MIGU_KNOWLEDGE_TYPE, true)
+	_assert_migu_knowledge(MIGU_KNOWLEDGE_EFFECT, true)
+	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT, true)
+	_assert_navigation_status_contains("迷穀归向：")
+
+	var legacy_state: Dictionary = equipped_state.duplicate(true)
+	legacy_state["version"] = 2
+	legacy_state.erase("navigation")
+	var legacy_knowledge_value: Variant = legacy_state.get("knowledge", {})
+	if legacy_knowledge_value is Dictionary:
+		var legacy_knowledge: Dictionary = legacy_knowledge_value
+		legacy_knowledge.erase("migu")
+		legacy_state["knowledge"] = legacy_knowledge
+	demo.call("_reset_demo_state")
+	var legacy_result: Variant = demo.call("_apply_demo_save_state", legacy_state)
+	_assert_true(legacy_result == true, "legacy save without migu navigation fields should load")
+	_assert_optional_done(MIGU_BRANCH_ITEM_ID, true)
+	_assert_true(demo.get("migu_equipped") == false, "legacy save should default migu to unequipped")
+	_assert_vec2_near(
+		demo.get("demo_origin_position"),
+		initial_position,
+		"legacy save should default origin to player spawn"
+	)
+	_assert_migu_knowledge(MIGU_KNOWLEDGE_APPEARANCE, false)
+	_assert_migu_knowledge(MIGU_KNOWLEDGE_TYPE, false)
+	_assert_migu_knowledge(MIGU_KNOWLEDGE_EFFECT, false)
+	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT, true)
+	_assert_navigation_status_not_contains("迷穀归向：")
+
+	demo.call("_reset_demo_state")
+
+
 func _force_state_after_stone_activation() -> void:
 	demo.call("_reset_demo_state")
 
@@ -557,13 +767,20 @@ func _assert_optional_state_pending() -> void:
 	_assert_optional_done(GENERIC_BEAST_CREATURE_ID, false)
 	_assert_journal_recent("无")
 	_assert_journal_optional_state_pending()
+	_assert_true(demo.get("migu_equipped") == false, "pending optional state should not equip migu")
+	_assert_migu_knowledge(MIGU_KNOWLEDGE_APPEARANCE, false)
+	_assert_migu_knowledge(MIGU_KNOWLEDGE_TYPE, false)
+	_assert_migu_knowledge(MIGU_KNOWLEDGE_EFFECT, false)
 
 	var migu_label := demo.get_node_or_null("WorldRoot/MiguBranchLabel")
 	var basic_ore_label := demo.get_node_or_null("WorldRoot/BasicOreLabel")
 	var lushu_label := demo.get_node_or_null("WorldRoot/LushuLabel")
 	var generic_beast_label := demo.get_node_or_null("WorldRoot/GenericBeastLabel")
 
-	_assert_true(migu_label != null and migu_label.text == "迷穀枝", "MiguBranchLabel should show initial state")
+	_assert_true(
+		migu_label != null and migu_label.text == "陌生黑理发光之木",
+		"MiguBranchLabel should show unknown initial state"
+	)
 	_assert_true(basic_ore_label != null and basic_ore_label.text == "粗矿石", "BasicOreLabel should show initial state")
 	_assert_true(lushu_label != null and lushu_label.text == "鹿蜀", "LushuLabel should show initial state")
 	_assert_true(generic_beast_label != null and generic_beast_label.text == "普通野兽", "GenericBeastLabel should show initial state")
@@ -582,6 +799,10 @@ func _assert_optional_state_complete() -> void:
 	_assert_optional_done(LUSHU_CREATURE_ID, true)
 	_assert_optional_done(GENERIC_BEAST_CREATURE_ID, true)
 	_assert_journal_optional_state_complete()
+	_assert_true(demo.get("migu_equipped") == false, "optional collection alone should not equip migu")
+	_assert_migu_knowledge(MIGU_KNOWLEDGE_APPEARANCE, true)
+	_assert_migu_knowledge(MIGU_KNOWLEDGE_TYPE, true)
+	_assert_migu_knowledge(MIGU_KNOWLEDGE_EFFECT, false)
 
 	var migu_label := demo.get_node_or_null("WorldRoot/MiguBranchLabel")
 	var basic_ore_label := demo.get_node_or_null("WorldRoot/BasicOreLabel")
@@ -670,6 +891,10 @@ func _assert_legacy_optional_save_compatibility() -> void:
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_APPEARANCE, false)
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_TYPE, false)
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT, false)
+	_assert_true(demo.get("migu_equipped") == false, "legacy optional save should default migu to unequipped")
+	_assert_migu_knowledge(MIGU_KNOWLEDGE_APPEARANCE, false)
+	_assert_migu_knowledge(MIGU_KNOWLEDGE_TYPE, false)
+	_assert_migu_knowledge(MIGU_KNOWLEDGE_EFFECT, false)
 	_assert_optional_done(MIGU_BRANCH_ITEM_ID, true)
 	_assert_optional_done(LUSHU_CREATURE_ID, true)
 	_assert_optional_done(BASIC_ORE_ITEM_ID, false)
@@ -1697,11 +1922,26 @@ func _assert_journal_labels_separated() -> void:
 	var hint_label := demo.get_node_or_null("CanvasLayer/InteractionHistoryPanel/OptionalProgressShortcutHintLabel") as Label
 	var view_toggle_button := demo.get_node_or_null("CanvasLayer/InteractionHistoryPanel/OptionalProgressViewToggleButton") as Button
 	var history_toggle_button := demo.get_node_or_null("CanvasLayer/InteractionHistoryToggleButton") as Button
+	var survival_label := demo.get_node_or_null("CanvasLayer/SurvivalStatusLabel") as Label
+	var navigation_label := demo.get_node_or_null("CanvasLayer/NavigationStatusLabel") as Label
+	var journal_panel := demo.get_node_or_null("CanvasLayer/InteractionHistoryPanel") as Control
 	_assert_true(history_label != null, "interaction history label must exist")
 	_assert_true(hint_label != null, "optional progress shortcut hint label must exist")
 	_assert_true(view_toggle_button != null, "optional progress view toggle button must exist")
 	_assert_true(history_toggle_button != null, "interaction history toggle button must exist")
-	if journal_label == null or history_label == null or hint_label == null or view_toggle_button == null or history_toggle_button == null:
+	_assert_true(survival_label != null, "survival status label must exist")
+	_assert_true(navigation_label != null, "navigation status label must exist")
+	_assert_true(journal_panel != null, "interaction history panel must exist")
+	if (
+		journal_label == null
+		or history_label == null
+		or hint_label == null
+		or view_toggle_button == null
+		or history_toggle_button == null
+		or survival_label == null
+		or navigation_label == null
+		or journal_panel == null
+	):
 		return
 
 	_assert_true(hint_label.offset_bottom <= journal_label.offset_top, "shortcut hint should end before journal label starts")
@@ -1714,6 +1954,18 @@ func _assert_journal_labels_separated() -> void:
 	_assert_true(hint_label.clip_text == true, "shortcut hint label should clip text inside its fixed area")
 	_assert_true(journal_label.clip_text == true, "journal label should clip text inside its fixed area")
 	_assert_true(history_label.clip_text == true, "history label should clip text inside its fixed area")
+	_assert_true(
+		survival_label.get_global_rect().end.y <= navigation_label.get_global_rect().position.y,
+		"survival HUD should end before navigation HUD starts"
+	)
+	_assert_true(
+		navigation_label.get_global_rect().end.y <= history_toggle_button.get_global_rect().position.y,
+		"navigation HUD should end before journal toggle starts"
+	)
+	_assert_true(
+		not navigation_label.get_global_rect().intersects(journal_panel.get_global_rect()),
+		"navigation HUD should not overlap optional journal"
+	)
 
 
 func _assert_shortcut_hint_label() -> void:
@@ -1898,6 +2150,55 @@ func _assert_zhuyu_knowledge(slot: String, expected: bool) -> void:
 	_assert_true(
 		knowledge_state.get(slot, false) == expected,
 		"zhuyu knowledge mismatch for %s" % slot
+	)
+
+
+func _assert_migu_knowledge(slot: String, expected: bool) -> void:
+	var knowledge_state: Variant = demo.get("migu_knowledge_state")
+	_assert_true(knowledge_state is Dictionary, "migu_knowledge_state should be a Dictionary")
+	if not (knowledge_state is Dictionary):
+		return
+	_assert_true(
+		knowledge_state.get(slot, false) == expected,
+		"migu knowledge mismatch for %s" % slot
+	)
+
+
+func _navigation_status_text() -> String:
+	var navigation_label := demo.get_node_or_null("CanvasLayer/NavigationStatusLabel") as Label
+	_assert_true(navigation_label != null, "NavigationStatusLabel should exist")
+	if navigation_label == null:
+		return ""
+	return navigation_label.text
+
+
+func _assert_navigation_status_contains(expected: String) -> void:
+	var navigation_text := _navigation_status_text()
+	_assert_true(
+		navigation_text.contains(expected),
+		"navigation status should contain %s, actual=%s" % [expected, navigation_text]
+	)
+
+
+func _assert_navigation_status_not_contains(unexpected: String) -> void:
+	var navigation_text := _navigation_status_text()
+	_assert_true(
+		not navigation_text.contains(unexpected),
+		"navigation status should not contain %s, actual=%s" % [unexpected, navigation_text]
+	)
+
+
+func _assert_navigation_status_has_direction() -> void:
+	var navigation_text := _navigation_status_text()
+	var first_line := navigation_text.get_slice("\n", 0)
+	var has_direction := false
+	for direction in ["东北", "西北", "东南", "西南", "东", "北", "西", "南"]:
+		if first_line.contains(direction):
+			has_direction = true
+			break
+	_assert_true(
+		has_direction,
+		"navigation guidance should contain an eight-way direction, actual=%s" % first_line
 	)
 
 
