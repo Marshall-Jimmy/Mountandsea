@@ -58,6 +58,9 @@ const NAVIGATION_LOST_PRESSURE_DISTANCE := 360.0
 const MIGU_KNOWLEDGE_APPEARANCE := "appearance"
 const MIGU_KNOWLEDGE_TYPE := "type"
 const MIGU_KNOWLEDGE_EFFECT := "effect"
+const EXPECTED_VIEWPORT_WIDTH := 1440
+const EXPECTED_VIEWPORT_HEIGHT := 810
+const LIVE_LOG_UI_RECENT_LIMIT := 3
 
 var demo: Node
 var player: Node2D
@@ -94,6 +97,7 @@ func _run_test() -> void:
 	_assert_progress_view_toggle_preserves_history("Demo 开始")
 	_assert_journal_shortcut_handlers_preserve_text("Demo 开始")
 	_assert_reset_preserves_compact_journal_view()
+	_assert_knowledge_codex_and_hud_layout()
 	_assert_zhuyu_hunger_knowledge_loop()
 	_assert_migu_navigation_knowledge_loop()
 	if failed:
@@ -222,6 +226,173 @@ func _run_test() -> void:
 	quit(0)
 
 
+func _assert_knowledge_codex_and_hud_layout() -> void:
+	var codex_panel := demo.get_node_or_null("CanvasLayer/KnowledgeCodexPanel") as Panel
+	var codex_title := demo.get_node_or_null(
+		"CanvasLayer/KnowledgeCodexPanel/KnowledgeCodexTitleLabel"
+	) as Label
+	var codex_content := demo.get_node_or_null(
+		"CanvasLayer/KnowledgeCodexPanel/KnowledgeCodexContentLabel"
+	) as Label
+	var codex_hint := demo.get_node_or_null(
+		"CanvasLayer/KnowledgeCodexPanel/KnowledgeCodexHintLabel"
+	) as Label
+	_assert_true(codex_panel != null, "knowledge codex panel should exist")
+	_assert_true(codex_title != null, "knowledge codex title should exist")
+	_assert_true(codex_content != null, "knowledge codex content should exist")
+	_assert_true(codex_hint != null, "knowledge codex shortcut hint should exist")
+	if codex_panel == null or codex_title == null or codex_content == null or codex_hint == null:
+		return
+
+	_assert_true(codex_panel.visible == false, "knowledge codex should start hidden")
+	_assert_true(codex_title.text.contains("图鉴"), "knowledge codex should have a title")
+	_assert_true(codex_content.text.contains("祝余"), "knowledge codex should include zhuyu")
+	_assert_true(codex_content.text.contains("迷穀"), "knowledge codex should include migu")
+	_assert_true(
+		codex_content.text.count("???") == 6,
+		"locked codex should show six unknown slots"
+	)
+	_assert_true(codex_hint.text.contains("K"), "knowledge codex should show K shortcut hint")
+	var demo_script := demo.get_script() as Script
+	_assert_true(demo_script != null, "demo script should exist")
+	if demo_script != null:
+		_assert_true(demo_script.source_code.contains("KEY_K"), "codex shortcut should use KEY_K")
+		_assert_true(
+			demo_script.source_code.contains("LIVE_LOG_RECT"),
+			"HUD layout should use named rectangle constants"
+		)
+	_assert_true(demo.has_method("_configure_hud_layout"), "HUD layout helper should exist")
+
+	var journal_visible_before: bool = demo.get("interaction_history_panel_visible")
+	var detail_view_before: bool = demo.get("optional_progress_detail_view")
+	var survival_label := demo.get_node_or_null("CanvasLayer/SurvivalStatusLabel") as Label
+	var navigation_label := demo.get_node_or_null("CanvasLayer/NavigationStatusLabel") as Label
+	var journal_panel := demo.get_node_or_null("CanvasLayer/InteractionHistoryPanel") as Control
+	var prompt_label := demo.get_node_or_null("CanvasLayer/PromptLabel") as Label
+	var log_label := demo.get_node_or_null("CanvasLayer/LogLabel") as RichTextLabel
+	var completion_panel := demo.get_node_or_null("CanvasLayer/CompletionPanel") as Control
+	_assert_true(survival_label != null, "hunger HUD should exist")
+	_assert_true(navigation_label != null, "migu navigation HUD should exist")
+	_assert_true(journal_panel != null, "optional journal should exist")
+	_assert_true(prompt_label != null, "prompt label should exist")
+	_assert_true(log_label != null, "live log should exist")
+	_assert_true(completion_panel != null, "completion panel should exist")
+	if (
+		survival_label == null
+		or navigation_label == null
+		or journal_panel == null
+		or prompt_label == null
+		or log_label == null
+		or completion_panel == null
+	):
+		return
+
+	var survival_visible_before := survival_label.visible
+	var navigation_visible_before := navigation_label.visible
+	var journal_node_visible_before := journal_panel.visible
+	var prompt_visible_before := prompt_label.visible
+	demo.call("_on_knowledge_codex_toggle_pressed")
+	_assert_true(codex_panel.visible, "first K toggle handler should show codex")
+	_assert_true(
+		demo.get("interaction_history_panel_visible") == journal_visible_before,
+		"codex toggle should not change J journal state"
+	)
+	_assert_true(
+		demo.get("optional_progress_detail_view") == detail_view_before,
+		"codex toggle should not change V journal view state"
+	)
+	_assert_true(survival_label.visible == survival_visible_before, "codex should preserve hunger HUD visibility")
+	_assert_true(navigation_label.visible == navigation_visible_before, "codex should preserve navigation HUD visibility")
+	_assert_true(journal_panel.visible == journal_node_visible_before, "codex should preserve journal visibility")
+	_assert_true(prompt_label.visible == prompt_visible_before, "codex should preserve prompt visibility")
+	demo.call("_on_knowledge_codex_toggle_pressed")
+	_assert_true(codex_panel.visible == false, "second K toggle handler should hide codex")
+
+	demo.call("_open_demo_menu")
+	_assert_true(demo.call("_can_toggle_knowledge_codex") == false, "menu should block K codex toggle")
+	demo.call("_handle_codex_shortcut_input")
+	_assert_true(codex_panel.visible == false, "codex should stay hidden while menu is open")
+	demo.call("_close_demo_menu")
+	completion_panel.visible = true
+	_assert_true(
+		demo.call("_can_toggle_knowledge_codex") == false,
+		"completion panel should block K codex toggle"
+	)
+	demo.call("_handle_codex_shortcut_input")
+	_assert_true(codex_panel.visible == false, "codex should stay hidden during completion")
+	completion_panel.visible = false
+
+	_assert_true(
+		int(ProjectSettings.get_setting("display/window/size/viewport_width", -1))
+		== EXPECTED_VIEWPORT_WIDTH,
+		"viewport width should be 1440"
+	)
+	_assert_true(
+		int(ProjectSettings.get_setting("display/window/size/viewport_height", -1))
+		== EXPECTED_VIEWPORT_HEIGHT,
+		"viewport height should be 810"
+	)
+	_assert_true(
+		int(ProjectSettings.get_setting("display/window/size/window_width_override", -1))
+		== EXPECTED_VIEWPORT_WIDTH,
+		"window width override should be 1440"
+	)
+	_assert_true(
+		int(ProjectSettings.get_setting("display/window/size/window_height_override", -1))
+		== EXPECTED_VIEWPORT_HEIGHT,
+		"window height override should be 810"
+	)
+	_assert_float_near(
+		float(EXPECTED_VIEWPORT_WIDTH) / float(EXPECTED_VIEWPORT_HEIGHT),
+		16.0 / 9.0,
+		"configured viewport should remain 16:9"
+	)
+
+	var log_rect := log_label.get_global_rect()
+	var prompt_rect := prompt_label.get_global_rect()
+	var survival_rect := survival_label.get_global_rect()
+	var navigation_rect := navigation_label.get_global_rect()
+	var journal_rect := journal_panel.get_global_rect()
+	var codex_rect := codex_panel.get_global_rect()
+	_assert_true(not log_rect.intersects(prompt_rect), "live log should not overlap prompt")
+	_assert_true(not log_rect.intersects(survival_rect), "live log should not overlap hunger HUD")
+	_assert_true(not log_rect.intersects(navigation_rect), "live log should not overlap navigation HUD")
+	_assert_true(not log_rect.intersects(journal_rect), "live log should not overlap optional journal")
+	_assert_true(not codex_rect.intersects(journal_rect), "codex should not overlap optional journal")
+	_assert_true(not codex_rect.intersects(prompt_rect), "codex should not overlap prompt")
+	_assert_true(log_label.clip_contents, "live log should clip content to fixed bounds")
+	_assert_true(
+		log_label.autowrap_mode == TextServer.AUTOWRAP_WORD_SMART,
+		"live log should wrap long messages"
+	)
+	_assert_true(log_label.scroll_active == false, "live log should not expose scrolling")
+
+	var internal_log_count_before: int = demo.get("live_log_entries").size()
+	for index in range(5):
+		demo.call("_log", "HUD layout regression %d" % index)
+	var live_log_entries: Variant = demo.get("live_log_entries")
+	_assert_true(
+		live_log_entries is Array
+		and live_log_entries.size() == internal_log_count_before + 5,
+		"live log should preserve internal entries"
+	)
+	var visible_log_lines := log_label.text.split("\n", false)
+	_assert_true(
+		visible_log_lines.size() == LIVE_LOG_UI_RECENT_LIMIT,
+		"live log UI should show only the latest three entries"
+	)
+	_assert_true(not log_label.text.contains("regression 0"), "live log should hide older UI entries")
+	_assert_true(not log_label.text.contains("regression 1"), "live log should hide older UI entries")
+	_assert_true(log_label.text.contains("regression 2"), "live log should show recent entry 2")
+	_assert_true(log_label.text.contains("regression 4"), "live log should show latest entry")
+
+	var save_data: Variant = demo.call("_build_demo_save_state")
+	_assert_true(save_data is Dictionary, "codex regression save state should be a Dictionary")
+	if save_data is Dictionary:
+		_assert_true(not save_data.has("knowledge_codex_visible"), "codex visibility should not be saved")
+		_assert_true(not save_data.has("codex_open"), "codex open state should not be saved")
+
+
 func _assert_zhuyu_hunger_knowledge_loop() -> void:
 	demo.call("_reset_demo_state")
 	_assert_float_near(
@@ -240,6 +411,7 @@ func _assert_zhuyu_hunger_knowledge_loop() -> void:
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_APPEARANCE, false)
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_TYPE, false)
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT, false)
+	_assert_codex_unknown_count(6)
 	_assert_survival_status("饥饿")
 	_assert_survival_status("祝余效力")
 
@@ -283,6 +455,9 @@ func _assert_zhuyu_hunger_knowledge_loop() -> void:
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_APPEARANCE, true)
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_TYPE, true)
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT, false)
+	_assert_codex_contains("其状如韭而青华")
+	_assert_codex_contains("- 类型：草")
+	_assert_codex_contains("- 效果：???")
 	_assert_prompt_contains("采集祝余")
 	_assert_log_contains("图鉴更新：祝余 · 外观")
 	_assert_log_contains("图鉴更新：祝余 · 类型")
@@ -335,6 +510,7 @@ func _assert_zhuyu_hunger_knowledge_loop() -> void:
 		"eating zhuyu should start satiety"
 	)
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT, true)
+	_assert_codex_contains("食之不饥")
 	_assert_log_contains("食之不饥")
 	var repeated_eat_result: Variant = demo.call("_eat_zhuyu")
 	_assert_true(repeated_eat_result == false, "zhuyu should not be eaten twice")
@@ -357,6 +533,7 @@ func _assert_zhuyu_hunger_knowledge_loop() -> void:
 	_assert_true(demo.get("zhuyu_consumed") == true, "load should restore consumed zhuyu")
 	_assert_inventory_count(0)
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT, true)
+	_assert_codex_contains("食之不饥")
 	_assert_float_near(
 		float(demo.get("demo_hunger")),
 		DEMO_HUNGER_MAX,
@@ -436,6 +613,7 @@ func _assert_zhuyu_hunger_knowledge_loop() -> void:
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_APPEARANCE, false)
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_TYPE, false)
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT, false)
+	_assert_codex_unknown_count(6)
 	_assert_true(demo.get("zhuyu_consumed") == false, "legacy initial save should remain uneaten")
 
 	demo.call("_reset_demo_state")
@@ -450,6 +628,7 @@ func _assert_migu_navigation_knowledge_loop() -> void:
 	_assert_migu_knowledge(MIGU_KNOWLEDGE_APPEARANCE, false)
 	_assert_migu_knowledge(MIGU_KNOWLEDGE_TYPE, false)
 	_assert_migu_knowledge(MIGU_KNOWLEDGE_EFFECT, false)
+	_assert_codex_unknown_count(6)
 
 	player.position = origin + Vector2(NAVIGATION_NEAR_ORIGIN_DISTANCE - 10.0, 0.0)
 	demo.call("_update_navigation_state")
@@ -480,6 +659,8 @@ func _assert_migu_navigation_knowledge_loop() -> void:
 	_force_state_complete()
 	demo.call("_on_close_completion_pressed")
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT, true)
+	_assert_codex_contains("食之不饥")
+	_assert_codex_unknown_count(3)
 	_assert_float_near(
 		float(demo.get("demo_hunger")),
 		DEMO_HUNGER_MAX,
@@ -505,6 +686,9 @@ func _assert_migu_navigation_knowledge_loop() -> void:
 	_assert_migu_knowledge(MIGU_KNOWLEDGE_APPEARANCE, true)
 	_assert_migu_knowledge(MIGU_KNOWLEDGE_TYPE, true)
 	_assert_migu_knowledge(MIGU_KNOWLEDGE_EFFECT, false)
+	_assert_codex_contains("其状如榖而黑理，其华自照")
+	_assert_codex_contains("- 类型：木")
+	_assert_codex_contains("- 效果：???")
 	_assert_prompt_contains("采集迷穀")
 	_assert_log_contains("图鉴更新：迷穀 · 外观")
 	_assert_log_contains("图鉴更新：迷穀 · 类型")
@@ -539,6 +723,7 @@ func _assert_migu_navigation_knowledge_loop() -> void:
 	demo.call("_try_interact")
 	_assert_true(demo.get("migu_equipped") == true, "migu should equip through interaction")
 	_assert_migu_knowledge(MIGU_KNOWLEDGE_EFFECT, true)
+	_assert_codex_contains("佩之不迷")
 	_assert_log_contains("佩之不迷")
 	_assert_history_contains("佩戴迷穀")
 	_assert_true(
@@ -616,6 +801,8 @@ func _assert_migu_navigation_knowledge_loop() -> void:
 	_assert_migu_knowledge(MIGU_KNOWLEDGE_TYPE, true)
 	_assert_migu_knowledge(MIGU_KNOWLEDGE_EFFECT, true)
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT, true)
+	_assert_codex_contains("食之不饥")
+	_assert_codex_contains("佩之不迷")
 	_assert_navigation_status_contains("迷穀归向：")
 
 	var legacy_state: Dictionary = equipped_state.duplicate(true)
@@ -640,6 +827,8 @@ func _assert_migu_navigation_knowledge_loop() -> void:
 	_assert_migu_knowledge(MIGU_KNOWLEDGE_TYPE, false)
 	_assert_migu_knowledge(MIGU_KNOWLEDGE_EFFECT, false)
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT, true)
+	_assert_codex_contains("食之不饥")
+	_assert_codex_unknown_count(3)
 	_assert_navigation_status_not_contains("迷穀归向：")
 
 	demo.call("_reset_demo_state")
@@ -1955,8 +2144,8 @@ func _assert_journal_labels_separated() -> void:
 	_assert_true(journal_label.clip_text == true, "journal label should clip text inside its fixed area")
 	_assert_true(history_label.clip_text == true, "history label should clip text inside its fixed area")
 	_assert_true(
-		survival_label.get_global_rect().end.y <= navigation_label.get_global_rect().position.y,
-		"survival HUD should end before navigation HUD starts"
+		not survival_label.get_global_rect().intersects(navigation_label.get_global_rect()),
+		"survival HUD should not overlap navigation HUD"
 	)
 	_assert_true(
 		navigation_label.get_global_rect().end.y <= history_toggle_button.get_global_rect().position.y,
@@ -2161,6 +2350,35 @@ func _assert_migu_knowledge(slot: String, expected: bool) -> void:
 	_assert_true(
 		knowledge_state.get(slot, false) == expected,
 		"migu knowledge mismatch for %s" % slot
+	)
+
+
+func _codex_content_text() -> String:
+	var codex_content := demo.get_node_or_null(
+		"CanvasLayer/KnowledgeCodexPanel/KnowledgeCodexContentLabel"
+	) as Label
+	_assert_true(codex_content != null, "knowledge codex content label should exist")
+	if codex_content == null:
+		return ""
+	return codex_content.text
+
+
+func _assert_codex_contains(expected: String) -> void:
+	var codex_text := _codex_content_text()
+	_assert_true(
+		codex_text.contains(expected),
+		"knowledge codex should contain %s, actual=%s" % [expected, codex_text]
+	)
+
+
+func _assert_codex_unknown_count(expected_count: int) -> void:
+	var codex_text := _codex_content_text()
+	_assert_true(
+		codex_text.count("???") == expected_count,
+		"knowledge codex unknown slot count should be %d, actual=%s" % [
+			expected_count,
+			codex_text
+		]
 	)
 
 

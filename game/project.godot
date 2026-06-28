@@ -21,6 +21,13 @@ DataRegistry="*uid://ba4qf03rrjfs6"
 EventBus="*uid://bku41sfhcvn2f"
 SaveService="*uid://b0ufsp8wpix2q"
 
+[display]
+
+window/size/viewport_width=1440
+window/size/viewport_height=810
+window/size/window_width_override=1440
+window/size/window_height_override=810
+
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/snowhuman_framework/plugin.cfg")
