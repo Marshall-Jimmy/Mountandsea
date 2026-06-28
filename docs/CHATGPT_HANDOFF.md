@@ -147,23 +147,34 @@
 - 保留原 `ShenshengCreature` 的位置与 interaction identity；未新增 walk、attack 或 creature state machine。
 - 完整 headless 验证、生成器复现性检查和范围审计通过；合并前的 Godot GUI manual test 未在本文件中记录为已通过。
 
+### PR #42: game: add Zhuyu hunger and knowledge loop
+- **状态：** 已合并
+- **Branch：** `game/zhuyu-hunger-knowledge-loop`
+- **Merge commit：** f071d30894123df3409722b8b612a078af704e0a
+- **链接：** https://github.com/Marshall-Jimmy/Mountandsea/pull/42
+- 增加“饥饿压力 → 发现祝余 → 采集 / 食用祝余 → 图鉴知识解锁 → 饥饿压力缓解”的第一个知识驱动 gameplay loop。
+- 饥饿从 `100` 开始，以每秒 `2` 点下降；食用祝余恢复满值，并提供 15 秒“食之不饥”效力。
+- 靠近祝余解锁 `appearance` / `type`，食用后解锁 `effect`。
+- save version 更新为 `2`，保存 `world.zhuyu_consumed`、`survival.*` 和 `knowledge.zhuyu`，并兼容 legacy save。
+- 完整 headless regression 和范围审计通过；Godot GUI manual test 未在本文件中记录为已通过。
+
 ---
 
 ## 当前开放 PR
 
-### PR #42: game: add Zhuyu hunger and knowledge loop
+### PR #43: game: add Migu navigation knowledge loop
 - **状态：** Draft PR；Godot GUI manual test 保留给用户。
-- **Branch：** `game/zhuyu-hunger-knowledge-loop`
-- **链接：** https://github.com/Marshall-Jimmy/Mountandsea/pull/42
-- **目标：** 增加“饥饿压力 → 发现祝余 → 采集 / 食用祝余 → 图鉴知识解锁 → 饥饿压力缓解”的第一个知识驱动 gameplay loop。
-- 饥饿从 `100` 开始，以每秒 `2` 点下降；低于阈值时显示饥饿反馈，不引入 health、death 或 inheritance。
-- 靠近祝余时解锁 `appearance` / `type`；食用后解锁 `effect`，反馈为“食之不饥”。
-- 采集后进入 demo-local `EAT_ZHUYU` 阶段；食用恢复满饥饿并提供 15 秒饥饿暂停，不能重复采集或食用。
-- 右上角脚本创建的小型 HUD 显示饥饿、祝余效力与已知知识；打开 Demo 菜单时隐藏，不遮挡 optional journal。
-- save version 更新为 `2`，新增 `world.zhuyu_consumed`、`survival.demo_hunger`、`survival.zhuyu_satiety_remaining` 和 `knowledge.zhuyu`；旧 save 缺少这些字段时使用安全默认值。
-- 保持旧 `current_step` 数值不变，将 `EAT_ZHUYU` 追加为 `4`，避免旧 save 的步骤含义漂移。
-- 回归测试覆盖 hunger tick / clamp / warning、discovery、collect / eat、防重复、satiety 结束、两个中间状态的 save/load、legacy save 默认值、prompt / HUD，以及既有 optional journal、J / V shortcuts、player animation 与 shensheng idle。
-- 不新增美术，不修改 `.tscn`，不做完整背包、图鉴 UI、死亡传承或 Snowhuman Framework 重构。
+- **Branch：** `game/migu-navigation-knowledge-loop`
+- **链接：** https://github.com/Marshall-Jimmy/Mountandsea/pull/43
+- **目标：** 增加“远离 origin → 迷失压力 → 发现 / 采集 / 佩戴迷穀 → 解锁佩之不迷 → 获得归向指引”的第二个知识驱动 gameplay loop。
+- 复用现有 data-driven optional `migu_branch`，不创建第二个迷穀对象，也不改变 optional state 核心结构。
+- 出生点作为 demo-local origin；距离超过 `180 px` 显示方向感不稳，超过 `360 px` 显示方向感模糊。
+- 未佩戴迷穀时不显示精确方向；佩戴后实时显示 8 方向和距起点距离，接近 origin 时显示“已接近起点”。
+- 靠近迷穀解锁 `appearance` / `type`，佩戴后解锁 `effect`，反馈为“佩之不迷”。
+- save version 更新为 `3`，新增 `navigation.migu_equipped`、`navigation.origin_position` 和 `knowledge.migu`；保留 PR #42 的 `survival.*`、`knowledge.zhuyu` 与 `world.zhuyu_consumed`。
+- 右侧脚本 HUD 位于 hunger HUD 与 journal toggle 之间；打开 Demo 菜单时隐藏，不遮挡 optional journal。
+- 回归测试覆盖 origin、两级迷失压力、发现 / 采集 / 防重复 / 佩戴、8 方向、距离更新、原点零向量、save/load、legacy 默认值，以及 hunger、祝余、journal、J / V 和动画回归。
+- 不新增美术，不修改 `.tscn`，不做完整背包、装备、地图、minimap、寻路或图鉴 UI。
 - 当前自动验证已通过：`python tools/validate_minimal_demo.py`（包含 data、framework、Godot import、script check-only、save/load regression 和 framework keyword scan）。
 - 本 PR 不允许自动合并。
 
@@ -192,8 +203,10 @@
 - PR #37 已合并：journal 支持 `J` / `V` keyboard shortcuts、可见 shortcut hint 和防 overlap layout，并已完成用户 Godot GUI 手测。
 - PR #39 已合并：player 使用同一 silhouette 驱动的 stylized robe walk，并保留 clean cutout、stable idle、`IDLE/WALK` state machine 和 facing direction。
 - PR #41 已合并：狌狌使用 6 帧、4 FPS、统一 feet-center anchor 的 art-guided idle；未增加 walk / attack / creature state machine。
-- 当前 `game/zhuyu-hunger-knowledge-loop` 分支增加 demo-local 饥饿、祝余采集 / 食用、`appearance` / `type` / `effect` 知识解锁和右上角生存 HUD。
+- PR #42 已合并：demo 包含饥饿、祝余采集 / 食用、`appearance` / `type` / `effect` 知识解锁和右上角生存 HUD。
 - 祝余食用后恢复满饥饿并提供 15 秒“食之不饥”效力；状态支持 reset、save/load 与 legacy save 默认值。
+- 当前 `game/migu-navigation-knowledge-loop` 分支复用现有迷穀 optional collectible，增加迷失压力、采集后佩戴、`佩之不迷` 知识和实时 origin 归向 HUD。
+- 迷穀未佩戴时只显示方向感压力；佩戴后显示 8 方向、距离或“已接近起点”。
 - PR #36 不改变 optional state 核心结构、不新增 save fields、不改变 data-driven optional content 设计。
 - Snowhuman Framework 保持通用；addon 内没有项目专用内容。
 
@@ -228,17 +241,17 @@ git diff --stat
 
 ## 当前建议的下一项功能
 
-**Current active PR：** `game: add Zhuyu hunger and knowledge loop`（PR #42）
+**Current active PR：** `game: add Migu navigation knowledge loop`（PR #43）
 
 **目标：**
-- 让玩家在饥饿压力下发现、采集并食用祝余，观察“食之不饥”效果后解锁对应知识。
-- 使用 demo-local 状态和现有 inventory / bestiary / save 服务，不抽取全局 manager。
-- 保留现有石碑、狌狌、optional content、journal、J / V shortcuts 与动画行为。
-- 为 hunger、knowledge、collect / eat、satiety、save/load、reset、legacy save 和 prompt / HUD 提供 headless regression。
-- 不增加美术、完整背包、完整图鉴 UI、死亡传承、生火烹饪或新地图。
+- 玩家离出生点越远，方向感从稳定变为不稳 / 模糊。
+- 复用现有迷穀 optional content；发现、采集并佩戴后解锁“佩之不迷”。
+- 佩戴后显示返回 origin 的 8 方向与距离，接近 origin 时显示明确状态。
+- 保留 PR #42 的 hunger、祝余、save fields 与知识状态。
+- 不增加美术、完整装备、完整地图 / minimap、寻路或图鉴 UI。
 - 不移动 demo-specific 内容到 Snowhuman Framework。
 
-**状态：** Draft PR #42 已创建；本地实现和完整 headless regression 已通过。Godot GUI manual test 仍由用户完成；不要自动合并。
+**状态：** Draft PR #43 已创建；本地实现和完整 headless regression 已通过。Godot GUI manual test 仍由用户完成；不要自动合并。
 
 **验证：**
 - `python tools/validate_data.py` passed
@@ -249,7 +262,7 @@ git diff --stat
 - 未修改 `AGENTS.md`、`game/project.godot`、Snowhuman Framework、schemas、CI、`.tscn` 或美术资产。
 
 **下一步：**
-- 创建 Draft PR 后，由用户在 Godot GUI 检查饥饿 HUD、祝余发现 / 采集 / 食用 prompt、“食之不饥”倒计时与恢复，以及 optional journal、J / V shortcuts、player animation 和 shensheng idle 未回归。
+- 创建 Draft PR 后，由用户在 Godot GUI 检查两级迷失压力、迷穀发现 / 采集 / 佩戴 prompt、8 方向 / 距离实时更新和 HUD 不重叠，并复核 hunger、祝余、optional journal、J / V shortcuts、player animation 和 shensheng idle 未回归。
 
 ---
 
