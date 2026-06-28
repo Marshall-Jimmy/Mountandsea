@@ -50,9 +50,11 @@ const STEP_COMPLETE := 3
 const STEP_EAT_ZHUYU := 4
 const DEMO_HUNGER_MAX := 100.0
 const ZHUYU_SATIETY_DURATION := 15.0
+const COOKED_ZHUYU_SATIETY_DURATION := 45.0
 const ZHUYU_KNOWLEDGE_APPEARANCE := "appearance"
 const ZHUYU_KNOWLEDGE_TYPE := "type"
 const ZHUYU_KNOWLEDGE_EFFECT := "effect"
+const ZHUYU_KNOWLEDGE_COOKING := "cooking"
 const NAVIGATION_NEAR_ORIGIN_DISTANCE := 180.0
 const NAVIGATION_LOST_PRESSURE_DISTANCE := 360.0
 const MIGU_KNOWLEDGE_APPEARANCE := "appearance"
@@ -99,6 +101,7 @@ func _run_test() -> void:
 	_assert_reset_preserves_compact_journal_view()
 	_assert_knowledge_codex_and_hud_layout()
 	_assert_zhuyu_hunger_knowledge_loop()
+	_assert_campfire_cooking_loop()
 	_assert_migu_navigation_knowledge_loop()
 	if failed:
 		return
@@ -249,8 +252,8 @@ func _assert_knowledge_codex_and_hud_layout() -> void:
 	_assert_true(codex_content.text.contains("祝余"), "knowledge codex should include zhuyu")
 	_assert_true(codex_content.text.contains("迷穀"), "knowledge codex should include migu")
 	_assert_true(
-		codex_content.text.count("???") == 6,
-		"locked codex should show six unknown slots"
+		codex_content.text.count("???") == 7,
+		"locked codex should show seven unknown slots"
 	)
 	_assert_true(codex_hint.text.contains("K"), "knowledge codex should show K shortcut hint")
 	var demo_script := demo.get_script() as Script
@@ -411,7 +414,8 @@ func _assert_zhuyu_hunger_knowledge_loop() -> void:
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_APPEARANCE, false)
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_TYPE, false)
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT, false)
-	_assert_codex_unknown_count(6)
+	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_COOKING, false)
+	_assert_codex_unknown_count(7)
 	_assert_survival_status("饥饿")
 	_assert_survival_status("祝余效力")
 
@@ -455,6 +459,7 @@ func _assert_zhuyu_hunger_knowledge_loop() -> void:
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_APPEARANCE, true)
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_TYPE, true)
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT, false)
+	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_COOKING, false)
 	_assert_codex_contains("其状如韭而青华")
 	_assert_codex_contains("- 类型：草")
 	_assert_codex_contains("- 效果：???")
@@ -472,7 +477,7 @@ func _assert_zhuyu_hunger_knowledge_loop() -> void:
 	_assert_true(zhuyu_pickup.visible == false, "collected zhuyu should be hidden")
 	_assert_inventory_count(1)
 	demo.call("_update_prompt")
-	_assert_prompt_contains("食用祝余")
+	_assert_prompt_contains("食用生祝余")
 	var repeated_collect_result: Variant = demo.call(
 		"_on_zhuyu_interacted",
 		OWNER_ID,
@@ -506,8 +511,11 @@ func _assert_zhuyu_hunger_knowledge_loop() -> void:
 		"eating zhuyu should restore hunger"
 	)
 	_assert_true(
-		float(demo.get("zhuyu_satiety_remaining")) > 0.0,
-		"eating zhuyu should start satiety"
+		is_equal_approx(
+			float(demo.get("zhuyu_satiety_remaining")),
+			ZHUYU_SATIETY_DURATION
+		),
+		"eating raw zhuyu should start 15-second satiety"
 	)
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT, true)
 	_assert_codex_contains("食之不饥")
@@ -613,10 +621,180 @@ func _assert_zhuyu_hunger_knowledge_loop() -> void:
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_APPEARANCE, false)
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_TYPE, false)
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT, false)
-	_assert_codex_unknown_count(6)
+	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_COOKING, false)
+	_assert_codex_unknown_count(7)
+	_assert_true(demo.get("cooked_zhuyu_count") == 0, "legacy save should default cooked zhuyu to zero")
 	_assert_true(demo.get("zhuyu_consumed") == false, "legacy initial save should remain uneaten")
 
 	demo.call("_reset_demo_state")
+
+
+func _assert_campfire_cooking_loop() -> void:
+	demo.call("_reset_demo_state")
+	var campfire := demo.get_node_or_null("WorldRoot/Campfire") as Node2D
+	var campfire_label := demo.get_node_or_null("WorldRoot/CampfireLabel") as Label
+	var zhuyu_pickup := demo.get_node_or_null("WorldRoot/ZhuyuPickup") as Node2D
+	var migu_node := demo.get_node_or_null("WorldRoot/MiguBranch") as Node2D
+	var shensheng_node := demo.get_node_or_null("WorldRoot/ShenshengCreature") as Node2D
+	_assert_true(campfire != null, "demo-local Campfire node should exist")
+	_assert_true(campfire_label != null and campfire_label.text == "篝火", "campfire should have a clear label")
+	_assert_true(demo.has_method("_is_near_campfire"), "campfire proximity helper should exist")
+	if campfire == null or zhuyu_pickup == null:
+		return
+	_assert_true(
+		campfire.global_position.distance_to(initial_position) > float(demo.get("interaction_distance")),
+		"campfire should not overlap the player spawn interaction area"
+	)
+	_assert_true(
+		campfire.global_position.distance_to(zhuyu_pickup.global_position) > float(demo.get("interaction_distance")),
+		"campfire should not overlap the zhuyu interaction area"
+	)
+	if migu_node != null:
+		_assert_true(
+			campfire.global_position.distance_to(migu_node.global_position) > float(demo.get("interaction_distance")),
+			"campfire should not overlap the migu interaction area"
+		)
+	if shensheng_node != null:
+		_assert_true(
+			campfire.global_position.distance_to(shensheng_node.global_position) > float(demo.get("interaction_distance")),
+			"campfire should not overlap the shensheng interaction area"
+		)
+
+	player.position = campfire.global_position
+	demo.call("_update_prompt")
+	_assert_prompt_contains("需要祝余")
+	_assert_prompt_not_contains("按 E 烹饪祝余")
+
+	var zhuyu_result: Variant = demo.call(
+		"_on_zhuyu_interacted",
+		OWNER_ID,
+		ZHUYU_INTERACTABLE_ID,
+		{"item_id": ITEM_ID, "count": 1}
+	)
+	_assert_true(zhuyu_result == true, "zhuyu collection for cooking should succeed")
+	_assert_inventory_count(1)
+	_assert_true(demo.get("cooked_zhuyu_count") == 0, "cooked zhuyu should start at zero")
+	player.position = campfire.global_position
+	_assert_true(demo.call("_is_near_campfire") == true, "player should be near campfire")
+	demo.call("_update_prompt")
+	_assert_prompt_contains("按 E 烹饪祝余")
+
+	demo.set("demo_hunger", 20.0)
+	var cook_result: Variant = demo.call("_cook_zhuyu")
+	_assert_true(cook_result == true, "cooking raw zhuyu should succeed")
+	_assert_inventory_count(0)
+	_assert_true(demo.get("cooked_zhuyu_count") == 1, "cooking should create one cooked zhuyu")
+	_assert_true(demo.get("zhuyu_consumed") == false, "cooking should not count as eating zhuyu")
+	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_COOKING, true)
+	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT, false)
+	_assert_codex_contains("- 烹饪：熟祝余：食之不饥更久")
+	_assert_log_contains("熟祝余")
+	_assert_log_contains("图鉴更新：祝余 · 烹饪")
+	_assert_history_contains("烹饪熟祝余")
+	demo.call("_update_prompt")
+	_assert_prompt_contains("按 E 食用熟祝余")
+
+	var repeated_cook_result: Variant = demo.call("_cook_zhuyu")
+	_assert_true(repeated_cook_result == false, "one raw zhuyu should not cook twice")
+	_assert_inventory_count(0)
+	_assert_true(demo.get("cooked_zhuyu_count") == 1, "repeated cooking should not duplicate cooked zhuyu")
+
+	var cooked_state_value: Variant = demo.call("_build_demo_save_state")
+	_assert_true(cooked_state_value is Dictionary, "cooked zhuyu state should be serializable")
+	if not (cooked_state_value is Dictionary):
+		return
+	var cooked_state: Dictionary = cooked_state_value
+	_assert_true(cooked_state.get("version", 0) == 4, "cooking save should use version 4")
+	var cooked_world: Variant = cooked_state.get("world", {})
+	var cooked_inventory: Variant = cooked_state.get("inventory", {})
+	var cooked_knowledge: Variant = cooked_state.get("knowledge", {})
+	_assert_true(
+		cooked_world is Dictionary and cooked_world.get("cooked_zhuyu_count", 0) == 1,
+		"save should persist cooked zhuyu count"
+	)
+	_assert_true(
+		cooked_inventory is Dictionary and cooked_inventory.get(ITEM_ID, -1) == 0,
+		"existing inventory.zhuyu_leaf should persist raw zhuyu count"
+	)
+	if cooked_knowledge is Dictionary:
+		var saved_zhuyu_knowledge: Variant = cooked_knowledge.get("zhuyu", {})
+		_assert_true(
+			saved_zhuyu_knowledge is Dictionary
+			and saved_zhuyu_knowledge.get(ZHUYU_KNOWLEDGE_COOKING, false) == true,
+			"save should persist knowledge.zhuyu.cooking"
+		)
+
+	demo.call("_reset_demo_state")
+	_assert_inventory_count(0)
+	_assert_true(demo.get("cooked_zhuyu_count") == 0, "reset should clear cooked zhuyu")
+	_assert_float_near(
+		float(demo.get("zhuyu_satiety_remaining")),
+		0.0,
+		"reset should clear cooked zhuyu satiety"
+	)
+	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_COOKING, false)
+
+	var cooked_load_result: Variant = demo.call("_apply_demo_save_state", cooked_state)
+	_assert_true(cooked_load_result == true, "cooked zhuyu state should load")
+	_assert_true(demo.get("current_step") == STEP_EAT_ZHUYU, "load should restore cooking choice step")
+	_assert_inventory_count(0)
+	_assert_true(demo.get("cooked_zhuyu_count") == 1, "load should restore cooked zhuyu")
+	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_COOKING, true)
+	_assert_codex_contains("- 烹饪：熟祝余：食之不饥更久")
+	demo.call("_update_prompt")
+	_assert_prompt_contains("按 E 食用熟祝余")
+
+	var eat_cooked_result: Variant = demo.call("_eat_cooked_zhuyu")
+	_assert_true(eat_cooked_result == true, "eating cooked zhuyu should succeed")
+	_assert_true(demo.get("zhuyu_consumed") == true, "cooked zhuyu should be marked consumed")
+	_assert_true(demo.get("cooked_zhuyu_count") == 0, "eating should consume cooked zhuyu")
+	_assert_inventory_count(0)
+	_assert_float_near(
+		float(demo.get("demo_hunger")),
+		DEMO_HUNGER_MAX,
+		"eating cooked zhuyu should restore hunger"
+	)
+	_assert_float_near(
+		float(demo.get("zhuyu_satiety_remaining")),
+		COOKED_ZHUYU_SATIETY_DURATION,
+		"cooked zhuyu should provide 45-second satiety"
+	)
+	_assert_true(
+		COOKED_ZHUYU_SATIETY_DURATION > ZHUYU_SATIETY_DURATION,
+		"cooked zhuyu satiety should be clearly longer than raw zhuyu"
+	)
+	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT, true)
+	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_COOKING, true)
+	_assert_log_contains("温热的饱腹感延续更久")
+	var repeated_eat_result: Variant = demo.call("_eat_cooked_zhuyu")
+	_assert_true(repeated_eat_result == false, "cooked zhuyu should not be eaten twice")
+
+	var eaten_cooked_state: Variant = demo.call("_build_demo_save_state")
+	demo.call("_reset_demo_state")
+	var eaten_cooked_load_result: Variant = demo.call("_apply_demo_save_state", eaten_cooked_state)
+	_assert_true(eaten_cooked_load_result == true, "eaten cooked zhuyu state should load")
+	_assert_float_near(
+		float(demo.get("zhuyu_satiety_remaining")),
+		COOKED_ZHUYU_SATIETY_DURATION,
+		"load should restore cooked zhuyu satiety remaining"
+	)
+	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_COOKING, true)
+	var hunger_during_cooked_satiety := float(demo.get("demo_hunger"))
+	demo.call("_update_hunger", COOKED_ZHUYU_SATIETY_DURATION + 1.0)
+	_assert_float_near(
+		float(demo.get("zhuyu_satiety_remaining")),
+		0.0,
+		"cooked zhuyu satiety should expire"
+	)
+	_assert_true(
+		float(demo.get("demo_hunger")) < hunger_during_cooked_satiety,
+		"hunger should resume after cooked zhuyu satiety expires"
+	)
+
+	demo.call("_reset_demo_state")
+	_assert_inventory_count(0)
+	_assert_true(demo.get("cooked_zhuyu_count") == 0, "final reset should clear cooked zhuyu")
+	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_COOKING, false)
 
 
 func _assert_migu_navigation_knowledge_loop() -> void:
@@ -628,7 +806,7 @@ func _assert_migu_navigation_knowledge_loop() -> void:
 	_assert_migu_knowledge(MIGU_KNOWLEDGE_APPEARANCE, false)
 	_assert_migu_knowledge(MIGU_KNOWLEDGE_TYPE, false)
 	_assert_migu_knowledge(MIGU_KNOWLEDGE_EFFECT, false)
-	_assert_codex_unknown_count(6)
+	_assert_codex_unknown_count(7)
 
 	player.position = origin + Vector2(NAVIGATION_NEAR_ORIGIN_DISTANCE - 10.0, 0.0)
 	demo.call("_update_navigation_state")
@@ -660,7 +838,7 @@ func _assert_migu_navigation_knowledge_loop() -> void:
 	demo.call("_on_close_completion_pressed")
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT, true)
 	_assert_codex_contains("食之不饥")
-	_assert_codex_unknown_count(3)
+	_assert_codex_unknown_count(4)
 	_assert_float_near(
 		float(demo.get("demo_hunger")),
 		DEMO_HUNGER_MAX,
@@ -702,12 +880,18 @@ func _assert_migu_navigation_knowledge_loop() -> void:
 	_assert_true(collect_result == true, "migu collection should succeed")
 	_assert_optional_done(MIGU_BRANCH_ITEM_ID, true)
 	_assert_inventory_item_count(MIGU_BRANCH_ITEM_ID, 1)
+	_assert_true(demo.get("migu_equipped") == true, "migu collection should auto-equip")
+	_assert_migu_knowledge(MIGU_KNOWLEDGE_EFFECT, true)
+	_assert_codex_contains("佩之不迷")
 	_assert_true(
-		migu_label != null and migu_label.text.contains("已采集"),
-		"collected migu should show collected state"
+		migu_label != null and migu_label.text.contains("已佩戴"),
+		"collected migu should immediately show equipped state"
 	)
-	_assert_log_contains("你采集了迷穀。")
-	_assert_log_contains("迷穀之华自照，似可佩戴以辨方向。")
+	_assert_log_contains("已佩于身侧")
+	_assert_log_contains("佩之不迷")
+	_assert_log_contains("图鉴更新：迷穀 · 效果：佩之不迷")
+	demo.call("_update_navigation_state")
+	_assert_navigation_status_contains("迷穀归向：")
 
 	var repeated_collect_result: Variant = demo.call(
 		"_on_optional_collectible_interacted",
@@ -717,21 +901,11 @@ func _assert_migu_navigation_knowledge_loop() -> void:
 	)
 	_assert_true(repeated_collect_result == true, "repeated migu collection should be harmless")
 	_assert_inventory_item_count(MIGU_BRANCH_ITEM_ID, 1)
-	demo.call("_update_prompt")
-	_assert_prompt_contains("佩戴迷穀")
-
-	demo.call("_try_interact")
-	_assert_true(demo.get("migu_equipped") == true, "migu should equip through interaction")
-	_assert_migu_knowledge(MIGU_KNOWLEDGE_EFFECT, true)
-	_assert_codex_contains("佩之不迷")
-	_assert_log_contains("佩之不迷")
-	_assert_history_contains("佩戴迷穀")
-	_assert_true(
-		migu_label != null and migu_label.text.contains("已佩戴"),
-		"equipped migu should show equipped state"
-	)
+	_assert_true(demo.get("migu_equipped") == true, "repeated collection should preserve auto-equip")
 	demo.call("_update_prompt")
 	_assert_prompt_not_contains("按 E 佩戴迷穀")
+	_assert_prompt_not_contains("按 E 采集迷穀")
+	_assert_history_contains("采集迷穀枝")
 
 	demo.call("_update_navigation_state")
 	_assert_navigation_status_contains("迷穀归向：")
@@ -817,19 +991,20 @@ func _assert_migu_navigation_knowledge_loop() -> void:
 	var legacy_result: Variant = demo.call("_apply_demo_save_state", legacy_state)
 	_assert_true(legacy_result == true, "legacy save without migu navigation fields should load")
 	_assert_optional_done(MIGU_BRANCH_ITEM_ID, true)
-	_assert_true(demo.get("migu_equipped") == false, "legacy save should default migu to unequipped")
+	_assert_true(demo.get("migu_equipped") == true, "legacy collected migu should migrate to auto-equipped")
 	_assert_vec2_near(
 		demo.get("demo_origin_position"),
 		initial_position,
 		"legacy save should default origin to player spawn"
 	)
-	_assert_migu_knowledge(MIGU_KNOWLEDGE_APPEARANCE, false)
-	_assert_migu_knowledge(MIGU_KNOWLEDGE_TYPE, false)
-	_assert_migu_knowledge(MIGU_KNOWLEDGE_EFFECT, false)
+	_assert_migu_knowledge(MIGU_KNOWLEDGE_APPEARANCE, true)
+	_assert_migu_knowledge(MIGU_KNOWLEDGE_TYPE, true)
+	_assert_migu_knowledge(MIGU_KNOWLEDGE_EFFECT, true)
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT, true)
 	_assert_codex_contains("食之不饥")
-	_assert_codex_unknown_count(3)
-	_assert_navigation_status_not_contains("迷穀归向：")
+	_assert_codex_contains("佩之不迷")
+	_assert_codex_unknown_count(1)
+	_assert_navigation_status_contains("迷穀归向：")
 
 	demo.call("_reset_demo_state")
 
@@ -988,10 +1163,10 @@ func _assert_optional_state_complete() -> void:
 	_assert_optional_done(LUSHU_CREATURE_ID, true)
 	_assert_optional_done(GENERIC_BEAST_CREATURE_ID, true)
 	_assert_journal_optional_state_complete()
-	_assert_true(demo.get("migu_equipped") == false, "optional collection alone should not equip migu")
+	_assert_true(demo.get("migu_equipped") == true, "optional migu collection should auto-equip")
 	_assert_migu_knowledge(MIGU_KNOWLEDGE_APPEARANCE, true)
 	_assert_migu_knowledge(MIGU_KNOWLEDGE_TYPE, true)
-	_assert_migu_knowledge(MIGU_KNOWLEDGE_EFFECT, false)
+	_assert_migu_knowledge(MIGU_KNOWLEDGE_EFFECT, true)
 
 	var migu_label := demo.get_node_or_null("WorldRoot/MiguBranchLabel")
 	var basic_ore_label := demo.get_node_or_null("WorldRoot/BasicOreLabel")
@@ -1001,7 +1176,7 @@ func _assert_optional_state_complete() -> void:
 	var target_hint_label := demo.get_node_or_null("CanvasLayer/TargetHintLabel")
 	var completion_summary_label := demo.get_node_or_null("CanvasLayer/CompletionPanel/CompletionSummaryLabel")
 
-	_assert_true(migu_label != null and migu_label.text.contains("已采集"), "MiguBranchLabel should show collected state")
+	_assert_true(migu_label != null and migu_label.text.contains("已佩戴"), "MiguBranchLabel should show auto-equipped state")
 	_assert_true(basic_ore_label != null and basic_ore_label.text.contains("已采集"), "BasicOreLabel should show collected state")
 	_assert_true(lushu_label != null and lushu_label.text.contains("已发现"), "LushuLabel should show discovered state")
 	_assert_true(generic_beast_label != null and generic_beast_label.text.contains("已发现"), "GenericBeastLabel should show discovered state")
@@ -1080,10 +1255,10 @@ func _assert_legacy_optional_save_compatibility() -> void:
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_APPEARANCE, false)
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_TYPE, false)
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT, false)
-	_assert_true(demo.get("migu_equipped") == false, "legacy optional save should default migu to unequipped")
-	_assert_migu_knowledge(MIGU_KNOWLEDGE_APPEARANCE, false)
-	_assert_migu_knowledge(MIGU_KNOWLEDGE_TYPE, false)
-	_assert_migu_knowledge(MIGU_KNOWLEDGE_EFFECT, false)
+	_assert_true(demo.get("migu_equipped") == true, "legacy collected migu should migrate to auto-equipped")
+	_assert_migu_knowledge(MIGU_KNOWLEDGE_APPEARANCE, true)
+	_assert_migu_knowledge(MIGU_KNOWLEDGE_TYPE, true)
+	_assert_migu_knowledge(MIGU_KNOWLEDGE_EFFECT, true)
 	_assert_optional_done(MIGU_BRANCH_ITEM_ID, true)
 	_assert_optional_done(LUSHU_CREATURE_ID, true)
 	_assert_optional_done(BASIC_ORE_ITEM_ID, false)
