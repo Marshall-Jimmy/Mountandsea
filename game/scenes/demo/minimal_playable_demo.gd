@@ -58,9 +58,11 @@ const DEMO_HUNGER_DECAY_PER_SECOND := 2.0
 const DEMO_HUNGER_WARNING_THRESHOLD := 70.0
 const DEMO_HUNGER_CRITICAL_THRESHOLD := 35.0
 const ZHUYU_SATIETY_DURATION := 15.0
+const COOKED_ZHUYU_SATIETY_DURATION := 45.0
 const ZHUYU_KNOWLEDGE_APPEARANCE := "appearance"
 const ZHUYU_KNOWLEDGE_TYPE := "type"
 const ZHUYU_KNOWLEDGE_EFFECT := "effect"
+const ZHUYU_KNOWLEDGE_COOKING := "cooking"
 const NAVIGATION_NEAR_ORIGIN_DISTANCE := 180.0
 const NAVIGATION_LOST_PRESSURE_DISTANCE := 360.0
 const MIGU_KNOWLEDGE_APPEARANCE := "appearance"
@@ -81,6 +83,8 @@ enum DemoStep {
 @onready var player_animation_state_machine: DemoPlayerAnimationStateMachine = %PlayerAnimationStateMachine
 @onready var zhuyu_pickup: Polygon2D = %ZhuyuPickup
 @onready var zhuyu_label: Label = %ZhuyuLabel
+@onready var campfire: Node2D = %Campfire
+@onready var campfire_label: Label = %CampfireLabel
 @onready var guidance_stone: Polygon2D = %GuidanceStone
 @onready var guidance_stone_label: Label = $WorldRoot/GuidanceStoneLabel
 @onready var shensheng_creature: Polygon2D = %ShenshengCreature
@@ -147,10 +151,12 @@ var demo_hunger_max := DEMO_HUNGER_MAX
 var demo_hunger_decay_per_second := DEMO_HUNGER_DECAY_PER_SECOND
 var zhuyu_satiety_remaining := 0.0
 var zhuyu_consumed := false
+var cooked_zhuyu_count := 0
 var zhuyu_knowledge_state := {
 	ZHUYU_KNOWLEDGE_APPEARANCE: false,
 	ZHUYU_KNOWLEDGE_TYPE: false,
-	ZHUYU_KNOWLEDGE_EFFECT: false
+	ZHUYU_KNOWLEDGE_EFFECT: false,
+	ZHUYU_KNOWLEDGE_COOKING: false
 }
 var hunger_warning_level := 0
 var demo_origin_position := PLAYER_START_POSITION
@@ -650,9 +656,13 @@ func _refresh_knowledge_codex() -> void:
 			_has_zhuyu_knowledge(ZHUYU_KNOWLEDGE_TYPE),
 			"草"
 		)
-		+ "- 效果：%s\n\n" % _format_codex_slot(
+		+ "- 效果：%s\n" % _format_codex_slot(
 			_has_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT),
 			"食之不饥"
+		)
+		+ "- 烹饪：%s\n\n" % _format_codex_slot(
+			_has_zhuyu_knowledge(ZHUYU_KNOWLEDGE_COOKING),
+			"熟祝余：食之不饥更久"
 		)
 		+ "迷穀\n"
 		+ "- 外观：%s\n" % _format_codex_slot(
@@ -1055,6 +1065,7 @@ func _format_migu_knowledge_status() -> String:
 
 func _update_prompt() -> void:
 	var near_zhuyu := _is_near_zhuyu()
+	var near_campfire := _is_near_campfire()
 	var near_stone := _is_near_stone()
 	var near_shensheng := _is_near_shensheng()
 	var nearest_optional := _nearest_optional_config()
@@ -1073,6 +1084,8 @@ func _update_prompt() -> void:
 		DemoStep.COLLECT_ZHUYU:
 			if near_zhuyu:
 				_show_prompt(_format_zhuyu_collect_prompt())
+			elif near_campfire:
+				_show_prompt("篝火：需要祝余")
 			elif near_stone:
 				_show_prompt("先寻找并采集祝余")
 			elif near_shensheng:
@@ -1082,10 +1095,19 @@ func _update_prompt() -> void:
 			else:
 				prompt_label.visible = false
 		DemoStep.EAT_ZHUYU:
-			_show_prompt("按 E 食用祝余")
+			if cooked_zhuyu_count > 0:
+				_show_prompt("按 E 食用熟祝余")
+			elif near_campfire and _get_raw_zhuyu_count() > 0:
+				_show_prompt("按 E 烹饪祝余")
+			elif near_campfire:
+				_show_prompt("篝火：需要祝余")
+			else:
+				_show_prompt("按 E 食用生祝余（靠近篝火可烹饪）")
 		DemoStep.ACTIVATE_STONE:
 			if near_stone:
 				_show_prompt("按 E 激活山海石碑")
+			elif near_campfire:
+				_show_prompt("篝火：需要祝余")
 			elif near_shensheng:
 				_show_prompt("先激活山海石碑")
 			elif near_optional:
@@ -1095,6 +1117,8 @@ func _update_prompt() -> void:
 		DemoStep.OBSERVE_SHENSHENG:
 			if near_shensheng:
 				_show_prompt("按 E 观察狌狌")
+			elif near_campfire:
+				_show_prompt("篝火：需要祝余")
 			elif near_stone:
 				_show_prompt("山海石碑已激活")
 			elif near_optional:
@@ -1109,6 +1133,8 @@ func _update_prompt() -> void:
 					_show_prompt(str(nearest_optional.get("prompt_done", "")))
 				else:
 					_show_prompt(str(nearest_optional.get("prompt_ready", "")))
+			elif near_campfire:
+				_show_prompt("篝火：需要祝余")
 			elif near_zhuyu or near_stone or near_shensheng:
 				_show_prompt("Demo 已完成")
 			else:
@@ -1139,26 +1165,25 @@ func _handle_interaction_input() -> void:
 
 func _try_interact() -> void:
 	var near_zhuyu := _is_near_zhuyu()
+	var near_campfire := _is_near_campfire()
 	var near_stone := _is_near_stone()
 	var near_shensheng := _is_near_shensheng()
 	var nearest_optional := _nearest_optional_config()
 	var near_optional := not nearest_optional.is_empty()
 
 	if current_step == DemoStep.EAT_ZHUYU:
-		_eat_zhuyu()
+		if cooked_zhuyu_count > 0:
+			_eat_cooked_zhuyu()
+		elif near_campfire and _get_raw_zhuyu_count() > 0:
+			_cook_zhuyu()
+		elif near_campfire:
+			_log("篝火还缺少祝余。")
+		else:
+			_eat_zhuyu()
 		return
 
 	if current_step == DemoStep.COMPLETE:
 		if near_optional:
-			if (
-				str(nearest_optional.get("id", "")) == MIGU_BRANCH_ITEM_ID
-				and _is_optional_done(nearest_optional)
-			):
-				if migu_equipped:
-					_log("迷穀已经佩戴。")
-				else:
-					_equip_migu()
-				return
 			var interactable_id := str(nearest_optional.get("interactable_id", ""))
 			var optional_interacted := interaction_service.interact(OWNER_ID, interactable_id)
 			if not optional_interacted:
@@ -1172,6 +1197,10 @@ func _try_interact() -> void:
 
 	if near_optional:
 		_log(str(nearest_optional.get("locked_log", "")))
+		return
+
+	if near_campfire:
+		_log("篝火：需要祝余。")
 		return
 
 	if not near_zhuyu and not near_stone and not near_shensheng:
@@ -1251,7 +1280,7 @@ func _eat_zhuyu() -> bool:
 	if current_step != DemoStep.EAT_ZHUYU or zhuyu_consumed:
 		_log("祝余已经食用，无法重复食用。")
 		return false
-	if inventory_service == null or inventory_service.get_item_count(OWNER_ID, ITEM_ID) <= 0:
+	if _get_raw_zhuyu_count() <= 0:
 		_log_error("食用祝余失败：背包中没有祝余。")
 		return false
 	if not inventory_service.remove_item(OWNER_ID, ITEM_ID, 1):
@@ -1270,6 +1299,67 @@ func _eat_zhuyu() -> bool:
 	)
 	_log("祝余效力发动：食之不饥")
 	_append_history_event("食用祝余")
+	prompt_label.visible = false
+	_refresh_status()
+	_refresh_survival_status()
+	_update_objective_ui()
+	_update_objective_guidance()
+	return true
+
+
+func _cook_zhuyu() -> bool:
+	if current_step != DemoStep.EAT_ZHUYU or zhuyu_consumed:
+		_log("当前没有可烹饪的祝余。")
+		return false
+	if not _is_near_campfire():
+		_log("需要靠近篝火才能烹饪祝余。")
+		return false
+	if cooked_zhuyu_count > 0:
+		_log("熟祝余已经备好，无需重复烹饪。")
+		return false
+	if _get_raw_zhuyu_count() <= 0:
+		_log_error("烹饪祝余失败：背包中没有生祝余。")
+		return false
+	if not inventory_service.remove_item(OWNER_ID, ITEM_ID, 1):
+		_log_error("烹饪祝余失败：无法移除生祝余。")
+		return false
+
+	cooked_zhuyu_count += 1
+	_log_ok("你在篝火旁烹成了熟祝余。")
+	_unlock_zhuyu_knowledge(
+		ZHUYU_KNOWLEDGE_COOKING,
+		"图鉴更新：祝余 · 烹饪"
+	)
+	_append_history_event("烹饪熟祝余")
+	prompt_label.visible = false
+	_refresh_status()
+	_refresh_survival_status()
+	_update_objective_ui()
+	_update_objective_guidance()
+	return true
+
+
+func _eat_cooked_zhuyu() -> bool:
+	if current_step != DemoStep.EAT_ZHUYU or zhuyu_consumed:
+		_log("熟祝余已经食用，无法重复食用。")
+		return false
+	if cooked_zhuyu_count <= 0:
+		_log_error("食用熟祝余失败：没有熟祝余。")
+		return false
+
+	cooked_zhuyu_count -= 1
+	zhuyu_consumed = true
+	demo_hunger = demo_hunger_max
+	zhuyu_satiety_remaining = COOKED_ZHUYU_SATIETY_DURATION
+	hunger_warning_level = 0
+	current_step = DemoStep.ACTIVATE_STONE
+	_log_ok("你食用了熟祝余，温热的饱腹感延续更久。")
+	_unlock_zhuyu_knowledge(
+		ZHUYU_KNOWLEDGE_EFFECT,
+		"图鉴更新：祝余 · 效果：食之不饥"
+	)
+	_log("熟祝余效力发动：食之不饥更久。")
+	_append_history_event("食用熟祝余")
 	prompt_label.visible = false
 	_refresh_status()
 	_refresh_survival_status()
@@ -1399,12 +1489,12 @@ func _on_optional_content_interacted(actor_id: String, interactable_id: String, 
 
 	_set_optional_done(config, true)
 	recent_optional_completion_name = str(config.get("display_name", content_id))
+	if content_id == MIGU_BRANCH_ITEM_ID and not _equip_migu(true):
+		_log_error("迷穀自动佩戴失败。")
+		return false
 	_update_optional_content_visuals()
 	prompt_label.visible = false
-	if content_id == MIGU_BRANCH_ITEM_ID:
-		_log_ok("你采集了迷穀。")
-		_log("迷穀之华自照，似可佩戴以辨方向。")
-	else:
+	if content_id != MIGU_BRANCH_ITEM_ID:
 		_log_ok(str(config.get("success_log", "")))
 	_append_history_event(str(config.get("history", "")))
 	_refresh_status()
@@ -1457,9 +1547,7 @@ func _reset_migu_knowledge_state() -> void:
 
 func _format_migu_prompt(config: Dictionary) -> String:
 	if _is_optional_done(config):
-		if migu_equipped:
-			return "迷穀已佩戴"
-		return "按 E 佩戴迷穀"
+		return "迷穀已采集并自动佩戴"
 	if (
 		_has_migu_knowledge(MIGU_KNOWLEDGE_APPEARANCE)
 		and _has_migu_knowledge(MIGU_KNOWLEDGE_TYPE)
@@ -1468,7 +1556,7 @@ func _format_migu_prompt(config: Dictionary) -> String:
 	return "按 E 采集陌生黑理发光之木"
 
 
-func _equip_migu() -> bool:
+func _equip_migu(is_automatic := false) -> bool:
 	if migu_equipped:
 		_log("迷穀已经佩戴。")
 		return false
@@ -1488,8 +1576,11 @@ func _equip_migu() -> bool:
 		MIGU_KNOWLEDGE_EFFECT,
 		"图鉴更新：迷穀 · 效果：佩之不迷"
 	)
-	_log_ok("迷穀效力发动：佩之不迷")
-	_append_history_event("佩戴迷穀")
+	if is_automatic:
+		_log_ok("你采下迷穀，其华自照，已佩于身侧。")
+	else:
+		_log_ok("迷穀效力发动：佩之不迷")
+		_append_history_event("佩戴迷穀")
 	prompt_label.visible = false
 	_update_optional_content_visuals()
 	_refresh_navigation_status()
@@ -1534,7 +1625,8 @@ func _reset_zhuyu_knowledge_state() -> void:
 	zhuyu_knowledge_state = {
 		ZHUYU_KNOWLEDGE_APPEARANCE: false,
 		ZHUYU_KNOWLEDGE_TYPE: false,
-		ZHUYU_KNOWLEDGE_EFFECT: false
+		ZHUYU_KNOWLEDGE_EFFECT: false,
+		ZHUYU_KNOWLEDGE_COOKING: false
 	}
 
 
@@ -1545,6 +1637,12 @@ func _format_zhuyu_collect_prompt() -> String:
 	):
 		return "按 E 采集祝余"
 	return "按 E 采集陌生青华草"
+
+
+func _get_raw_zhuyu_count() -> int:
+	if inventory_service == null:
+		return 0
+	return inventory_service.get_item_count(OWNER_ID, ITEM_ID)
 
 
 func get_save_data() -> Dictionary:
@@ -1626,12 +1724,13 @@ func _build_demo_save_state() -> Dictionary:
 		return {}
 
 	return {
-		"version": 3,
+		"version": 4,
 		"owner_id": OWNER_ID,
 		"current_step": int(current_step),
 		"world": {
 			"pickup_collected": zhuyu_collected,
 			"zhuyu_consumed": zhuyu_consumed,
+			"cooked_zhuyu_count": cooked_zhuyu_count,
 			"stone_activated": stone_activated,
 			"creature_discovered": shensheng_discovered,
 			"optional": _build_optional_save_state()
@@ -1682,7 +1781,7 @@ func _apply_survival_save_state(state: Dictionary) -> void:
 	zhuyu_satiety_remaining = clampf(
 		_to_float_or_default(state.get("zhuyu_satiety_remaining"), 0.0),
 		0.0,
-		ZHUYU_SATIETY_DURATION
+		COOKED_ZHUYU_SATIETY_DURATION
 	)
 	hunger_warning_level = _get_hunger_warning_level()
 
@@ -1692,7 +1791,8 @@ func _apply_zhuyu_knowledge_save_state(state: Dictionary) -> void:
 	for slot in [
 		ZHUYU_KNOWLEDGE_APPEARANCE,
 		ZHUYU_KNOWLEDGE_TYPE,
-		ZHUYU_KNOWLEDGE_EFFECT
+		ZHUYU_KNOWLEDGE_EFFECT,
+		ZHUYU_KNOWLEDGE_COOKING
 	]:
 		zhuyu_knowledge_state[slot] = state.get(slot, false) == true
 
@@ -1807,6 +1907,11 @@ func _apply_demo_save_state(state: Dictionary) -> bool:
 	var inventory_counts := _build_loaded_inventory_counts(inventory_data)
 	if inventory_counts.is_empty():
 		return false
+	var loaded_cooked_zhuyu_count := _to_non_negative_int(
+		world_data.get("cooked_zhuyu_count", 0)
+	)
+	if loaded_cooked_zhuyu_count < 0:
+		return false
 
 	inventory_service.clear_inventory(OWNER_ID)
 	bestiary_service.clear_owner(OWNER_ID)
@@ -1824,6 +1929,7 @@ func _apply_demo_save_state(state: Dictionary) -> bool:
 		"zhuyu_consumed",
 		_step_is_after_zhuyu_eaten(current_step)
 	) == true
+	cooked_zhuyu_count = loaded_cooked_zhuyu_count
 	stone_activated = world_data.get("stone_activated", false) == true
 	shensheng_discovered = world_data.get("creature_discovered", false) == true
 	_apply_survival_save_state(survival_data)
@@ -1837,14 +1943,17 @@ func _apply_demo_save_state(state: Dictionary) -> bool:
 	_apply_optional_save_state(optional_data)
 	_apply_legacy_optional_save_state(world_data, optional_data)
 	var migu_config := _find_optional_config_by_id(MIGU_BRANCH_ITEM_ID)
-	if (
-		migu_equipped
-		and (
-			migu_config.is_empty()
-			or not _is_optional_done(migu_config)
-			or inventory_service.get_item_count(OWNER_ID, MIGU_BRANCH_ITEM_ID) <= 0
-		)
-	):
+	var has_collected_migu := (
+		not migu_config.is_empty()
+		and _is_optional_done(migu_config)
+		and inventory_service.get_item_count(OWNER_ID, MIGU_BRANCH_ITEM_ID) > 0
+	)
+	if has_collected_migu:
+		migu_equipped = true
+		migu_knowledge_state[MIGU_KNOWLEDGE_APPEARANCE] = true
+		migu_knowledge_state[MIGU_KNOWLEDGE_TYPE] = true
+		migu_knowledge_state[MIGU_KNOWLEDGE_EFFECT] = true
+	elif migu_equipped:
 		migu_equipped = false
 	if _step_has_collected_zhuyu(current_step):
 		zhuyu_collected = true
@@ -1944,6 +2053,7 @@ func _reset_demo_state(history_message := "Demo 已重置") -> void:
 	current_step = DemoStep.COLLECT_ZHUYU
 	zhuyu_collected = false
 	zhuyu_consumed = false
+	cooked_zhuyu_count = 0
 	stone_activated = false
 	shensheng_discovered = false
 	demo_hunger = demo_hunger_max
@@ -2185,6 +2295,12 @@ func _is_near_zhuyu() -> bool:
 	return player.global_position.distance_to(zhuyu_pickup.global_position) <= interaction_distance
 
 
+func _is_near_campfire() -> bool:
+	if campfire == null or not campfire.visible:
+		return false
+	return player.global_position.distance_to(campfire.global_position) <= interaction_distance
+
+
 func _is_near_stone() -> bool:
 	if guidance_stone == null or not guidance_stone.visible:
 		return false
@@ -2226,6 +2342,11 @@ func _set_optional_done(config: Dictionary, done: bool) -> void:
 
 
 func _is_near_optional(config: Dictionary) -> bool:
+	if (
+		str(config.get("id", "")) == MIGU_BRANCH_ITEM_ID
+		and _is_optional_done(config)
+	):
+		return false
 	var node: Node2D = config.get("node", null) as Node2D
 	if node == null or not node.visible:
 		return false
@@ -2373,6 +2494,8 @@ func _format_zhuyu_knowledge_status() -> String:
 		unlocked.append("类型")
 	if _has_zhuyu_knowledge(ZHUYU_KNOWLEDGE_EFFECT):
 		unlocked.append("食之不饥")
+	if _has_zhuyu_knowledge(ZHUYU_KNOWLEDGE_COOKING):
+		unlocked.append("烹饪")
 	if unlocked.is_empty():
 		return "未知"
 	return "、".join(unlocked)
@@ -2394,7 +2517,10 @@ func _update_objective_ui() -> void:
 		DemoStep.COLLECT_ZHUYU:
 			objective_label.text = "当前目标：寻找并采集祝余"
 		DemoStep.EAT_ZHUYU:
-			objective_label.text = "当前目标：食用祝余"
+			if cooked_zhuyu_count > 0:
+				objective_label.text = "当前目标：食用熟祝余"
+			else:
+				objective_label.text = "当前目标：食用或烹饪祝余"
 		DemoStep.ACTIVATE_STONE:
 			objective_label.text = "当前目标：前往山海石碑"
 		DemoStep.OBSERVE_SHENSHENG:
@@ -2460,7 +2586,10 @@ func _update_objective_guidance() -> void:
 			guidance_stone.modulate.a = 0.35
 			shensheng_creature.modulate.a = 0.35
 			_set_optional_content_alpha(0.3)
-			target_hint_label.text = "目标提示：祝余已采集，按 E 食用"
+			if cooked_zhuyu_count > 0:
+				target_hint_label.text = "目标提示：熟祝余已备好，按 E 食用"
+			else:
+				target_hint_label.text = "目标提示：直接食用，或带到篝火烹饪"
 		DemoStep.ACTIVATE_STONE:
 			guidance_stone.modulate.a = 1.0
 			guidance_stone.scale = Vector2(1.15, 1.15)

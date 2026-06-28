@@ -176,11 +176,12 @@
 
 ---
 
-## 当前开放 PR
+## 当前已完成里程碑（再续）
 
 ### PR #44: game: add demo knowledge codex and HUD layout polish
-- **状态：** Draft PR；Godot GUI manual test 保留给用户。
+- **状态：** 已合并
 - **Branch：** `game/demo-knowledge-codex-hud-polish`
+- **Merge commit：** ab4d429adc689bf1ea52cc413d033e438855ac90
 - **链接：** https://github.com/Marshall-Jimmy/Mountandsea/pull/44
 - **目标：** 增加 demo-local Knowledge Codex，并整理 HUD / live log 布局以减少画面遮挡。
 - 图鉴仅显示祝余与迷穀，每项包含 `appearance`、`type`、`effect` 三个槽位；未解锁槽位显示 `???`。
@@ -189,8 +190,25 @@
 - HUD 调整为左上生存状态、右上 navigation、右侧 optional journal、左下最近 3 条 live log、底部中间 prompt；live log 保留内部历史并启用固定尺寸、换行和 clipping。
 - `game/project.godot` 原先未显式配置 window / viewport 尺寸；本 PR 仅增加 `viewport_width`、`viewport_height`、`window_width_override`、`window_height_override` 四项，统一设为 `1440 × 810`（16:9）。
 - 不新增美术，不修改 `.tscn`，不实现完整全局图鉴或新 gameplay loop。
-- 完整自动验证和范围审计已通过；PR 链接将在发布后补充。
-- 本 PR 不允许自动合并。
+- 完整自动验证和范围审计已通过；合并前的 Godot GUI manual test 未在本文件中记录为已通过。
+
+---
+
+## 当前开放 PR
+
+### PR #45: game: add campfire cooking loop and Migu auto-equip
+- **状态：** Draft PR；pending GUI manual test。
+- **Branch：** `game/campfire-cooking-migu-auto-equip`
+- **链接：** https://github.com/Marshall-Jimmy/Mountandsea/pull/45
+- **目标：** 在同一个小范围 gameplay / UX PR 中完成 Migu auto-equip 与 campfire cooking preparation loop。
+- 迷穀采集后自动设置 `navigation.migu_equipped = true`，立即解锁 `knowledge.migu.effect` 并启用归向 HUD；原迷穀位置不再提供二次佩戴交互。
+- 新增 demo-local primitive 篝火，不使用新美术；祝余可直接食用获得 15 秒短效“不饥”，也可烹饪成熟祝余。
+- 熟祝余食用后恢复 hunger，并提供 45 秒长效“不饥”；效力结束后 hunger 继续正常下降。
+- 祝余图鉴新增 `cooking` 槽位；首次成功烹饪后解锁“熟祝余：食之不饥更久”。
+- save version 更新为 `4`；raw 祝余继续复用 `inventory.zhuyu_leaf`，新增 `world.cooked_zhuyu_count` 与 `knowledge.zhuyu.cooking`，并保持 legacy save 缺失字段时安全默认。
+- 不新增完整背包、装备、烹饪 UI、燃料、火候或多个配方；不修改美术、`game/project.godot` 或 Snowhuman Framework。
+- 自动验证已通过：`python tools/validate_minimal_demo.py`（包含 data、framework、Godot import、script check-only、save/load regression 与 framework keyword scan）。
+- Godot GUI manual test 保留给用户；本 PR 不允许自动合并。
 
 ---
 
@@ -221,8 +239,10 @@
 - 祝余食用后恢复满饥饿并提供 15 秒“食之不饥”效力；状态支持 reset、save/load 与 legacy save 默认值。
 - PR #43 已合并：demo 复用现有迷穀 optional collectible，增加迷失压力、采集后佩戴、`佩之不迷` 知识和实时 origin 归向 HUD。
 - 迷穀未佩戴时只显示方向感压力；佩戴后显示 8 方向、距离或“已接近起点”。
-- 当前 `game/demo-knowledge-codex-hud-polish` 分支新增 demo-local 图鉴：使用 `K` 查看祝余 / 迷穀的 `appearance`、`type`、`effect`，未解锁槽位显示 `???`。
-- 当前分支将 live log 移到左下并只显示最近 3 条，将 prompt 放到底部中间，同时把生存、navigation 与 optional journal 分区；window / viewport 显式配置为 `1440 × 810`。
+- PR #44 已合并：demo-local 图鉴使用 `K` 查看祝余 / 迷穀 knowledge，live log、prompt、生存、navigation 与 optional journal 已分区；window / viewport 显式配置为 `1440 × 810`。
+- 当前 `game/campfire-cooking-migu-auto-equip` 分支让迷穀采集后自动佩戴并立即启用归向 HUD；已采集迷穀不再是原地佩戴交互点。
+- 当前分支新增 demo-local primitive 篝火与“生祝余 → 熟祝余 → 45 秒长效不饥”准备循环；祝余图鉴新增 `cooking` 槽位。
+- 当前分支 save version 为 `4`，raw 祝余沿用 `inventory.zhuyu_leaf`，熟祝余使用 `world.cooked_zhuyu_count`，并兼容缺少新字段的 legacy save。
 - PR #36 不改变 optional state 核心结构、不新增 save fields、不改变 data-driven optional content 设计。
 - Snowhuman Framework 保持通用；addon 内没有项目专用内容。
 
@@ -257,28 +277,28 @@ git diff --stat
 
 ## 当前建议的下一项功能
 
-**Current active PR：** `game: add demo knowledge codex and HUD layout polish`（PR #44）
+**Current active PR：** `game: add campfire cooking loop and Migu auto-equip`（PR #45）
 
 **目标：**
-- 把现有 `knowledge.zhuyu` / `knowledge.migu` 呈现为可长期查看的 demo-local 图鉴。
-- 使用 `K` 切换图鉴，不影响 `J` / `V` journal、`E` interaction、菜单或 completion panel。
-- 将 HUD 分区并限制 live log 为最近 3 条，减少对 player 附近主要画面的遮挡。
-- 仅将 window / viewport 尺寸显式设为 `1440 × 810`，保持 16:9。
-- 不新增 save fields、美术、新 gameplay loop 或完整全局图鉴系统。
+- 迷穀采集后自动佩戴，立即解锁“佩之不迷”并显示归向 HUD。
+- 在 `minimal_playable_demo` 内增加 primitive 篝火，让生祝余可烹饪成熟祝余。
+- 生祝余保持 15 秒短效“不饥”；熟祝余提供 45 秒长效“不饥”。
+- 祝余图鉴新增 `knowledge.zhuyu.cooking` 槽位，并保存 cooked count、satiety 与 cooking knowledge。
+- 不新增完整背包 / 装备 / 烹饪系统，不新增美术。
 - 不移动 demo-specific 内容到 Snowhuman Framework。
 
-**状态：** Draft PR #44 已创建；本地实现和 headless regression 已通过。Godot GUI manual test 仍由用户完成；不要自动合并。
+**状态：** Draft PR #45 已创建；本地实现和 headless regression 已通过。Godot GUI manual test 仍由用户完成；不要自动合并。
 
 **验证：**
 - `python tools/validate_data.py` passed
 - `python tools/check_framework.py` passed
 - `python tools/validate_minimal_demo.py` passed，包含 Godot 4.7 headless import、script check-only 和 save/load regression
-- `git diff --check` passed；`git diff --stat` ran（4 files changed）。
+- `git diff --check` passed；最终 `git diff --stat` 将在发布前复核。
 - 显式 Snowhuman Framework keyword scan for `zhuyu|shensheng|zaoyaoshan|migu|祝余|狌狌|招摇山|迷穀|迷榖`：no matches。
-- 未修改 `AGENTS.md`、Snowhuman Framework、schemas、CI、tooling、`.tscn` 或美术资产；`game/project.godot` diff 仅限四个 window / viewport size 字段。
+- 未修改 `AGENTS.md`、`game/project.godot`、Snowhuman Framework、schemas、CI、tooling 或美术资产；`.tscn` 只新增 demo-local primitive 篝火。
 
 **下一步：**
-- 创建 Draft PR 后，由用户在 Godot GUI 检查 `K` 图鉴开关、祝余 / 迷穀 knowledge 解锁呈现、`1440 × 810` 布局与 live log / prompt / journal 不重叠，并复核 hunger、navigation、J / V / E、player animation 和 shensheng idle 未回归。
+- 创建 Draft PR 后，由用户在 Godot GUI 检查迷穀采集后自动佩戴、归向 HUD 即时出现、篝火位置与 prompt、生 / 熟祝余选择、45 秒熟祝余效力、K 图鉴 cooking 槽位，并复核 J / V / K、player animation 和 shensheng idle 未回归。
 
 ---
 

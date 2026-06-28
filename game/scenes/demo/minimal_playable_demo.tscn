@@ -179,6 +179,27 @@ offset_right = 400.0
 offset_bottom = 296.0
 text = "祝余叶"
 
+[node name="Campfire" type="Node2D" parent="WorldRoot"]
+unique_name_in_owner = true
+position = Vector2(360, 460)
+
+[node name="Logs" type="Polygon2D" parent="WorldRoot/Campfire"]
+color = Color(0.38, 0.22, 0.12, 1)
+polygon = PackedVector2Array(-30, 10, -24, 20, 30, -10, 24, -20)
+
+[node name="Flame" type="Polygon2D" parent="WorldRoot/Campfire"]
+position = Vector2(0, -22)
+color = Color(1, 0.42, 0.12, 1)
+polygon = PackedVector2Array(0, -30, 20, 8, 10, 28, -10, 28, -20, 8)
+
+[node name="CampfireLabel" type="Label" parent="WorldRoot"]
+unique_name_in_owner = true
+offset_left = 332.0
+offset_top = 492.0
+offset_right = 388.0
+offset_bottom = 516.0
+text = "篝火"
+
 [node name="GuidanceStone" type="Polygon2D" parent="WorldRoot"]
 unique_name_in_owner = true
 position = Vector2(540, 380)
