@@ -776,7 +776,11 @@ func _generated_instance_index(instance_id: String) -> int:
 	var separator_index := instance_id.rfind("_")
 	if separator_index < 0:
 		return -1
-	return _to_non_negative_int(instance_id.substr(separator_index + 1))
+	var index_text := instance_id.substr(separator_index + 1)
+	if not index_text.is_valid_int():
+		return -1
+	var index := index_text.to_int()
+	return index if index >= 0 else -1
 
 
 func _apply_generated_placement_visuals() -> void:

@@ -256,9 +256,11 @@
 - demo save version 更新为 `5`；新增 `world.generation_seed`、`world.generated_content` 和 `world.collected_instances`，保留 `world.pickup_collected`、`world.zhuyu_consumed`、`inventory.zhuyu_leaf`、`world.cooked_zhuyu_count`、optional journal 与 knowledge 字段。
 - legacy save 缺少 generation 字段时使用 default seed 重新生成布局，并把旧 `pickup_collected` / `migu_collected` 状态迁移到 `zhuyu_0` / `migu_0`。
 - 回归覆盖 default / different seed、count → instance 映射、zero count、slot clamp、stable ids、reset、祝余 / 迷穀多实例、狌狌 idle 与 visual-only 规则、save/load、legacy migration，以及 hunger、cooking、navigation、K / J / V、optional journal 和 player animation。
+- 用户首次 Godot GUI 手测发现实际按 `E` 时持续显示 `找不到可交互的 generated zhuyu instance`；根因是 `_generated_instance_index()` 把 instance id 后缀截成字符串后传给只接受数值 Variant 的 helper，导致真实 `_try_interact()` 路由恒定得到 `-1`，而原回归直接调用 callback 未覆盖该路径。
+- 修复改为严格校验并解析 instance id 的数字字符串后缀；新增从玩家真实位置调用 `_update_prompt()` / `_try_interact()` 的祝余与迷穀回归，确认采集、库存、逐实例状态和迷穀 auto-equip 均能通过实际路由。
 - 自动验证已通过：`python tools/validate_data.py`、`python tools/check_framework.py`、`python tools/validate_minimal_demo.py`、`godot --headless --path game --script res://tests/world/world_generation_regression.gd`、`git diff --check` 和范围审计；clamp regression 会按设计输出三条 warning。
 - 不做完整地图渲染、随机出生系统、chunk、minimap、大地图 UI、正式资源刷新或完整 creature system；不修改 Snowhuman Framework、`game/project.godot`、world data、美术素材、schemas、CI 或 tooling。
-- Godot GUI manual test reserved for user，未标记为已通过。本 PR 不允许自动合并。
+- 修复后的 Godot GUI manual re-test reserved for user，未标记为已通过。本 PR 不允许自动合并。
 
 ---
 

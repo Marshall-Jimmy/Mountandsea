@@ -102,6 +102,7 @@ func _run_test() -> void:
 	if player != null:
 		initial_position = player.position
 	_assert_world_generated_placement_and_multi_instance_state()
+	_assert_generated_interaction_routing()
 	_assert_player_animation_pipeline()
 	_assert_shensheng_idle_pipeline()
 	_assert_history_panel_visible(true)
@@ -646,6 +647,68 @@ func _generated_position_snapshot() -> Dictionary:
 				positions[instance_id] = node.position
 		snapshot[content_type] = positions
 	return snapshot
+
+
+func _assert_generated_interaction_routing() -> void:
+	_assert_true(
+		demo.call("_generated_instance_index", "zhuyu_0") == 0,
+		"generated instance index should parse numeric suffixes"
+	)
+	_assert_true(
+		demo.call("_generated_instance_index", "migu_1") == 1,
+		"generated instance index should parse later slots"
+	)
+	_assert_true(
+		demo.call("_generated_instance_index", "zhuyu_invalid") == -1,
+		"generated instance index should reject non-numeric suffixes"
+	)
+
+	demo.call("_reset_demo_state")
+	var zhuyu_node := _generated_nodes_for_type(
+		GENERATED_ZHUYU_TYPE
+	).get("zhuyu_0", null) as Node2D
+	_assert_true(zhuyu_node != null, "real interaction route requires zhuyu_0")
+	if zhuyu_node != null:
+		player.position = zhuyu_node.global_position
+		demo.call("_update_prompt")
+		_assert_prompt_contains("采集祝余")
+		demo.call("_try_interact")
+		_assert_true(
+			demo.call(
+				"_is_generated_instance_collected",
+				GENERATED_ZHUYU_TYPE,
+				"zhuyu_0"
+			) == true,
+			"_try_interact should route to the nearest generated zhuyu"
+		)
+		_assert_inventory_count(1)
+
+	_force_state_complete()
+	demo.call("_on_close_completion_pressed")
+	var migu_node := _generated_nodes_for_type(
+		GENERATED_MIGU_TYPE
+	).get("migu_0", null) as Node2D
+	_assert_true(migu_node != null, "real interaction route requires migu_0")
+	if migu_node != null:
+		player.position = migu_node.global_position
+		demo.call("_update_prompt")
+		_assert_prompt_contains("采集迷穀")
+		demo.call("_try_interact")
+		_assert_true(
+			demo.call(
+				"_is_generated_instance_collected",
+				GENERATED_MIGU_TYPE,
+				"migu_0"
+			) == true,
+			"_try_interact should route to the nearest generated migu"
+		)
+		_assert_inventory_item_count(MIGU_BRANCH_ITEM_ID, 1)
+		_assert_true(
+			demo.get("migu_equipped") == true,
+			"real generated migu interaction should auto-equip"
+		)
+
+	demo.call("_reset_demo_state", "Demo 开始：采集祝余叶")
 
 
 func _assert_knowledge_codex_and_hud_layout() -> void:
