@@ -252,12 +252,14 @@
 - 每类内容使用 demo-local 固定 slots，并用 seed 对 slot 顺序做确定性选择；同 seed 的布局稳定，不同 seed 可以选择不同 slots。
 - generated count 超过可用 slots 时会安全 clamp 并输出 warning；count 为 `0` 时不创建对应实例。
 - 祝余和迷穀使用稳定 instance id（如 `zhuyu_0`、`migu_0`）记录逐实例采集状态；多个祝余分别增加 `inventory.zhuyu_leaf`，多个迷穀分别记录采集，首次迷穀采集继续自动佩戴并解锁 `knowledge.migu.effect`。
-- 狌狌复用 PR #41 的 idle sprite setup；`shensheng_0` 保留主流程互动，其余 generated instances 为 visual-only，不增加 AI、战斗、掉落或完整 creature system。
+- 狌狌复用 PR #41 的 idle sprite setup；所有 generated instances 都有稳定 interactable id，主流程可通过任意一只完成物种发现，完成后仍可重复观察，但不会重复写入图鉴或完成记录。
 - demo save version 更新为 `5`；新增 `world.generation_seed`、`world.generated_content` 和 `world.collected_instances`，保留 `world.pickup_collected`、`world.zhuyu_consumed`、`inventory.zhuyu_leaf`、`world.cooked_zhuyu_count`、optional journal 与 knowledge 字段。
 - legacy save 缺少 generation 字段时使用 default seed 重新生成布局，并把旧 `pickup_collected` / `migu_collected` 状态迁移到 `zhuyu_0` / `migu_0`。
-- 回归覆盖 default / different seed、count → instance 映射、zero count、slot clamp、stable ids、reset、祝余 / 迷穀多实例、狌狌 idle 与 visual-only 规则、save/load、legacy migration，以及 hunger、cooking、navigation、K / J / V、optional journal 和 player animation。
+- 回归覆盖 default / different seed、count → instance 映射、zero count、slot clamp、stable ids、reset、祝余 / 迷穀多实例、狌狌 idle 与多实例互动、save/load、legacy migration，以及 hunger、cooking、navigation、K / J / V、optional journal 和 player animation。
 - 用户首次 Godot GUI 手测发现实际按 `E` 时持续显示 `找不到可交互的 generated zhuyu instance`；根因是 `_generated_instance_index()` 把 instance id 后缀截成字符串后传给只接受数值 Variant 的 helper，导致真实 `_try_interact()` 路由恒定得到 `-1`，而原回归直接调用 callback 未覆盖该路径。
 - 修复改为严格校验并解析 instance id 的数字字符串后缀；新增从玩家真实位置调用 `_update_prompt()` / `_try_interact()` 的祝余与迷穀回归，确认采集、库存、逐实例状态和迷穀 auto-equip 均能通过实际路由。
+- 用户后续 GUI 反馈指出只有一只狌狌可互动，且主流程推进后采集的祝余无法烹饪；已将所有生成狌狌注册为独立 interactable，同时保持物种级图鉴状态；篝火交互改为按当前库存烹饪生祝余或食用熟祝余，不再受首次 `EAT_ZHUYU` 步骤和 `zhuyu_consumed` 锁死。
+- 新增 `shensheng_1` 完成主流程、`shensheng_2` 完成后重复观察，以及 Demo 完成后采集 `zhuyu_1`、烹饪、save/load、食用熟祝余且不重播主流程的回归覆盖。
 - 自动验证已通过：`python tools/validate_data.py`、`python tools/check_framework.py`、`python tools/validate_minimal_demo.py`、`godot --headless --path game --script res://tests/world/world_generation_regression.gd`、`git diff --check` 和范围审计；clamp regression 会按设计输出三条 warning。
 - 不做完整地图渲染、随机出生系统、chunk、minimap、大地图 UI、正式资源刷新或完整 creature system；不修改 Snowhuman Framework、`game/project.godot`、world data、美术素材、schemas、CI 或 tooling。
 - 修复后的 Godot GUI manual re-test reserved for user，未标记为已通过。本 PR 不允许自动合并。
@@ -296,7 +298,8 @@
 - PR #45 已合并：demo-local primitive 篝火提供“生祝余 → 熟祝余 → 45 秒长效不饥”准备循环；祝余图鉴新增 `cooking` 槽位。
 - 当前开放 PR 将 demo save version 更新为 `5`；raw 祝余沿用 `inventory.zhuyu_leaf`，熟祝余使用 `world.cooked_zhuyu_count`，新增 `world.generation_seed`、`world.generated_content`、`world.collected_instances`，并兼容缺少 generation 字段的 legacy save。
 - PR #46 的 world map foundation 与 PR #47 的 debug view 已合并；当前开放 PR 仅把生成 count 和 seed-driven 固定 slot 选择接入 `minimal_playable_demo`，不替换地图或实现正式出生系统。
-- 狌狌 generated placement 仅第一个实例可互动，其余实例保持 PR #41 idle animation 的 visual-only presence。
+- 所有狌狌 generated instances 均保持 PR #41 idle animation 并可互动；图鉴发现与主流程完成仍是物种级状态，不重复累计。
+- 后续采集的祝余仍可在篝火逐个烹饪；熟祝余可继续食用并刷新长效 satiety，不会回退或重播已经完成的主流程。
 - PR #36 不改变 optional state 核心结构、不新增 save fields、不改变 data-driven optional content 设计。
 - Snowhuman Framework 保持通用；addon 内没有项目专用内容。
 
@@ -336,7 +339,7 @@ git diff --stat
 **目标：**
 - 使用 `world_map.json` default seed 调用现有 generator，把祝余、迷穀、狌狌 count 映射到 demo-local 固定 placement slots。
 - 支持祝余 / 迷穀逐实例采集与 save/load；首次迷穀采集继续 auto-equip。
-- 生成多个狌狌时只保留 `shensheng_0` 可互动，其余为 idle visual-only。
+- 生成多个狌狌时，每个实例都可观察；首次有效观察完成物种发现，其余实例提供可重复反馈。
 - 不修改 Snowhuman Framework，不接入完整地图渲染、随机出生或完整 creature system。
 
 **状态：** Draft PR #48 已创建且 GitHub 显示可合并；本地实现、扩展后的 minimal demo regression、标准验证和范围审计已通过。Godot GUI manual test 仍由用户完成；不要自动合并。

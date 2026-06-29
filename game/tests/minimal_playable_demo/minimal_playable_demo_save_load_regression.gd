@@ -113,6 +113,7 @@ func _run_test() -> void:
 	_assert_knowledge_codex_and_hud_layout()
 	_assert_zhuyu_hunger_knowledge_loop()
 	_assert_campfire_cooking_loop()
+	_assert_post_progress_zhuyu_cooking()
 	_assert_migu_navigation_knowledge_loop()
 	if failed:
 		return
@@ -578,22 +579,20 @@ func _assert_world_generated_placement_and_multi_instance_state() -> void:
 			"generated shensheng_%d should keep the idle animation playing" % index
 		)
 	var interaction_service_value: Variant = demo.get("interaction_service")
-	_assert_true(
-		interaction_service_value != null
-		and interaction_service_value.call(
-			"has_interactable",
-			SHENSHENG_INTERACTABLE_ID
-		),
-		"shensheng_0 should remain interactable"
-	)
-	_assert_true(
-		interaction_service_value != null
-		and not interaction_service_value.call(
-			"has_interactable",
-			"%s_1" % SHENSHENG_INTERACTABLE_ID
-		),
-		"additional shensheng instances should remain visual-only"
-	)
+	for index in range(3):
+		var shensheng_interactable_id: Variant = demo.call(
+			"_generated_interactable_id",
+			GENERATED_SHENSHENG_TYPE,
+			index
+		)
+		_assert_true(
+			interaction_service_value != null
+			and interaction_service_value.call(
+				"has_interactable",
+				shensheng_interactable_id
+			),
+			"generated shensheng_%d should be interactable" % index
+		)
 
 	var migu_multi_save: Dictionary = demo.call("_build_demo_save_state")
 	demo.call("_reset_demo_state")
@@ -683,8 +682,41 @@ func _assert_generated_interaction_routing() -> void:
 		)
 		_assert_inventory_count(1)
 
-	_force_state_complete()
+	_force_state_after_stone_activation()
+	var second_shensheng := _generated_nodes_for_type(
+		GENERATED_SHENSHENG_TYPE
+	).get("shensheng_1", null) as Node2D
+	_assert_true(
+		second_shensheng != null,
+		"real interaction route requires shensheng_1"
+	)
+	if second_shensheng != null:
+		player.position = second_shensheng.global_position
+		demo.call("_update_prompt")
+		_assert_prompt_contains("观察狌狌")
+		demo.call("_try_interact")
+		_assert_true(
+			demo.get("shensheng_discovered") == true
+			and demo.get("current_step") == STEP_COMPLETE,
+			"_try_interact should allow shensheng_1 to complete observation"
+		)
+	else:
+		_force_state_complete()
 	demo.call("_on_close_completion_pressed")
+	var third_shensheng := _generated_nodes_for_type(
+		GENERATED_SHENSHENG_TYPE
+	).get("shensheng_2", null) as Node2D
+	_assert_true(
+		third_shensheng != null,
+		"real interaction route requires shensheng_2"
+	)
+	if third_shensheng != null:
+		player.position = third_shensheng.global_position
+		demo.call("_update_prompt")
+		_assert_prompt_contains("已记录")
+		demo.call("_try_interact")
+		_assert_log_contains("已经记录在图鉴中")
+
 	var migu_node := _generated_nodes_for_type(
 		GENERATED_MIGU_TYPE
 	).get("migu_0", null) as Node2D
@@ -1277,6 +1309,77 @@ func _assert_campfire_cooking_loop() -> void:
 	_assert_inventory_count(0)
 	_assert_true(demo.get("cooked_zhuyu_count") == 0, "final reset should clear cooked zhuyu")
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_COOKING, false)
+
+
+func _assert_post_progress_zhuyu_cooking() -> void:
+	_force_state_complete()
+	demo.call("_on_close_completion_pressed")
+	var extra_zhuyu := _generated_nodes_for_type(
+		GENERATED_ZHUYU_TYPE
+	).get("zhuyu_1", null) as Node2D
+	var campfire := demo.get_node_or_null("WorldRoot/Campfire") as Node2D
+	_assert_true(
+		extra_zhuyu != null,
+		"post-progress cooking requires zhuyu_1"
+	)
+	_assert_true(campfire != null, "post-progress cooking requires Campfire")
+	if extra_zhuyu == null or campfire == null:
+		demo.call("_reset_demo_state")
+		return
+
+	player.position = extra_zhuyu.global_position
+	demo.call("_update_prompt")
+	_assert_prompt_contains("采集祝余")
+	demo.call("_try_interact")
+	_assert_inventory_count(1)
+	_assert_true(
+		demo.get("current_step") == STEP_COMPLETE,
+		"collecting later zhuyu should not rewind the completed main flow"
+	)
+
+	player.position = campfire.global_position
+	demo.call("_update_prompt")
+	_assert_prompt_contains("按 E 烹饪祝余")
+	demo.call("_try_interact")
+	_assert_inventory_count(0)
+	_assert_true(
+		demo.get("cooked_zhuyu_count") == 1,
+		"later-collected zhuyu should cook after main flow completion"
+	)
+	_assert_true(
+		demo.get("current_step") == STEP_COMPLETE,
+		"later cooking should preserve completed main flow"
+	)
+
+	var cooked_complete_state: Dictionary = demo.call("_build_demo_save_state")
+	demo.call("_reset_demo_state")
+	_assert_true(
+		demo.call("_apply_demo_save_state", cooked_complete_state) == true,
+		"post-progress cooked zhuyu should survive save/load"
+	)
+	_assert_true(
+		demo.get("cooked_zhuyu_count") == 1,
+		"load should restore post-progress cooked zhuyu"
+	)
+	player.position = campfire.global_position
+	demo.call("_update_prompt")
+	_assert_prompt_contains("按 E 食用熟祝余")
+	demo.call("_try_interact")
+	_assert_true(
+		demo.get("cooked_zhuyu_count") == 0,
+		"post-progress cooked zhuyu should remain consumable"
+	)
+	_assert_true(
+		demo.get("current_step") == STEP_COMPLETE,
+		"repeat cooked zhuyu consumption should not replay main progression"
+	)
+	_assert_float_near(
+		float(demo.get("zhuyu_satiety_remaining")),
+		COOKED_ZHUYU_SATIETY_DURATION,
+		"post-progress cooked zhuyu should refresh long satiety"
+	)
+
+	demo.call("_reset_demo_state")
 
 
 func _assert_migu_navigation_knowledge_loop() -> void:

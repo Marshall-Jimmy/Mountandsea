@@ -1282,18 +1282,7 @@ func _initialize_services() -> void:
 func _register_interactables() -> bool:
 	if not _register_generated_zhuyu_interactables():
 		return false
-
-	var shensheng_registered := interaction_service.register_interactable(SHENSHENG_INTERACTABLE_ID, {
-		"type": "observe",
-		"metadata": {
-			"creature_id": CREATURE_ID,
-			"instance_id": _generated_instance_id(GENERATED_SHENSHENG_TYPE, 0)
-		},
-		"callback_target": self,
-		"callback_method": "_on_shensheng_interacted"
-	})
-	if not shensheng_registered:
-		_log_error("InteractionService 注册失败：%s" % SHENSHENG_INTERACTABLE_ID)
+	if not _register_generated_shensheng_interactables():
 		return false
 
 	if not _register_optional_interactables():
@@ -1312,6 +1301,30 @@ func _register_interactables() -> bool:
 		return false
 
 	_log_ok("InteractionService 注册成功")
+	return true
+
+
+func _register_generated_shensheng_interactables() -> bool:
+	for index in range(DEMO_SHENSHENG_PLACEMENT_SLOTS.size()):
+		var interactable_id := _generated_interactable_id(
+			GENERATED_SHENSHENG_TYPE,
+			index
+		)
+		var registered := interaction_service.register_interactable(interactable_id, {
+			"type": "observe",
+			"metadata": {
+				"creature_id": CREATURE_ID,
+				"instance_id": _generated_instance_id(
+					GENERATED_SHENSHENG_TYPE,
+					index
+				)
+			},
+			"callback_target": self,
+			"callback_method": "_on_shensheng_interacted"
+		})
+		if not registered:
+			_log_error("InteractionService 注册失败：%s" % interactable_id)
+			return false
 	return true
 
 
@@ -1623,6 +1636,14 @@ func _format_migu_knowledge_status() -> String:
 	return "、".join(unlocked)
 
 
+func _format_campfire_prompt() -> String:
+	if _get_raw_zhuyu_count() > 0:
+		return "按 E 烹饪祝余"
+	if cooked_zhuyu_count > 0:
+		return "按 E 食用熟祝余"
+	return "篝火：需要祝余"
+
+
 func _update_prompt() -> void:
 	var near_zhuyu := _is_near_zhuyu()
 	var near_campfire := _is_near_campfire()
@@ -1645,7 +1666,7 @@ func _update_prompt() -> void:
 			if near_zhuyu:
 				_show_prompt(_format_zhuyu_collect_prompt())
 			elif near_campfire:
-				_show_prompt("篝火：需要祝余")
+				_show_prompt(_format_campfire_prompt())
 			elif near_stone:
 				_show_prompt("先寻找并采集祝余")
 			elif near_shensheng:
@@ -1657,12 +1678,10 @@ func _update_prompt() -> void:
 		DemoStep.EAT_ZHUYU:
 			if near_zhuyu:
 				_show_prompt(_format_zhuyu_collect_prompt())
+			elif near_campfire:
+				_show_prompt(_format_campfire_prompt())
 			elif cooked_zhuyu_count > 0:
 				_show_prompt("按 E 食用熟祝余")
-			elif near_campfire and _get_raw_zhuyu_count() > 0:
-				_show_prompt("按 E 烹饪祝余")
-			elif near_campfire:
-				_show_prompt("篝火：需要祝余")
 			else:
 				_show_prompt("按 E 食用生祝余（靠近篝火可烹饪）")
 		DemoStep.ACTIVATE_STONE:
@@ -1671,7 +1690,7 @@ func _update_prompt() -> void:
 			elif near_stone:
 				_show_prompt("按 E 激活山海石碑")
 			elif near_campfire:
-				_show_prompt("篝火：需要祝余")
+				_show_prompt(_format_campfire_prompt())
 			elif near_shensheng:
 				_show_prompt("先激活山海石碑")
 			elif near_optional:
@@ -1684,7 +1703,7 @@ func _update_prompt() -> void:
 			elif near_shensheng:
 				_show_prompt("按 E 观察狌狌")
 			elif near_campfire:
-				_show_prompt("篝火：需要祝余")
+				_show_prompt(_format_campfire_prompt())
 			elif near_stone:
 				_show_prompt("山海石碑已激活")
 			elif near_optional:
@@ -1702,8 +1721,10 @@ func _update_prompt() -> void:
 				else:
 					_show_prompt(str(nearest_optional.get("prompt_ready", "")))
 			elif near_campfire:
-				_show_prompt("篝火：需要祝余")
-			elif near_zhuyu or near_stone or near_shensheng:
+				_show_prompt(_format_campfire_prompt())
+			elif near_shensheng:
+				_show_prompt("按 E 观察狌狌（已记录）")
+			elif near_zhuyu or near_stone:
 				_show_prompt("Demo 已完成")
 			else:
 				prompt_label.visible = false
@@ -1739,6 +1760,10 @@ func _try_interact() -> void:
 	var near_campfire := _is_near_campfire()
 	var near_stone := _is_near_stone()
 	var near_shensheng := _is_near_shensheng()
+	var nearest_shensheng_instance_id := _nearest_generated_instance_id(
+		GENERATED_SHENSHENG_TYPE,
+		false
+	)
 	var nearest_optional := _nearest_optional_config()
 	var near_optional := not nearest_optional.is_empty()
 
@@ -1748,12 +1773,10 @@ func _try_interact() -> void:
 				GENERATED_ZHUYU_TYPE,
 				nearest_zhuyu_instance_id
 			)
+		elif near_campfire:
+			_interact_with_campfire()
 		elif cooked_zhuyu_count > 0:
 			_eat_cooked_zhuyu()
-		elif near_campfire and _get_raw_zhuyu_count() > 0:
-			_cook_zhuyu()
-		elif near_campfire:
-			_log("篝火还缺少祝余。")
 		else:
 			_eat_zhuyu()
 		return
@@ -1780,7 +1803,16 @@ func _try_interact() -> void:
 			if not optional_interacted:
 				_log_error("InteractionService 交互失败：%s" % interactable_id)
 			return
-		if near_zhuyu or near_stone or near_shensheng:
+		if near_campfire:
+			_interact_with_campfire()
+			return
+		if near_shensheng:
+			_interact_with_generated_instance(
+				GENERATED_SHENSHENG_TYPE,
+				nearest_shensheng_instance_id
+			)
+			return
+		if near_zhuyu or near_stone:
 			_log("Demo 已完成。")
 		else:
 			_log("附近没有可交互对象。")
@@ -1791,7 +1823,7 @@ func _try_interact() -> void:
 		return
 
 	if near_campfire:
-		_log("篝火：需要祝余。")
+		_interact_with_campfire()
 		return
 
 	if near_zhuyu and current_step != DemoStep.COLLECT_ZHUYU:
@@ -1823,11 +1855,21 @@ func _try_interact() -> void:
 			_log("请先前往当前目标。")
 		DemoStep.OBSERVE_SHENSHENG:
 			if near_shensheng:
-				var shensheng_interacted := interaction_service.interact(OWNER_ID, SHENSHENG_INTERACTABLE_ID)
-				if not shensheng_interacted:
-					_log_error("InteractionService 交互失败：%s" % SHENSHENG_INTERACTABLE_ID)
+				_interact_with_generated_instance(
+					GENERATED_SHENSHENG_TYPE,
+					nearest_shensheng_instance_id
+				)
 				return
 			_log("请先前往当前目标。")
+
+
+func _interact_with_campfire() -> bool:
+	if _get_raw_zhuyu_count() > 0:
+		return _cook_zhuyu()
+	if cooked_zhuyu_count > 0:
+		return _eat_cooked_zhuyu()
+	_log("篝火还缺少祝余。")
+	return false
 
 
 func _interact_with_generated_instance(
@@ -1907,9 +1949,6 @@ func _on_zhuyu_interacted(actor_id: String, interactable_id: String, metadata: D
 
 
 func _eat_zhuyu() -> bool:
-	if current_step != DemoStep.EAT_ZHUYU or zhuyu_consumed:
-		_log("祝余已经食用，无法重复食用。")
-		return false
 	if _get_raw_zhuyu_count() <= 0:
 		_log_error("食用祝余失败：背包中没有祝余。")
 		return false
@@ -1917,11 +1956,16 @@ func _eat_zhuyu() -> bool:
 		_log_error("食用祝余失败：无法移除背包物品。")
 		return false
 
+	var advances_main_flow := (
+		current_step == DemoStep.EAT_ZHUYU
+		and not zhuyu_consumed
+	)
 	zhuyu_consumed = true
 	demo_hunger = demo_hunger_max
 	zhuyu_satiety_remaining = ZHUYU_SATIETY_DURATION
 	hunger_warning_level = 0
-	current_step = DemoStep.ACTIVATE_STONE
+	if advances_main_flow:
+		current_step = DemoStep.ACTIVATE_STONE
 	_log_ok("你食用了祝余，饥饿感暂时消退。")
 	_unlock_zhuyu_knowledge(
 		ZHUYU_KNOWLEDGE_EFFECT,
@@ -1938,14 +1982,8 @@ func _eat_zhuyu() -> bool:
 
 
 func _cook_zhuyu() -> bool:
-	if current_step != DemoStep.EAT_ZHUYU or zhuyu_consumed:
-		_log("当前没有可烹饪的祝余。")
-		return false
 	if not _is_near_campfire():
 		_log("需要靠近篝火才能烹饪祝余。")
-		return false
-	if cooked_zhuyu_count > 0:
-		_log("熟祝余已经备好，无需重复烹饪。")
 		return false
 	if _get_raw_zhuyu_count() <= 0:
 		_log_error("烹饪祝余失败：背包中没有生祝余。")
@@ -1970,19 +2008,21 @@ func _cook_zhuyu() -> bool:
 
 
 func _eat_cooked_zhuyu() -> bool:
-	if current_step != DemoStep.EAT_ZHUYU or zhuyu_consumed:
-		_log("熟祝余已经食用，无法重复食用。")
-		return false
 	if cooked_zhuyu_count <= 0:
 		_log_error("食用熟祝余失败：没有熟祝余。")
 		return false
 
+	var advances_main_flow := (
+		current_step == DemoStep.EAT_ZHUYU
+		and not zhuyu_consumed
+	)
 	cooked_zhuyu_count -= 1
 	zhuyu_consumed = true
 	demo_hunger = demo_hunger_max
 	zhuyu_satiety_remaining = COOKED_ZHUYU_SATIETY_DURATION
 	hunger_warning_level = 0
-	current_step = DemoStep.ACTIVATE_STONE
+	if advances_main_flow:
+		current_step = DemoStep.ACTIVATE_STONE
 	_log_ok("你食用了熟祝余，温热的饱腹感延续更久。")
 	_unlock_zhuyu_knowledge(
 		ZHUYU_KNOWLEDGE_EFFECT,
@@ -2026,19 +2066,32 @@ func _on_shensheng_interacted(actor_id: String, interactable_id: String, metadat
 	if actor_id.is_empty():
 		_log_error("观察失败：actor_id 为空。")
 		return false
-	if interactable_id != SHENSHENG_INTERACTABLE_ID:
+	var mapped_instance_id := _generated_instance_id_from_interactable(
+		GENERATED_SHENSHENG_TYPE,
+		interactable_id
+	)
+	if mapped_instance_id.is_empty():
 		_log_error("观察失败：interactable_id 不匹配。")
 		return false
+	var instance_id := str(metadata.get("instance_id", mapped_instance_id))
+	if (
+		instance_id != mapped_instance_id
+		or _generated_instance_node(
+			GENERATED_SHENSHENG_TYPE,
+			instance_id
+		) == null
+	):
+		_log_error("观察失败：metadata.instance_id 无效。")
+		return false
+	if shensheng_discovered:
+		_log("这只狌狌已经记录在图鉴中。")
+		return true
 	if current_step != DemoStep.OBSERVE_SHENSHENG:
 		if not stone_activated:
 			_log("需要先激活山海石碑。")
 		else:
 			_log("狌狌不是当前目标。")
 		return false
-	if shensheng_discovered:
-		_log("狌狌已经被发现。")
-		return true
-
 	var creature_id_value: Variant = metadata.get("creature_id", "")
 	if not (creature_id_value is String) or creature_id_value.is_empty():
 		_log_error("观察失败：metadata.creature_id 无效。")
@@ -3072,9 +3125,10 @@ func _is_near_stone() -> bool:
 
 
 func _is_near_shensheng() -> bool:
-	if shensheng_creature == null or not shensheng_creature.visible:
-		return false
-	return player.global_position.distance_to(shensheng_creature.global_position) <= interaction_distance
+	return not _nearest_generated_instance_id(
+		GENERATED_SHENSHENG_TYPE,
+		false
+	).is_empty()
 
 
 func _all_optional_content() -> Array:
