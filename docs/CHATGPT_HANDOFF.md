@@ -206,13 +206,10 @@
 - 不新增完整背包、装备、烹饪 UI、燃料、火候或多个配方；不修改美术、`game/project.godot` 或 Snowhuman Framework。
 - 合并前自动验证已通过；Godot GUI manual test 未在本文件中记录为已通过。
 
----
-
-## 当前开放 PR
-
 ### PR #46: game: add data-driven world map foundation
-- **状态：** Draft PR；pending review。
+- **状态：** 已合并
 - **Branch：** `game/world-map-foundation`
+- **Merge commit：** 33c84c83a2111eee19d5ad96e34ad82ec264daff
 - **链接：** https://github.com/Marshall-Jimmy/Mountandsea/pull/46
 - **目标：** 在 Mountandsea 游戏层建立 data-driven world map foundation，为后续随机出生、区域资源、异兽刷新、远征和地图生成提供可测试基础。
 - 新增 `world_map.json`、`south_mountain` region、spawn rules、resource rules 与 encounter rules；当前 MVP 覆盖 `south_mountain / zhaoyao`、祝余、迷穀、狌狌和 `zhaoyao_village` 出生候选点。
@@ -222,6 +219,24 @@
 - 未修改 Snowhuman Framework；未实现正式地图渲染或完整出生系统；未修改 demo gameplay loop、scene 或 save fields。
 - 自动验证已通过：`python tools/validate_data.py`、`python tools/check_framework.py`、`python tools/validate_minimal_demo.py`、world generator check-only、world generation regression、`git diff --check` 和范围审计。
 - 本 PR 不接入正式场景，Godot GUI manual test 不是核心验证；仍保留给用户，且未标记为已通过。本 PR 不允许自动合并。
+
+---
+
+## 当前开放 PR
+
+### PR #47: game: add world generation debug view
+- **状态：** Draft PR；pending review。
+- **Branch：** `game/world-generation-debug-view`
+- **链接：** https://github.com/Marshall-Jimmy/Mountandsea/pull/47
+- **目标：** 新增独立的 demo-local / game-layer world generation debug scene，用于查看 PR #46 world generator 的结构化输出。
+- debug view 显示 seed、starting region、starting mountain、player spawn、resources、encounters 与紧凑的 generation result summary。
+- 默认 seed 从 `world_map.json` 的 `default_seed` 读取；按钮可切换 default、`42`、`20260629`，并可重复生成当前 seed。
+- generation 或 world data 加载失败时，主 `RichTextLabel` 显示明确的 `World generation failed` 错误摘要，不静默失败。
+- 扩展独立 headless world generation regression，覆盖摘要字段、三个 seed、同 seed 稳定性、数据文件不变、scene 实例化、按钮节点和错误显示。
+- 未修改 Snowhuman Framework、`game/project.godot`、美术素材、`minimal_playable_demo` gameplay 或 save fields。
+- 未接入正式地图渲染、随机出生系统、资源实体落地或异兽实体刷新。
+- 自动验证已通过：`python tools/validate_data.py`、`python tools/check_framework.py`、`python tools/validate_minimal_demo.py`、debug script check-only、world generation regression、`git diff --check` 和范围审计。
+- Godot GUI manual test reserved for user，未标记为已通过。本 PR 不允许自动合并。
 
 ---
 
@@ -256,7 +271,8 @@
 - PR #45 已合并：迷穀采集后自动佩戴并立即启用归向 HUD；已采集迷穀不再是原地佩戴交互点。
 - PR #45 已合并：demo-local primitive 篝火提供“生祝余 → 熟祝余 → 45 秒长效不饥”准备循环；祝余图鉴新增 `cooking` 槽位。
 - 当前 demo save version 为 `4`，raw 祝余沿用 `inventory.zhuyu_leaf`，熟祝余使用 `world.cooked_zhuyu_count`，并兼容缺少新字段的 legacy save。
-- PR #46 的 world map foundation 尚未接入 demo gameplay、scene、正式出生系统或 save data。
+- PR #46 的 world map foundation 已合并，但尚未接入 demo gameplay、正式地图 scene、正式出生系统或 save data。
+- 当前 world generation debug view 是独立 scene，不替换或修改 `minimal_playable_demo` gameplay。
 - PR #36 不改变 optional state 核心结构、不新增 save fields、不改变 data-driven optional content 设计。
 - Snowhuman Framework 保持通用；addon 内没有项目专用内容。
 
@@ -291,30 +307,29 @@ git diff --stat
 
 ## 当前建议的下一项功能
 
-**Current active PR：** `game: add data-driven world map foundation`（PR #46）
+**Current active PR：** `game: add world generation debug view`（PR #47）
 
 **目标：**
-- 在游戏层读取 world skeleton、south mountain region 和 spawn/resource/encounter rules。
-- 使用 seed 生成稳定的 starting region/mountain、player spawn、resource counts 与 encounter counts。
-- 提供独立的 deterministic seeded RNG、weighted table、轻量 world/region validation 和 JSON-safe generation result。
-- 不修改 Snowhuman Framework，不接入正式地图渲染、完整出生系统、demo gameplay 或 save fields。
+- 在独立 debug scene 中读取 PR #46 的 world data 并调用现有 generator。
+- 显示 seed、starting region / mountain、player spawn、resources、encounters 与紧凑结果统计。
+- 支持 default、`42`、`20260629` 三个 seed 以及当前 seed 重生成。
+- 不修改 Snowhuman Framework，不接入正式地图渲染、随机出生、demo gameplay 或 save fields。
 
-**状态：** Draft PR #46 已创建；本地实现、world generation regression 和现有 minimal demo regression 已通过。Godot GUI manual test 仍由用户完成；不要自动合并。
+**状态：** Draft PR #47 已创建；本地实现、扩展后的 world generation regression 和现有 minimal demo regression 已通过。Godot GUI manual test 仍由用户完成；不要自动合并。
 
 **验证：**
 - `python tools/validate_data.py` passed
 - `python tools/check_framework.py` passed
 - `python tools/validate_minimal_demo.py` passed，包含 Godot 4.7 headless import、script check-only 和 save/load regression
-- `godot --headless --path game --check-only --script res://scripts/world/world_generator.gd` passed
+- `godot --headless --path game --check-only --script res://scenes/debug/world_generation_debug.gd` passed
 - `godot --headless --path game --script res://tests/world/world_generation_regression.gd` passed
-- `python -m py_compile tools/validate_data.py` passed
 - `git diff --check` passed；`git diff --stat` 已运行并确认范围。
-- 显式 Snowhuman Framework keyword scan for `zhuyu|shensheng|zaoyaoshan|migu|south_mountain|zhaoyao|祝余|狌狌|招摇山|迷穀|迷榖|南山经`：no matches。
-- 未修改 `AGENTS.md`、`game/project.godot`、Snowhuman Framework、schemas、CI、美术资产、demo scene 或 demo gameplay；tooling 仅扩展 world data validation。
+- 显式 Snowhuman Framework keyword scan 无项目专用关键词匹配。
+- 未修改 `AGENTS.md`、`game/project.godot`、Snowhuman Framework、schemas、CI、tooling、美术资产、demo scene、demo gameplay 或 save fields。
 
 **下一步：**
-- 用户 review PR #46；由于本 PR 不接入场景，GUI 手测不是核心，但仍不得标记为已通过。
-- 后续 PR 可基于稳定数据结果选择一个窄范围入口，例如 debug world summary 或正式出生候选消费；不要在 PR #46 内扩展地图渲染、远征或完整刷新系统。
+- 用户在 Godot GUI 中打开 `world_generation_debug.tscn`，检查三个 seed 按钮、`Regenerate` 和摘要可读性；GUI 手测不得在用户确认前标记为通过。
+- 后续 PR 再选择正式出生候选消费或地图渲染入口；不要在当前 debug PR 中扩展 gameplay。
 
 ---
 
@@ -323,6 +338,8 @@ git diff --stat
 - `game/scenes/demo/minimal_playable_demo.gd`
 - `game/scenes/demo/minimal_playable_demo.tscn`
 - `game/tests/minimal_playable_demo/minimal_playable_demo_save_load_regression.gd`
+- `game/scenes/debug/world_generation_debug.gd`
+- `game/scenes/debug/world_generation_debug.tscn`
 - `game/data/world/world_map.json`
 - `game/data/world/regions/south_mountain.json`
 - `game/scripts/world/world_generator.gd`

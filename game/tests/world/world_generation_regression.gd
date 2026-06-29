@@ -5,6 +5,8 @@ const WeightedTable := preload("res://scripts/world/weighted_table.gd")
 const WorldMapModel := preload("res://scripts/world/world_map_model.gd")
 const RegionModel := preload("res://scripts/world/region_model.gd")
 const WorldGenerator := preload("res://scripts/world/world_generator.gd")
+const WorldGenerationDebug := preload("res://scenes/debug/world_generation_debug.gd")
+const WorldGenerationDebugScene := preload("res://scenes/debug/world_generation_debug.tscn")
 
 const WORLD_MAP_PATH := "res://data/world/world_map.json"
 const REGION_PATH := "res://data/world/regions/south_mountain.json"
@@ -39,6 +41,10 @@ func _run() -> void:
 		quit(1)
 		return
 	_assert_world_generation()
+	if failed:
+		quit(1)
+		return
+	_assert_world_generation_debug()
 	if failed:
 		quit(1)
 		return
@@ -276,6 +282,148 @@ func _assert_world_generation() -> void:
 		missing_region_generator.last_error.contains("missing region data"),
 		"missing region data must expose a clear error"
 	)
+
+
+func _assert_world_generation_debug() -> void:
+	var world_data_paths := [
+		WORLD_MAP_PATH,
+		REGION_PATH,
+		SPAWN_RULES_PATH,
+		RESOURCE_RULES_PATH,
+		ENCOUNTER_RULES_PATH
+	]
+	var hashes_before := {}
+	for path in world_data_paths:
+		hashes_before[path] = FileAccess.get_md5(path)
+
+	_assert_true(
+		int(world_map["default_seed"]) == DEFAULT_SEED,
+		"debug view default seed must come from world_map.json"
+	)
+
+	var regions_by_id := {"south_mountain": region}
+	var summaries := {}
+	var results := {}
+	for seed_value in [DEFAULT_SEED, 42, 20260629]:
+		var generator := WorldGenerator.new()
+		var generated := generator.generate_from_files(seed_value)
+		_assert_true(
+			not generated.is_empty(),
+			"debug seed %d must generate a result: %s" % [seed_value, generator.last_error]
+		)
+		if failed:
+			return
+		results[seed_value] = generated
+		summaries[seed_value] = WorldGenerationDebug.build_debug_summary(
+			generated,
+			world_map,
+			regions_by_id
+		)
+		_assert_true(
+			not summaries[seed_value].is_empty(),
+			"debug summary for seed %d must not be empty" % seed_value
+		)
+		_assert_true(
+			summaries[seed_value].contains("Seed: %d" % seed_value),
+			"debug summary must include seed %d" % seed_value
+		)
+
+	var default_summary: String = summaries[DEFAULT_SEED]
+	for expected_text in [
+		"World Generation Debug",
+		"Starting Region: south_mountain / 南山经",
+		"Starting Mountain: zhaoyao / 招摇山",
+		"Player Spawn: zhaoyao_village",
+		"Resources:",
+		"zhuyu",
+		"migu",
+		"Encounters:",
+		"shensheng",
+		"Generation Result Summary:"
+	]:
+		_assert_true(
+			default_summary.contains(expected_text),
+			"debug summary must include %s" % expected_text
+		)
+
+	var repeated_result := WorldGenerator.new().generate_from_files(DEFAULT_SEED)
+	var repeated_summary := WorldGenerationDebug.build_debug_summary(
+		repeated_result,
+		world_map,
+		regions_by_id
+	)
+	_assert_true(
+		repeated_summary == default_summary,
+		"same seed must produce an identical debug summary"
+	)
+	_assert_true(
+		JSON.stringify(results[42]) != JSON.stringify(results[20260629]),
+		"different debug seeds must produce different raw results"
+	)
+
+	for path in world_data_paths:
+		_assert_true(
+			FileAccess.get_md5(path) == hashes_before[path],
+			"switching debug seeds must not modify world data: %s" % path
+		)
+
+	var debug_view: Variant = WorldGenerationDebugScene.instantiate()
+	_assert_true(debug_view != null, "world generation debug scene must instantiate")
+	if failed:
+		return
+	root.add_child(debug_view)
+
+	var summary_control: Variant = debug_view.find_child("SummaryLabel", true, false)
+	_assert_true(
+		summary_control is RichTextLabel,
+		"world generation debug scene must include a main RichTextLabel"
+	)
+	_assert_true(
+		debug_view.current_seed == DEFAULT_SEED,
+		"world generation debug scene must display the default seed on ready"
+	)
+	_assert_true(
+		debug_view.last_summary.contains("Seed: %d" % DEFAULT_SEED),
+		"world generation debug scene must render the default result on ready"
+	)
+	for button_name in [
+		"DefaultSeedButton",
+		"Seed42Button",
+		"Seed20260629Button",
+		"RegenerateButton"
+	]:
+		_assert_true(
+			debug_view.find_child(button_name, true, false) is Button,
+			"world generation debug scene must include %s" % button_name
+		)
+
+	_assert_true(debug_view.generate_for_seed(42), "debug scene must switch to seed 42")
+	var seed_42_summary: String = debug_view.last_summary
+	_assert_true(
+		debug_view.regenerate_current_seed(),
+		"debug scene must regenerate the current seed"
+	)
+	_assert_true(
+		debug_view.last_summary == seed_42_summary,
+		"regenerating the same seed must keep the scene summary stable"
+	)
+
+	var failure_text: String = debug_view.show_failure(
+		"missing region file: res://data/world/regions/missing.json"
+	)
+	_assert_true(
+		failure_text.begins_with("World generation failed:"),
+		"debug failure helper must include a clear heading"
+	)
+	_assert_true(
+		failure_text.contains("missing region file"),
+		"debug failure helper must include the generator error"
+	)
+	_assert_true(
+		summary_control.text == failure_text,
+		"debug failure helper must render the error in the main label"
+	)
+	debug_view.queue_free()
 
 
 func _load_json(path: String) -> Dictionary:
