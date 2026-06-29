@@ -222,11 +222,12 @@
 
 ---
 
-## 当前开放 PR
+## 当前已完成里程碑（world generation）
 
 ### PR #47: game: add world generation debug view
-- **状态：** Draft PR；pending review。
+- **状态：** 已合并
 - **Branch：** `game/world-generation-debug-view`
+- **Merge commit：** 98241ee4d02dd26b9236b4ab83e5da8135404b1d
 - **链接：** https://github.com/Marshall-Jimmy/Mountandsea/pull/47
 - **目标：** 新增独立的 demo-local / game-layer world generation debug scene，用于查看 PR #46 world generator 的结构化输出。
 - debug view 显示 seed、starting region、starting mountain、player spawn、resources、encounters 与紧凑的 generation result summary。
@@ -237,6 +238,31 @@
 - 未接入正式地图渲染、随机出生系统、资源实体落地或异兽实体刷新。
 - 自动验证已通过：`python tools/validate_data.py`、`python tools/check_framework.py`、`python tools/validate_minimal_demo.py`、debug script check-only、world generation regression、`git diff --check` 和范围审计。
 - Godot GUI manual test reserved for user，未标记为已通过。本 PR 不允许自动合并。
+
+---
+
+## 当前开放 PR
+
+### PR #48: game: connect world generation to demo content placement
+- **状态：** Draft / pending Godot GUI manual test。
+- **Branch：** `game/world-generated-demo-placement`
+- **链接：** https://github.com/Marshall-Jimmy/Mountandsea/pull/48
+- **目标：** 将 PR #46 / #47 的 deterministic world generation result 小范围接入 `minimal_playable_demo`，由 seed 驱动祝余、迷穀、狌狌的数量与固定 placement slot 选择。
+- 默认从 `world_map.json` 读取 seed `20260628`；当前结果为 `zhuyu: 3`、`migu: 2`、`shensheng: 3`。
+- 每类内容使用 demo-local 固定 slots，并用 seed 对 slot 顺序做确定性选择；同 seed 的布局稳定，不同 seed 可以选择不同 slots。
+- generated count 超过可用 slots 时会安全 clamp 并输出 warning；count 为 `0` 时不创建对应实例。
+- 祝余和迷穀使用稳定 instance id（如 `zhuyu_0`、`migu_0`）记录逐实例采集状态；多个祝余分别增加 `inventory.zhuyu_leaf`，多个迷穀分别记录采集，首次迷穀采集继续自动佩戴并解锁 `knowledge.migu.effect`。
+- 狌狌复用 PR #41 的 idle sprite setup；所有 generated instances 都有稳定 interactable id，主流程可通过任意一只完成物种发现，完成后仍可重复观察，但不会重复写入图鉴或完成记录。
+- demo save version 更新为 `5`；新增 `world.generation_seed`、`world.generated_content` 和 `world.collected_instances`，保留 `world.pickup_collected`、`world.zhuyu_consumed`、`inventory.zhuyu_leaf`、`world.cooked_zhuyu_count`、optional journal 与 knowledge 字段。
+- legacy save 缺少 generation 字段时使用 default seed 重新生成布局，并把旧 `pickup_collected` / `migu_collected` 状态迁移到 `zhuyu_0` / `migu_0`。
+- 回归覆盖 default / different seed、count → instance 映射、zero count、slot clamp、stable ids、reset、祝余 / 迷穀多实例、狌狌 idle 与多实例互动、save/load、legacy migration，以及 hunger、cooking、navigation、K / J / V、optional journal 和 player animation。
+- 用户首次 Godot GUI 手测发现实际按 `E` 时持续显示 `找不到可交互的 generated zhuyu instance`；根因是 `_generated_instance_index()` 把 instance id 后缀截成字符串后传给只接受数值 Variant 的 helper，导致真实 `_try_interact()` 路由恒定得到 `-1`，而原回归直接调用 callback 未覆盖该路径。
+- 修复改为严格校验并解析 instance id 的数字字符串后缀；新增从玩家真实位置调用 `_update_prompt()` / `_try_interact()` 的祝余与迷穀回归，确认采集、库存、逐实例状态和迷穀 auto-equip 均能通过实际路由。
+- 用户后续 GUI 反馈指出只有一只狌狌可互动，且主流程推进后采集的祝余无法烹饪；已将所有生成狌狌注册为独立 interactable，同时保持物种级图鉴状态；篝火交互改为按当前库存烹饪生祝余或食用熟祝余，不再受首次 `EAT_ZHUYU` 步骤和 `zhuyu_consumed` 锁死。
+- 新增 `shensheng_1` 完成主流程、`shensheng_2` 完成后重复观察，以及 Demo 完成后采集 `zhuyu_1`、烹饪、save/load、食用熟祝余且不重播主流程的回归覆盖。
+- 自动验证已通过：`python tools/validate_data.py`、`python tools/check_framework.py`、`python tools/validate_minimal_demo.py`、`godot --headless --path game --script res://tests/world/world_generation_regression.gd`、`git diff --check` 和范围审计；clamp regression 会按设计输出三条 warning。
+- 不做完整地图渲染、随机出生系统、chunk、minimap、大地图 UI、正式资源刷新或完整 creature system；不修改 Snowhuman Framework、`game/project.godot`、world data、美术素材、schemas、CI 或 tooling。
+- 修复后的 Godot GUI manual re-test reserved for user，未标记为已通过。本 PR 不允许自动合并。
 
 ---
 
@@ -270,9 +296,10 @@
 - PR #44 已合并：demo-local 图鉴使用 `K` 查看祝余 / 迷穀 knowledge，live log、prompt、生存、navigation 与 optional journal 已分区；window / viewport 显式配置为 `1440 × 810`。
 - PR #45 已合并：迷穀采集后自动佩戴并立即启用归向 HUD；已采集迷穀不再是原地佩戴交互点。
 - PR #45 已合并：demo-local primitive 篝火提供“生祝余 → 熟祝余 → 45 秒长效不饥”准备循环；祝余图鉴新增 `cooking` 槽位。
-- 当前 demo save version 为 `4`，raw 祝余沿用 `inventory.zhuyu_leaf`，熟祝余使用 `world.cooked_zhuyu_count`，并兼容缺少新字段的 legacy save。
-- PR #46 的 world map foundation 已合并，但尚未接入 demo gameplay、正式地图 scene、正式出生系统或 save data。
-- 当前 world generation debug view 是独立 scene，不替换或修改 `minimal_playable_demo` gameplay。
+- 当前开放 PR 将 demo save version 更新为 `5`；raw 祝余沿用 `inventory.zhuyu_leaf`，熟祝余使用 `world.cooked_zhuyu_count`，新增 `world.generation_seed`、`world.generated_content`、`world.collected_instances`，并兼容缺少 generation 字段的 legacy save。
+- PR #46 的 world map foundation 与 PR #47 的 debug view 已合并；当前开放 PR 仅把生成 count 和 seed-driven 固定 slot 选择接入 `minimal_playable_demo`，不替换地图或实现正式出生系统。
+- 所有狌狌 generated instances 均保持 PR #41 idle animation 并可互动；图鉴发现与主流程完成仍是物种级状态，不重复累计。
+- 后续采集的祝余仍可在篝火逐个烹饪；熟祝余可继续食用并刷新长效 satiety，不会回退或重播已经完成的主流程。
 - PR #36 不改变 optional state 核心结构、不新增 save fields、不改变 data-driven optional content 设计。
 - Snowhuman Framework 保持通用；addon 内没有项目专用内容。
 
@@ -307,29 +334,28 @@ git diff --stat
 
 ## 当前建议的下一项功能
 
-**Current active PR：** `game: add world generation debug view`（PR #47）
+**Current active PR：** `game: connect world generation to demo content placement`（PR #48）
 
 **目标：**
-- 在独立 debug scene 中读取 PR #46 的 world data 并调用现有 generator。
-- 显示 seed、starting region / mountain、player spawn、resources、encounters 与紧凑结果统计。
-- 支持 default、`42`、`20260629` 三个 seed 以及当前 seed 重生成。
-- 不修改 Snowhuman Framework，不接入正式地图渲染、随机出生、demo gameplay 或 save fields。
+- 使用 `world_map.json` default seed 调用现有 generator，把祝余、迷穀、狌狌 count 映射到 demo-local 固定 placement slots。
+- 支持祝余 / 迷穀逐实例采集与 save/load；首次迷穀采集继续 auto-equip。
+- 生成多个狌狌时，每个实例都可观察；首次有效观察完成物种发现，其余实例提供可重复反馈。
+- 不修改 Snowhuman Framework，不接入完整地图渲染、随机出生或完整 creature system。
 
-**状态：** Draft PR #47 已创建；本地实现、扩展后的 world generation regression 和现有 minimal demo regression 已通过。Godot GUI manual test 仍由用户完成；不要自动合并。
+**状态：** Draft PR #48 已创建且 GitHub 显示可合并；本地实现、扩展后的 minimal demo regression、标准验证和范围审计已通过。Godot GUI manual test 仍由用户完成；不要自动合并。
 
 **验证：**
-- `python tools/validate_data.py` passed
-- `python tools/check_framework.py` passed
-- `python tools/validate_minimal_demo.py` passed，包含 Godot 4.7 headless import、script check-only 和 save/load regression
-- `godot --headless --path game --check-only --script res://scenes/debug/world_generation_debug.gd` passed
-- `godot --headless --path game --script res://tests/world/world_generation_regression.gd` passed
-- `git diff --check` passed；`git diff --stat` 已运行并确认范围。
-- 显式 Snowhuman Framework keyword scan 无项目专用关键词匹配。
-- 未修改 `AGENTS.md`、`game/project.godot`、Snowhuman Framework、schemas、CI、tooling、美术资产、demo scene、demo gameplay 或 save fields。
+- `godot --headless --path game --check-only --script res://scenes/demo/minimal_playable_demo.gd` passed。
+- `godot --headless --path game --check-only --script res://tests/minimal_playable_demo/minimal_playable_demo_save_load_regression.gd` passed。
+- `godot --headless --path game --script res://tests/minimal_playable_demo/minimal_playable_demo_save_load_regression.gd` passed。
+- `python tools/validate_data.py`、`python tools/check_framework.py`、`python tools/validate_minimal_demo.py` passed。
+- `godot --headless --path game --script res://tests/world/world_generation_regression.gd` passed。
+- `git diff --check` passed；`git diff --stat` 已运行。
+- 显式 Snowhuman Framework keyword scan 无匹配；未修改 `AGENTS.md`、`game/project.godot`、Snowhuman Framework、schemas、CI、tooling、world data 或美术素材。
 
 **下一步：**
-- 用户在 Godot GUI 中打开 `world_generation_debug.tscn`，检查三个 seed 按钮、`Regenerate` 和摘要可读性；GUI 手测不得在用户确认前标记为通过。
-- 后续 PR 再选择正式出生候选消费或地图渲染入口；不要在当前 debug PR 中扩展 gameplay。
+- 用户在 Godot GUI 中检查默认 seed 的多实例位置、逐实例采集、篝火 / navigation / journal 回归；GUI 手测不得在用户确认前标记为通过。
+- 后续 PR 再考虑正式地图渲染或出生系统；不要在当前 placement PR 中扩展。
 
 ---
 

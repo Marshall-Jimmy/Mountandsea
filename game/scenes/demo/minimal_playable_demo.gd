@@ -1,5 +1,9 @@
 extends Node2D
 
+const WorldGenerator := preload("res://scripts/world/world_generator.gd")
+const WorldMapModel := preload("res://scripts/world/world_map_model.gd")
+const SeededRng := preload("res://scripts/world/seeded_rng.gd")
+
 const OWNER_ID := "player"
 const ITEM_ID := "zhuyu_leaf"
 const CREATURE_ID := "shensheng"
@@ -68,6 +72,45 @@ const NAVIGATION_LOST_PRESSURE_DISTANCE := 360.0
 const MIGU_KNOWLEDGE_APPEARANCE := "appearance"
 const MIGU_KNOWLEDGE_TYPE := "type"
 const MIGU_KNOWLEDGE_EFFECT := "effect"
+const DEFAULT_WORLD_MAP_PATH := "res://data/world/world_map.json"
+const GENERATED_ZHUYU_TYPE := "zhuyu"
+const GENERATED_MIGU_TYPE := "migu"
+const GENERATED_SHENSHENG_TYPE := "shensheng"
+const GENERATED_CONTENT_TYPES := [
+	GENERATED_ZHUYU_TYPE,
+	GENERATED_MIGU_TYPE,
+	GENERATED_SHENSHENG_TYPE
+]
+const GENERATED_COLLECTIBLE_TYPES := [
+	GENERATED_ZHUYU_TYPE,
+	GENERATED_MIGU_TYPE
+]
+const DEMO_ZHUYU_PLACEMENT_SLOTS := [
+	Vector2(430, 260),
+	Vector2(520, 600),
+	Vector2(760, 650),
+	Vector2(930, 250),
+	Vector2(1000, 610)
+]
+const DEMO_MIGU_PLACEMENT_SLOTS := [
+	Vector2(720, 300),
+	Vector2(1000, 360)
+]
+const DEMO_SHENSHENG_PLACEMENT_SLOTS := [
+	Vector2(650, 260),
+	Vector2(620, 620),
+	Vector2(820, 160)
+]
+const GENERATED_PLACEMENT_SEED_SALTS := {
+	GENERATED_ZHUYU_TYPE: 101,
+	GENERATED_MIGU_TYPE: 211,
+	GENERATED_SHENSHENG_TYPE: 307
+}
+const GENERATED_LABEL_OFFSETS := {
+	GENERATED_ZHUYU_TYPE: Vector2(-30, 36),
+	GENERATED_MIGU_TYPE: Vector2(-40, 36),
+	GENERATED_SHENSHENG_TYPE: Vector2(-30, 36)
+}
 
 enum DemoStep {
 	COLLECT_ZHUYU = 0,
@@ -166,6 +209,26 @@ var migu_knowledge_state := {
 	MIGU_KNOWLEDGE_TYPE: false,
 	MIGU_KNOWLEDGE_EFFECT: false
 }
+var generation_seed := 0
+var generated_content := {
+	GENERATED_ZHUYU_TYPE: 0,
+	GENERATED_MIGU_TYPE: 0,
+	GENERATED_SHENSHENG_TYPE: 0
+}
+var generated_instance_nodes := {
+	GENERATED_ZHUYU_TYPE: {},
+	GENERATED_MIGU_TYPE: {},
+	GENERATED_SHENSHENG_TYPE: {}
+}
+var generated_instance_labels := {
+	GENERATED_ZHUYU_TYPE: {},
+	GENERATED_MIGU_TYPE: {},
+	GENERATED_SHENSHENG_TYPE: {}
+}
+var collected_instance_ids := {
+	GENERATED_ZHUYU_TYPE: {},
+	GENERATED_MIGU_TYPE: {}
+}
 var navigation_pressure_level := 0
 var was_near_zhuyu := false
 var was_near_stone := false
@@ -178,6 +241,13 @@ var was_codex_toggle_key_pressed := false
 
 
 func _ready() -> void:
+	if not _initialize_default_generated_world():
+		_log_error("默认 world generation 加载失败，Demo 使用单实例安全回退。")
+		_configure_generated_world_layout(0, {
+			GENERATED_ZHUYU_TYPE: 1,
+			GENERATED_MIGU_TYPE: 1,
+			GENERATED_SHENSHENG_TYPE: 1
+		})
 	_init_optional_content_config()
 	_configure_hud_layout()
 	_configure_interaction_history_panel()
@@ -356,6 +426,456 @@ func _create_optional_label(label_name: String, label_position: Vector2, text: S
 	label.text = text
 	world_root.add_child(label)
 	return label
+
+
+func _initialize_default_generated_world() -> bool:
+	var world_result := WorldMapModel.load_file(DEFAULT_WORLD_MAP_PATH)
+	if not world_result.get("ok", false):
+		_log_error("world_map.json 加载失败：%s" % str(world_result.get("errors", [])))
+		return false
+
+	var world_data: Variant = world_result.get("data", {})
+	if not (world_data is Dictionary):
+		return false
+	var seed_value := _to_non_negative_int(world_data.get("default_seed", -1))
+	if seed_value < 0:
+		_log_error("world_map.json default_seed 无效。")
+		return false
+
+	var generator := WorldGenerator.new()
+	var generation_result: Dictionary = generator.generate_from_files(seed_value)
+	if generation_result.is_empty():
+		_log_error("world generation 失败：%s" % generator.last_error)
+		return false
+
+	var content := _extract_generated_demo_content(generation_result)
+	if content.is_empty():
+		_log_error("world generation result 缺少 Demo 所需资源或异兽数量。")
+		return false
+
+	_clear_collected_instance_ids()
+	_configure_generated_world_layout(seed_value, content)
+	return true
+
+
+func _extract_generated_demo_content(generation_result: Dictionary) -> Dictionary:
+	var region_id: Variant = generation_result.get("starting_region_id")
+	var mountain_id: Variant = generation_result.get("starting_mountain_id")
+	var generated_regions: Variant = generation_result.get("generated_regions", {})
+	if (
+		not (region_id is String)
+		or not (mountain_id is String)
+		or not (generated_regions is Dictionary)
+	):
+		return {}
+
+	var region_data: Variant = generated_regions.get(region_id, {})
+	if not (region_data is Dictionary):
+		return {}
+	var mountains: Variant = region_data.get("mountains", {})
+	if not (mountains is Dictionary):
+		return {}
+	var mountain_data: Variant = mountains.get(mountain_id, {})
+	if not (mountain_data is Dictionary):
+		return {}
+
+	var resources: Variant = mountain_data.get("resources", [])
+	var encounters: Variant = mountain_data.get("encounters", [])
+	if not (resources is Array) or not (encounters is Array):
+		return {}
+
+	var zhuyu_count := _find_generated_entry_count(resources, GENERATED_ZHUYU_TYPE)
+	var migu_count := _find_generated_entry_count(resources, GENERATED_MIGU_TYPE)
+	var shensheng_count := _find_generated_entry_count(
+		encounters,
+		GENERATED_SHENSHENG_TYPE
+	)
+	if zhuyu_count < 0 or migu_count < 0 or shensheng_count < 0:
+		return {}
+
+	return {
+		GENERATED_ZHUYU_TYPE: zhuyu_count,
+		GENERATED_MIGU_TYPE: migu_count,
+		GENERATED_SHENSHENG_TYPE: shensheng_count
+	}
+
+
+func _find_generated_entry_count(entries: Array, entry_id: String) -> int:
+	for entry_value in entries:
+		if not (entry_value is Dictionary):
+			continue
+		var entry: Dictionary = entry_value
+		if entry.get("id", "") != entry_id:
+			continue
+		var count := _to_non_negative_int(entry.get("count", -1))
+		return count
+	return -1
+
+
+func _configure_generated_world_layout(seed_value: int, content: Dictionary) -> void:
+	generation_seed = seed_value
+	var clamped_content := {}
+	for content_type in GENERATED_CONTENT_TYPES:
+		var requested_count := _to_non_negative_int(content.get(content_type, 0))
+		if requested_count < 0:
+			requested_count = 0
+		var available_slots := _placement_slots_for_type(content_type).size()
+		var clamped_count := mini(requested_count, available_slots)
+		if requested_count > available_slots:
+			var warning := (
+				"minimal_playable_demo: generated %s count %d exceeds %d placement slots; clamped."
+				% [content_type, requested_count, available_slots]
+			)
+			push_warning(warning)
+			_log(warning)
+		clamped_content[content_type] = clamped_count
+	generated_content = clamped_content
+	_rebuild_generated_instances()
+
+
+func _rebuild_generated_instances() -> void:
+	_clear_generated_extra_nodes()
+	for content_type in GENERATED_CONTENT_TYPES:
+		generated_instance_nodes[content_type] = {}
+		generated_instance_labels[content_type] = {}
+		_build_generated_instances_for_type(content_type)
+	_apply_generated_placement_visuals()
+
+
+func _clear_generated_extra_nodes() -> void:
+	for content_type in GENERATED_CONTENT_TYPES:
+		var primary_node := _primary_generated_node(content_type)
+		var primary_label := _primary_generated_label(content_type)
+		var nodes_value: Variant = generated_instance_nodes.get(content_type, {})
+		if nodes_value is Dictionary:
+			for node_value in nodes_value.values():
+				var node := node_value as Node
+				if (
+					node != null
+					and node != primary_node
+					and is_instance_valid(node)
+				):
+					node.free()
+		var labels_value: Variant = generated_instance_labels.get(content_type, {})
+		if labels_value is Dictionary:
+			for label_value in labels_value.values():
+				var label := label_value as Node
+				if (
+					label != null
+					and label != primary_label
+					and is_instance_valid(label)
+				):
+					label.free()
+
+
+func _build_generated_instances_for_type(content_type: String) -> void:
+	var primary_node := _primary_generated_node(content_type)
+	var primary_label := _primary_generated_label(content_type)
+	if primary_node == null or primary_label == null:
+		return
+
+	primary_node.visible = false
+	primary_label.visible = false
+	primary_node.scale = Vector2.ONE
+	primary_node.modulate = Color.WHITE
+
+	var count := int(generated_content.get(content_type, 0))
+	var ordered_slots := _ordered_placement_slots(content_type)
+	var label_offset: Vector2 = GENERATED_LABEL_OFFSETS.get(content_type, Vector2.ZERO)
+	for index in range(count):
+		var node: Node2D
+		var label: Label
+		if index == 0:
+			node = primary_node
+			label = primary_label
+		else:
+			node = primary_node.duplicate() as Node2D
+			label = primary_label.duplicate() as Label
+			if node == null or label == null:
+				continue
+			node.name = "%sGenerated%d" % [_generated_node_name_prefix(content_type), index]
+			label.name = "%sGenerated%d" % [_generated_label_name_prefix(content_type), index]
+			node.unique_name_in_owner = false
+			label.unique_name_in_owner = false
+			world_root.add_child(node)
+			world_root.add_child(label)
+
+		var instance_id := _generated_instance_id(content_type, index)
+		node.position = ordered_slots[index]
+		node.scale = Vector2.ONE
+		node.modulate = Color.WHITE
+		node.visible = true
+		node.set_meta("generated_instance_id", instance_id)
+		label.position = ordered_slots[index] + label_offset
+		label.visible = true
+		label.set_meta("generated_instance_id", instance_id)
+		generated_instance_nodes[content_type][instance_id] = node
+		generated_instance_labels[content_type][instance_id] = label
+
+
+func _ordered_placement_slots(content_type: String) -> Array:
+	var slots := _placement_slots_for_type(content_type).duplicate()
+	if slots.size() <= 1:
+		return slots
+	var salt := int(GENERATED_PLACEMENT_SEED_SALTS.get(content_type, 0))
+	var rng := SeededRng.new(generation_seed + salt)
+	for index in range(slots.size() - 1, 0, -1):
+		var swap_index := rng.next_int(0, index)
+		var slot_value: Variant = slots[index]
+		slots[index] = slots[swap_index]
+		slots[swap_index] = slot_value
+	return slots
+
+
+func _placement_slots_for_type(content_type: String) -> Array:
+	match content_type:
+		GENERATED_ZHUYU_TYPE:
+			return DEMO_ZHUYU_PLACEMENT_SLOTS
+		GENERATED_MIGU_TYPE:
+			return DEMO_MIGU_PLACEMENT_SLOTS
+		GENERATED_SHENSHENG_TYPE:
+			return DEMO_SHENSHENG_PLACEMENT_SLOTS
+	return []
+
+
+func _primary_generated_node(content_type: String) -> Node2D:
+	match content_type:
+		GENERATED_ZHUYU_TYPE:
+			return zhuyu_pickup
+		GENERATED_MIGU_TYPE:
+			return migu_branch
+		GENERATED_SHENSHENG_TYPE:
+			return shensheng_creature
+	return null
+
+
+func _primary_generated_label(content_type: String) -> Label:
+	match content_type:
+		GENERATED_ZHUYU_TYPE:
+			return zhuyu_label
+		GENERATED_MIGU_TYPE:
+			return migu_branch_label
+		GENERATED_SHENSHENG_TYPE:
+			return shensheng_label
+	return null
+
+
+func _generated_node_name_prefix(content_type: String) -> String:
+	match content_type:
+		GENERATED_ZHUYU_TYPE:
+			return "ZhuyuPickup"
+		GENERATED_MIGU_TYPE:
+			return "MiguBranch"
+		GENERATED_SHENSHENG_TYPE:
+			return "ShenshengCreature"
+	return "GeneratedContent"
+
+
+func _generated_label_name_prefix(content_type: String) -> String:
+	match content_type:
+		GENERATED_ZHUYU_TYPE:
+			return "ZhuyuLabel"
+		GENERATED_MIGU_TYPE:
+			return "MiguBranchLabel"
+		GENERATED_SHENSHENG_TYPE:
+			return "ShenshengLabel"
+	return "GeneratedContentLabel"
+
+
+func _generated_instance_id(content_type: String, index: int) -> String:
+	return "%s_%d" % [content_type, index]
+
+
+func _generated_interactable_id(content_type: String, index: int) -> String:
+	var base_id := ""
+	match content_type:
+		GENERATED_ZHUYU_TYPE:
+			base_id = ZHUYU_INTERACTABLE_ID
+		GENERATED_MIGU_TYPE:
+			base_id = MIGU_BRANCH_INTERACTABLE_ID
+		GENERATED_SHENSHENG_TYPE:
+			base_id = SHENSHENG_INTERACTABLE_ID
+	if index == 0:
+		return base_id
+	return "%s_%d" % [base_id, index]
+
+
+func _generated_instance_id_from_interactable(
+	content_type: String,
+	interactable_id: String
+) -> String:
+	var slot_count := _placement_slots_for_type(content_type).size()
+	for index in range(slot_count):
+		if _generated_interactable_id(content_type, index) == interactable_id:
+			return _generated_instance_id(content_type, index)
+	return ""
+
+
+func _clear_collected_instance_ids() -> void:
+	for content_type in GENERATED_COLLECTIBLE_TYPES:
+		collected_instance_ids[content_type] = {}
+
+
+func _is_generated_instance_collected(content_type: String, instance_id: String) -> bool:
+	var collected_value: Variant = collected_instance_ids.get(content_type, {})
+	return collected_value is Dictionary and collected_value.get(instance_id, false) == true
+
+
+func _set_generated_instance_collected(
+	content_type: String,
+	instance_id: String,
+	is_collected: bool
+) -> void:
+	var collected_value: Variant = collected_instance_ids.get(content_type, {})
+	if not (collected_value is Dictionary):
+		collected_value = {}
+	var collected_state: Dictionary = collected_value
+	if is_collected:
+		collected_state[instance_id] = true
+	else:
+		collected_state.erase(instance_id)
+	collected_instance_ids[content_type] = collected_state
+
+
+func _nearest_generated_instance_id(
+	content_type: String,
+	skip_collected := true
+) -> String:
+	var nearest_id := ""
+	var nearest_distance := INF
+	var count := int(generated_content.get(content_type, 0))
+	for index in range(count):
+		var instance_id := _generated_instance_id(content_type, index)
+		if (
+			skip_collected
+			and content_type in GENERATED_COLLECTIBLE_TYPES
+			and _is_generated_instance_collected(content_type, instance_id)
+		):
+			continue
+		var nodes_value: Variant = generated_instance_nodes.get(content_type, {})
+		if not (nodes_value is Dictionary):
+			continue
+		var node := nodes_value.get(instance_id, null) as Node2D
+		if node == null or not node.visible:
+			continue
+		var distance := player.global_position.distance_to(node.global_position)
+		if distance <= interaction_distance and distance < nearest_distance:
+			nearest_id = instance_id
+			nearest_distance = distance
+	return nearest_id
+
+
+func _generated_instance_node(content_type: String, instance_id: String) -> Node2D:
+	var nodes_value: Variant = generated_instance_nodes.get(content_type, {})
+	if not (nodes_value is Dictionary):
+		return null
+	return nodes_value.get(instance_id, null) as Node2D
+
+
+func _generated_instance_index(instance_id: String) -> int:
+	var separator_index := instance_id.rfind("_")
+	if separator_index < 0:
+		return -1
+	var index_text := instance_id.substr(separator_index + 1)
+	if not index_text.is_valid_int():
+		return -1
+	var index := index_text.to_int()
+	return index if index >= 0 else -1
+
+
+func _apply_generated_placement_visuals() -> void:
+	_update_generated_zhuyu_visuals()
+	_update_generated_migu_visuals()
+	_update_generated_shensheng_visuals()
+
+
+func _update_generated_zhuyu_visuals() -> void:
+	var count := int(generated_content.get(GENERATED_ZHUYU_TYPE, 0))
+	for index in range(count):
+		var instance_id := _generated_instance_id(GENERATED_ZHUYU_TYPE, index)
+		var node := _generated_instance_node(GENERATED_ZHUYU_TYPE, instance_id)
+		var label := generated_instance_labels[GENERATED_ZHUYU_TYPE].get(
+			instance_id,
+			null
+		) as Label
+		if node == null or label == null:
+			continue
+		var collected := _is_generated_instance_collected(
+			GENERATED_ZHUYU_TYPE,
+			instance_id
+		)
+		node.visible = not collected
+		label.visible = not collected
+		node.modulate.a = 1.0
+		label.text = (
+			"祝余"
+			if _has_zhuyu_knowledge(ZHUYU_KNOWLEDGE_APPEARANCE)
+			else "陌生青华草"
+		)
+
+
+func _update_generated_migu_visuals() -> void:
+	var count := int(generated_content.get(GENERATED_MIGU_TYPE, 0))
+	for index in range(count):
+		var instance_id := _generated_instance_id(GENERATED_MIGU_TYPE, index)
+		var node := _generated_instance_node(GENERATED_MIGU_TYPE, instance_id)
+		var label := generated_instance_labels[GENERATED_MIGU_TYPE].get(
+			instance_id,
+			null
+		) as Label
+		if node == null or label == null:
+			continue
+		var collected := _is_generated_instance_collected(
+			GENERATED_MIGU_TYPE,
+			instance_id
+		)
+		node.visible = not collected
+		label.visible = not collected
+		if collected:
+			continue
+		label.text = (
+			"迷穀"
+			if _has_migu_knowledge(MIGU_KNOWLEDGE_APPEARANCE)
+			else "陌生黑理发光之木"
+		)
+		node.modulate.a = 1.0 if current_step == DemoStep.COMPLETE else 0.3
+
+
+func _update_generated_shensheng_visuals() -> void:
+	var count := int(generated_content.get(GENERATED_SHENSHENG_TYPE, 0))
+	for index in range(count):
+		var instance_id := _generated_instance_id(GENERATED_SHENSHENG_TYPE, index)
+		var node := _generated_instance_node(GENERATED_SHENSHENG_TYPE, instance_id)
+		var label := generated_instance_labels[GENERATED_SHENSHENG_TYPE].get(
+			instance_id,
+			null
+		) as Label
+		if node == null or label == null:
+			continue
+		node.visible = true
+		label.visible = true
+		node.modulate.a = 0.45 if shensheng_discovered else 1.0
+		label.text = "狌狌（已发现）" if shensheng_discovered else "狌狌"
+
+
+func _set_generated_type_alpha(content_type: String, alpha: float) -> void:
+	var nodes_value: Variant = generated_instance_nodes.get(content_type, {})
+	if not (nodes_value is Dictionary):
+		return
+	for node_value in nodes_value.values():
+		var node := node_value as Node2D
+		if node != null and node.visible:
+			node.modulate.a = alpha
+
+
+func _set_generated_type_scale(content_type: String, scale_value: Vector2) -> void:
+	var nodes_value: Variant = generated_instance_nodes.get(content_type, {})
+	if not (nodes_value is Dictionary):
+		return
+	for node_value in nodes_value.values():
+		var node := node_value as Node2D
+		if node != null:
+			node.scale = scale_value
 
 
 func _process(delta: float) -> void:
@@ -760,29 +1280,9 @@ func _initialize_services() -> void:
 
 
 func _register_interactables() -> bool:
-	var zhuyu_registered := interaction_service.register_interactable(ZHUYU_INTERACTABLE_ID, {
-		"type": "pickup",
-		"metadata": {
-			"item_id": ITEM_ID,
-			"count": 1
-		},
-		"callback_target": self,
-		"callback_method": "_on_zhuyu_interacted"
-	})
-	if not zhuyu_registered:
-		_log_error("InteractionService 注册失败：%s" % ZHUYU_INTERACTABLE_ID)
+	if not _register_generated_zhuyu_interactables():
 		return false
-
-	var shensheng_registered := interaction_service.register_interactable(SHENSHENG_INTERACTABLE_ID, {
-		"type": "observe",
-		"metadata": {
-			"creature_id": CREATURE_ID
-		},
-		"callback_target": self,
-		"callback_method": "_on_shensheng_interacted"
-	})
-	if not shensheng_registered:
-		_log_error("InteractionService 注册失败：%s" % SHENSHENG_INTERACTABLE_ID)
+	if not _register_generated_shensheng_interactables():
 		return false
 
 	if not _register_optional_interactables():
@@ -804,8 +1304,59 @@ func _register_interactables() -> bool:
 	return true
 
 
+func _register_generated_shensheng_interactables() -> bool:
+	for index in range(DEMO_SHENSHENG_PLACEMENT_SLOTS.size()):
+		var interactable_id := _generated_interactable_id(
+			GENERATED_SHENSHENG_TYPE,
+			index
+		)
+		var registered := interaction_service.register_interactable(interactable_id, {
+			"type": "observe",
+			"metadata": {
+				"creature_id": CREATURE_ID,
+				"instance_id": _generated_instance_id(
+					GENERATED_SHENSHENG_TYPE,
+					index
+				)
+			},
+			"callback_target": self,
+			"callback_method": "_on_shensheng_interacted"
+		})
+		if not registered:
+			_log_error("InteractionService 注册失败：%s" % interactable_id)
+			return false
+	return true
+
+
+func _register_generated_zhuyu_interactables() -> bool:
+	for index in range(DEMO_ZHUYU_PLACEMENT_SLOTS.size()):
+		var interactable_id := _generated_interactable_id(
+			GENERATED_ZHUYU_TYPE,
+			index
+		)
+		var registered := interaction_service.register_interactable(interactable_id, {
+			"type": "pickup",
+			"metadata": {
+				"item_id": ITEM_ID,
+				"count": 1,
+				"instance_id": _generated_instance_id(GENERATED_ZHUYU_TYPE, index)
+			},
+			"callback_target": self,
+			"callback_method": "_on_zhuyu_interacted"
+		})
+		if not registered:
+			_log_error("InteractionService 注册失败：%s" % interactable_id)
+			return false
+	return true
+
+
 func _register_optional_interactables() -> bool:
+	if not _register_generated_migu_interactables():
+		return false
+
 	for config in optional_collectibles:
+		if str(config.get("id", "")) == MIGU_BRANCH_ITEM_ID:
+			continue
 		if not _register_optional_interactable(config, "_on_optional_collectible_interacted"):
 			return false
 
@@ -813,6 +1364,28 @@ func _register_optional_interactables() -> bool:
 		if not _register_optional_interactable(config, "_on_optional_creature_interacted"):
 			return false
 
+	return true
+
+
+func _register_generated_migu_interactables() -> bool:
+	for index in range(DEMO_MIGU_PLACEMENT_SLOTS.size()):
+		var interactable_id := _generated_interactable_id(
+			GENERATED_MIGU_TYPE,
+			index
+		)
+		var registered := interaction_service.register_interactable(interactable_id, {
+			"type": "pickup",
+			"metadata": {
+				"item_id": MIGU_BRANCH_ITEM_ID,
+				"count": 1,
+				"instance_id": _generated_instance_id(GENERATED_MIGU_TYPE, index)
+			},
+			"callback_target": self,
+			"callback_method": "_on_optional_collectible_interacted"
+		})
+		if not registered:
+			_log_error("InteractionService 注册失败：%s" % interactable_id)
+			return false
 	return true
 
 
@@ -1063,6 +1636,14 @@ func _format_migu_knowledge_status() -> String:
 	return "、".join(unlocked)
 
 
+func _format_campfire_prompt() -> String:
+	if _get_raw_zhuyu_count() > 0:
+		return "按 E 烹饪祝余"
+	if cooked_zhuyu_count > 0:
+		return "按 E 食用熟祝余"
+	return "篝火：需要祝余"
+
+
 func _update_prompt() -> void:
 	var near_zhuyu := _is_near_zhuyu()
 	var near_campfire := _is_near_campfire()
@@ -1085,7 +1666,7 @@ func _update_prompt() -> void:
 			if near_zhuyu:
 				_show_prompt(_format_zhuyu_collect_prompt())
 			elif near_campfire:
-				_show_prompt("篝火：需要祝余")
+				_show_prompt(_format_campfire_prompt())
 			elif near_stone:
 				_show_prompt("先寻找并采集祝余")
 			elif near_shensheng:
@@ -1095,19 +1676,21 @@ func _update_prompt() -> void:
 			else:
 				prompt_label.visible = false
 		DemoStep.EAT_ZHUYU:
-			if cooked_zhuyu_count > 0:
-				_show_prompt("按 E 食用熟祝余")
-			elif near_campfire and _get_raw_zhuyu_count() > 0:
-				_show_prompt("按 E 烹饪祝余")
+			if near_zhuyu:
+				_show_prompt(_format_zhuyu_collect_prompt())
 			elif near_campfire:
-				_show_prompt("篝火：需要祝余")
+				_show_prompt(_format_campfire_prompt())
+			elif cooked_zhuyu_count > 0:
+				_show_prompt("按 E 食用熟祝余")
 			else:
 				_show_prompt("按 E 食用生祝余（靠近篝火可烹饪）")
 		DemoStep.ACTIVATE_STONE:
-			if near_stone:
+			if near_zhuyu:
+				_show_prompt(_format_zhuyu_collect_prompt())
+			elif near_stone:
 				_show_prompt("按 E 激活山海石碑")
 			elif near_campfire:
-				_show_prompt("篝火：需要祝余")
+				_show_prompt(_format_campfire_prompt())
 			elif near_shensheng:
 				_show_prompt("先激活山海石碑")
 			elif near_optional:
@@ -1115,10 +1698,12 @@ func _update_prompt() -> void:
 			else:
 				prompt_label.visible = false
 		DemoStep.OBSERVE_SHENSHENG:
-			if near_shensheng:
+			if near_zhuyu:
+				_show_prompt(_format_zhuyu_collect_prompt())
+			elif near_shensheng:
 				_show_prompt("按 E 观察狌狌")
 			elif near_campfire:
-				_show_prompt("篝火：需要祝余")
+				_show_prompt(_format_campfire_prompt())
 			elif near_stone:
 				_show_prompt("山海石碑已激活")
 			elif near_optional:
@@ -1126,7 +1711,9 @@ func _update_prompt() -> void:
 			else:
 				prompt_label.visible = false
 		DemoStep.COMPLETE:
-			if near_optional:
+			if near_zhuyu:
+				_show_prompt(_format_zhuyu_collect_prompt())
+			elif near_optional:
 				if str(nearest_optional.get("id", "")) == MIGU_BRANCH_ITEM_ID:
 					_show_prompt(_format_migu_prompt(nearest_optional))
 				elif _is_optional_done(nearest_optional):
@@ -1134,8 +1721,10 @@ func _update_prompt() -> void:
 				else:
 					_show_prompt(str(nearest_optional.get("prompt_ready", "")))
 			elif near_campfire:
-				_show_prompt("篝火：需要祝余")
-			elif near_zhuyu or near_stone or near_shensheng:
+				_show_prompt(_format_campfire_prompt())
+			elif near_shensheng:
+				_show_prompt("按 E 观察狌狌（已记录）")
+			elif near_zhuyu or near_stone:
 				_show_prompt("Demo 已完成")
 			else:
 				prompt_label.visible = false
@@ -1165,31 +1754,65 @@ func _handle_interaction_input() -> void:
 
 func _try_interact() -> void:
 	var near_zhuyu := _is_near_zhuyu()
+	var nearest_zhuyu_instance_id := _nearest_generated_instance_id(
+		GENERATED_ZHUYU_TYPE
+	)
 	var near_campfire := _is_near_campfire()
 	var near_stone := _is_near_stone()
 	var near_shensheng := _is_near_shensheng()
+	var nearest_shensheng_instance_id := _nearest_generated_instance_id(
+		GENERATED_SHENSHENG_TYPE,
+		false
+	)
 	var nearest_optional := _nearest_optional_config()
 	var near_optional := not nearest_optional.is_empty()
 
 	if current_step == DemoStep.EAT_ZHUYU:
-		if cooked_zhuyu_count > 0:
-			_eat_cooked_zhuyu()
-		elif near_campfire and _get_raw_zhuyu_count() > 0:
-			_cook_zhuyu()
+		if near_zhuyu:
+			_interact_with_generated_instance(
+				GENERATED_ZHUYU_TYPE,
+				nearest_zhuyu_instance_id
+			)
 		elif near_campfire:
-			_log("篝火还缺少祝余。")
+			_interact_with_campfire()
+		elif cooked_zhuyu_count > 0:
+			_eat_cooked_zhuyu()
 		else:
 			_eat_zhuyu()
 		return
 
 	if current_step == DemoStep.COMPLETE:
+		if near_zhuyu:
+			_interact_with_generated_instance(
+				GENERATED_ZHUYU_TYPE,
+				nearest_zhuyu_instance_id
+			)
+			return
 		if near_optional:
 			var interactable_id := str(nearest_optional.get("interactable_id", ""))
+			if str(nearest_optional.get("id", "")) == MIGU_BRANCH_ITEM_ID:
+				var migu_instance_id := _nearest_generated_instance_id(
+					GENERATED_MIGU_TYPE
+				)
+				var migu_index := _generated_instance_index(migu_instance_id)
+				interactable_id = _generated_interactable_id(
+					GENERATED_MIGU_TYPE,
+					migu_index
+				)
 			var optional_interacted := interaction_service.interact(OWNER_ID, interactable_id)
 			if not optional_interacted:
 				_log_error("InteractionService 交互失败：%s" % interactable_id)
 			return
-		if near_zhuyu or near_stone or near_shensheng:
+		if near_campfire:
+			_interact_with_campfire()
+			return
+		if near_shensheng:
+			_interact_with_generated_instance(
+				GENERATED_SHENSHENG_TYPE,
+				nearest_shensheng_instance_id
+			)
+			return
+		if near_zhuyu or near_stone:
 			_log("Demo 已完成。")
 		else:
 			_log("附近没有可交互对象。")
@@ -1200,7 +1823,14 @@ func _try_interact() -> void:
 		return
 
 	if near_campfire:
-		_log("篝火：需要祝余。")
+		_interact_with_campfire()
+		return
+
+	if near_zhuyu and current_step != DemoStep.COLLECT_ZHUYU:
+		_interact_with_generated_instance(
+			GENERATED_ZHUYU_TYPE,
+			nearest_zhuyu_instance_id
+		)
 		return
 
 	if not near_zhuyu and not near_stone and not near_shensheng:
@@ -1210,9 +1840,10 @@ func _try_interact() -> void:
 	match current_step:
 		DemoStep.COLLECT_ZHUYU:
 			if near_zhuyu:
-				var zhuyu_interacted := interaction_service.interact(OWNER_ID, ZHUYU_INTERACTABLE_ID)
-				if not zhuyu_interacted:
-					_log_error("InteractionService 交互失败：%s" % ZHUYU_INTERACTABLE_ID)
+				_interact_with_generated_instance(
+					GENERATED_ZHUYU_TYPE,
+					nearest_zhuyu_instance_id
+				)
 				return
 			_log("请先前往当前目标。")
 		DemoStep.ACTIVATE_STONE:
@@ -1224,22 +1855,58 @@ func _try_interact() -> void:
 			_log("请先前往当前目标。")
 		DemoStep.OBSERVE_SHENSHENG:
 			if near_shensheng:
-				var shensheng_interacted := interaction_service.interact(OWNER_ID, SHENSHENG_INTERACTABLE_ID)
-				if not shensheng_interacted:
-					_log_error("InteractionService 交互失败：%s" % SHENSHENG_INTERACTABLE_ID)
+				_interact_with_generated_instance(
+					GENERATED_SHENSHENG_TYPE,
+					nearest_shensheng_instance_id
+				)
 				return
 			_log("请先前往当前目标。")
+
+
+func _interact_with_campfire() -> bool:
+	if _get_raw_zhuyu_count() > 0:
+		return _cook_zhuyu()
+	if cooked_zhuyu_count > 0:
+		return _eat_cooked_zhuyu()
+	_log("篝火还缺少祝余。")
+	return false
+
+
+func _interact_with_generated_instance(
+	content_type: String,
+	instance_id: String
+) -> bool:
+	var index := _generated_instance_index(instance_id)
+	if index < 0:
+		_log_error("找不到可交互的 generated %s instance。" % content_type)
+		return false
+	var interactable_id := _generated_interactable_id(content_type, index)
+	var interacted := interaction_service.interact(OWNER_ID, interactable_id)
+	if not interacted:
+		_log_error("InteractionService 交互失败：%s" % interactable_id)
+	return interacted
 
 
 func _on_zhuyu_interacted(actor_id: String, interactable_id: String, metadata: Dictionary) -> bool:
 	if actor_id.is_empty():
 		_log_error("采集失败：actor_id 为空。")
 		return false
-	if interactable_id != ZHUYU_INTERACTABLE_ID:
+	var mapped_instance_id := _generated_instance_id_from_interactable(
+		GENERATED_ZHUYU_TYPE,
+		interactable_id
+	)
+	if mapped_instance_id.is_empty():
 		_log_error("采集失败：interactable_id 不匹配。")
 		return false
-	if current_step != DemoStep.COLLECT_ZHUYU:
-		_log("祝余不是当前目标。")
+	var instance_id := str(metadata.get("instance_id", mapped_instance_id))
+	if (
+		instance_id != mapped_instance_id
+		or _generated_instance_node(GENERATED_ZHUYU_TYPE, instance_id) == null
+	):
+		_log_error("采集失败：metadata.instance_id 无效。")
+		return false
+	if _is_generated_instance_collected(GENERATED_ZHUYU_TYPE, instance_id):
+		_log("这株祝余已经采集。")
 		return false
 
 	var item_id_value: Variant = metadata.get("item_id", "")
@@ -1261,14 +1928,19 @@ func _on_zhuyu_interacted(actor_id: String, interactable_id: String, metadata: D
 		return false
 
 	_discover_zhuyu_appearance_and_type()
+	var was_initial_collection := current_step == DemoStep.COLLECT_ZHUYU
+	_set_generated_instance_collected(GENERATED_ZHUYU_TYPE, instance_id, true)
 	zhuyu_collected = true
-	zhuyu_pickup.visible = false
-	zhuyu_label.visible = false
+	_update_generated_zhuyu_visuals()
 	prompt_label.visible = false
-	current_step = DemoStep.EAT_ZHUYU
-	_log_ok("你采集了祝余。")
-	_log("祝余已采集，可食用以缓解饥饿。")
-	_append_history_event("采集祝余叶")
+	if was_initial_collection:
+		current_step = DemoStep.EAT_ZHUYU
+		_log_ok("你采集了祝余。")
+		_log("祝余已采集，可食用以缓解饥饿。")
+		_append_history_event("采集祝余叶")
+	else:
+		_log_ok("你又采集了一株祝余。")
+		_append_history_event("采集祝余叶（%s）" % instance_id)
 	_refresh_status()
 	_refresh_survival_status()
 	_update_objective_ui()
@@ -1277,9 +1949,6 @@ func _on_zhuyu_interacted(actor_id: String, interactable_id: String, metadata: D
 
 
 func _eat_zhuyu() -> bool:
-	if current_step != DemoStep.EAT_ZHUYU or zhuyu_consumed:
-		_log("祝余已经食用，无法重复食用。")
-		return false
 	if _get_raw_zhuyu_count() <= 0:
 		_log_error("食用祝余失败：背包中没有祝余。")
 		return false
@@ -1287,11 +1956,16 @@ func _eat_zhuyu() -> bool:
 		_log_error("食用祝余失败：无法移除背包物品。")
 		return false
 
+	var advances_main_flow := (
+		current_step == DemoStep.EAT_ZHUYU
+		and not zhuyu_consumed
+	)
 	zhuyu_consumed = true
 	demo_hunger = demo_hunger_max
 	zhuyu_satiety_remaining = ZHUYU_SATIETY_DURATION
 	hunger_warning_level = 0
-	current_step = DemoStep.ACTIVATE_STONE
+	if advances_main_flow:
+		current_step = DemoStep.ACTIVATE_STONE
 	_log_ok("你食用了祝余，饥饿感暂时消退。")
 	_unlock_zhuyu_knowledge(
 		ZHUYU_KNOWLEDGE_EFFECT,
@@ -1308,14 +1982,8 @@ func _eat_zhuyu() -> bool:
 
 
 func _cook_zhuyu() -> bool:
-	if current_step != DemoStep.EAT_ZHUYU or zhuyu_consumed:
-		_log("当前没有可烹饪的祝余。")
-		return false
 	if not _is_near_campfire():
 		_log("需要靠近篝火才能烹饪祝余。")
-		return false
-	if cooked_zhuyu_count > 0:
-		_log("熟祝余已经备好，无需重复烹饪。")
 		return false
 	if _get_raw_zhuyu_count() <= 0:
 		_log_error("烹饪祝余失败：背包中没有生祝余。")
@@ -1340,19 +2008,21 @@ func _cook_zhuyu() -> bool:
 
 
 func _eat_cooked_zhuyu() -> bool:
-	if current_step != DemoStep.EAT_ZHUYU or zhuyu_consumed:
-		_log("熟祝余已经食用，无法重复食用。")
-		return false
 	if cooked_zhuyu_count <= 0:
 		_log_error("食用熟祝余失败：没有熟祝余。")
 		return false
 
+	var advances_main_flow := (
+		current_step == DemoStep.EAT_ZHUYU
+		and not zhuyu_consumed
+	)
 	cooked_zhuyu_count -= 1
 	zhuyu_consumed = true
 	demo_hunger = demo_hunger_max
 	zhuyu_satiety_remaining = COOKED_ZHUYU_SATIETY_DURATION
 	hunger_warning_level = 0
-	current_step = DemoStep.ACTIVATE_STONE
+	if advances_main_flow:
+		current_step = DemoStep.ACTIVATE_STONE
 	_log_ok("你食用了熟祝余，温热的饱腹感延续更久。")
 	_unlock_zhuyu_knowledge(
 		ZHUYU_KNOWLEDGE_EFFECT,
@@ -1396,19 +2066,32 @@ func _on_shensheng_interacted(actor_id: String, interactable_id: String, metadat
 	if actor_id.is_empty():
 		_log_error("观察失败：actor_id 为空。")
 		return false
-	if interactable_id != SHENSHENG_INTERACTABLE_ID:
+	var mapped_instance_id := _generated_instance_id_from_interactable(
+		GENERATED_SHENSHENG_TYPE,
+		interactable_id
+	)
+	if mapped_instance_id.is_empty():
 		_log_error("观察失败：interactable_id 不匹配。")
 		return false
+	var instance_id := str(metadata.get("instance_id", mapped_instance_id))
+	if (
+		instance_id != mapped_instance_id
+		or _generated_instance_node(
+			GENERATED_SHENSHENG_TYPE,
+			instance_id
+		) == null
+	):
+		_log_error("观察失败：metadata.instance_id 无效。")
+		return false
+	if shensheng_discovered:
+		_log("这只狌狌已经记录在图鉴中。")
+		return true
 	if current_step != DemoStep.OBSERVE_SHENSHENG:
 		if not stone_activated:
 			_log("需要先激活山海石碑。")
 		else:
 			_log("狌狌不是当前目标。")
 		return false
-	if shensheng_discovered:
-		_log("狌狌已经被发现。")
-		return true
-
 	var creature_id_value: Variant = metadata.get("creature_id", "")
 	if not (creature_id_value is String) or creature_id_value.is_empty():
 		_log_error("观察失败：metadata.creature_id 无效。")
@@ -1421,8 +2104,7 @@ func _on_shensheng_interacted(actor_id: String, interactable_id: String, metadat
 
 	shensheng_discovered = true
 	current_step = DemoStep.COMPLETE
-	shensheng_creature.modulate.a = 0.45
-	shensheng_label.text = "狌狌（已发现）"
+	_update_generated_shensheng_visuals()
 	prompt_label.visible = false
 	_log_ok("观察狌狌成功")
 	_log("Demo 完成")
@@ -1445,6 +2127,12 @@ func _on_optional_creature_interacted(actor_id: String, interactable_id: String,
 
 func _on_optional_content_interacted(actor_id: String, interactable_id: String, metadata: Dictionary, expected_type: String) -> bool:
 	var config := _find_optional_config_by_interactable_id(interactable_id)
+	var migu_instance_id := _generated_instance_id_from_interactable(
+		GENERATED_MIGU_TYPE,
+		interactable_id
+	)
+	if config.is_empty() and not migu_instance_id.is_empty():
+		config = _find_optional_config_by_id(MIGU_BRANCH_ITEM_ID)
 	var error_prefix := str(config.get("error_prefix", "交互失败"))
 	if actor_id.is_empty():
 		_log_error("%s：actor_id 为空。" % error_prefix)
@@ -1455,7 +2143,29 @@ func _on_optional_content_interacted(actor_id: String, interactable_id: String, 
 	if current_step != DemoStep.COMPLETE:
 		_log(str(config.get("locked_log", "")))
 		return false
-	if _is_optional_done(config):
+	var is_generated_migu := (
+		expected_type == "collectible"
+		and str(config.get("id", "")) == MIGU_BRANCH_ITEM_ID
+		and not migu_instance_id.is_empty()
+	)
+	if is_generated_migu:
+		var saved_instance_id := str(
+			metadata.get("instance_id", migu_instance_id)
+		)
+		if (
+			saved_instance_id != migu_instance_id
+			or _generated_instance_node(GENERATED_MIGU_TYPE, saved_instance_id) == null
+		):
+			_log_error("%s：metadata.instance_id 无效。" % error_prefix)
+			return false
+		migu_instance_id = saved_instance_id
+		if _is_generated_instance_collected(
+			GENERATED_MIGU_TYPE,
+			migu_instance_id
+		):
+			_log(str(config.get("already_done_log", "")))
+			return true
+	elif _is_optional_done(config):
 		_log(str(config.get("already_done_log", "")))
 		return true
 
@@ -1487,9 +2197,19 @@ func _on_optional_content_interacted(actor_id: String, interactable_id: String, 
 		_log_error("未知 optional content 类型：%s。" % expected_type)
 		return false
 
+	if is_generated_migu:
+		_set_generated_instance_collected(
+			GENERATED_MIGU_TYPE,
+			migu_instance_id,
+			true
+		)
 	_set_optional_done(config, true)
 	recent_optional_completion_name = str(config.get("display_name", content_id))
-	if content_id == MIGU_BRANCH_ITEM_ID and not _equip_migu(true):
+	if (
+		content_id == MIGU_BRANCH_ITEM_ID
+		and not migu_equipped
+		and not _equip_migu(true)
+	):
 		_log_error("迷穀自动佩戴失败。")
 		return false
 	_update_optional_content_visuals()
@@ -1526,7 +2246,7 @@ func _unlock_migu_knowledge(slot: String, feedback: String) -> bool:
 		slot == MIGU_KNOWLEDGE_APPEARANCE
 		or slot == MIGU_KNOWLEDGE_TYPE
 	):
-		migu_branch_label.text = "迷穀"
+		_update_generated_migu_visuals()
 	_log(feedback)
 	_refresh_navigation_status()
 	_refresh_knowledge_codex()
@@ -1546,13 +2266,17 @@ func _reset_migu_knowledge_state() -> void:
 
 
 func _format_migu_prompt(config: Dictionary) -> String:
-	if _is_optional_done(config):
-		return "迷穀已采集并自动佩戴"
+	if _nearest_generated_instance_id(GENERATED_MIGU_TYPE).is_empty():
+		if _is_optional_done(config):
+			return "迷穀已采集并自动佩戴"
+		return str(config.get("prompt_locked", ""))
 	if (
 		_has_migu_knowledge(MIGU_KNOWLEDGE_APPEARANCE)
 		and _has_migu_knowledge(MIGU_KNOWLEDGE_TYPE)
 	):
 		return "按 E 采集迷穀"
+	if _is_optional_done(config):
+		return "迷穀已采集并自动佩戴"
 	return "按 E 采集陌生黑理发光之木"
 
 
@@ -1610,7 +2334,7 @@ func _unlock_zhuyu_knowledge(slot: String, feedback: String) -> bool:
 		slot == ZHUYU_KNOWLEDGE_APPEARANCE
 		or slot == ZHUYU_KNOWLEDGE_TYPE
 	):
-		zhuyu_label.text = "祝余"
+		_update_generated_zhuyu_visuals()
 	_log(feedback)
 	_refresh_survival_status()
 	_refresh_knowledge_codex()
@@ -1724,10 +2448,13 @@ func _build_demo_save_state() -> Dictionary:
 		return {}
 
 	return {
-		"version": 4,
+		"version": 5,
 		"owner_id": OWNER_ID,
 		"current_step": int(current_step),
 		"world": {
+			"generation_seed": generation_seed,
+			"generated_content": generated_content.duplicate(true),
+			"collected_instances": _build_collected_instance_save_state(),
 			"pickup_collected": zhuyu_collected,
 			"zhuyu_consumed": zhuyu_consumed,
 			"cooked_zhuyu_count": cooked_zhuyu_count,
@@ -1762,12 +2489,92 @@ func _build_demo_save_state() -> Dictionary:
 	}
 
 
+func _build_collected_instance_save_state() -> Dictionary:
+	var state := {}
+	for content_type in GENERATED_COLLECTIBLE_TYPES:
+		var ids: Array = []
+		var collected_value: Variant = collected_instance_ids.get(content_type, {})
+		if collected_value is Dictionary:
+			ids = collected_value.keys()
+			ids.sort()
+		state[content_type] = ids
+	return state
+
+
 func _build_optional_save_state() -> Dictionary:
 	var state := {}
 	for config in _all_optional_content():
 		var content_id := str(config.get("id", ""))
 		state[content_id] = _is_optional_done(config)
 	return state
+
+
+func _apply_generated_world_save_state(world_data: Dictionary) -> bool:
+	if (
+		not world_data.has("generation_seed")
+		or not world_data.has("generated_content")
+	):
+		return _initialize_default_generated_world()
+
+	var seed_value := _to_non_negative_int(world_data.get("generation_seed", -1))
+	var content_value: Variant = world_data.get("generated_content", {})
+	if seed_value < 0 or not (content_value is Dictionary):
+		return false
+	var content: Dictionary = content_value
+	var loaded_content := {}
+	for content_type in GENERATED_CONTENT_TYPES:
+		var count := _to_non_negative_int(content.get(content_type, -1))
+		if count < 0:
+			return false
+		loaded_content[content_type] = count
+
+	_clear_collected_instance_ids()
+	_configure_generated_world_layout(seed_value, loaded_content)
+
+	var collected_value: Variant = world_data.get("collected_instances", {})
+	if not (collected_value is Dictionary):
+		return false
+	var collected_data: Dictionary = collected_value
+	for content_type in GENERATED_COLLECTIBLE_TYPES:
+		var instance_ids: Variant = collected_data.get(content_type, [])
+		if not (instance_ids is Array):
+			return false
+		for instance_id_value in instance_ids:
+			if not (instance_id_value is String):
+				return false
+			var instance_id: String = instance_id_value
+			if _generated_instance_node(content_type, instance_id) == null:
+				return false
+			_set_generated_instance_collected(content_type, instance_id, true)
+	return true
+
+
+func _migrate_legacy_generated_instance_state() -> void:
+	if (
+		zhuyu_collected
+		and int(generated_content.get(GENERATED_ZHUYU_TYPE, 0)) > 0
+	):
+		_set_generated_instance_collected(
+			GENERATED_ZHUYU_TYPE,
+			_generated_instance_id(GENERATED_ZHUYU_TYPE, 0),
+			true
+		)
+	var migu_config := _find_optional_config_by_id(MIGU_BRANCH_ITEM_ID)
+	if (
+		not migu_config.is_empty()
+		and _is_optional_done(migu_config)
+		and int(generated_content.get(GENERATED_MIGU_TYPE, 0)) > 0
+	):
+		_set_generated_instance_collected(
+			GENERATED_MIGU_TYPE,
+			_generated_instance_id(GENERATED_MIGU_TYPE, 0),
+			true
+		)
+
+
+func _has_collected_generated_instance(content_type: String) -> bool:
+	var collected_value: Variant = collected_instance_ids.get(content_type, {})
+	return collected_value is Dictionary and not collected_value.is_empty()
 
 
 func _apply_survival_save_state(state: Dictionary) -> void:
@@ -1912,6 +2719,8 @@ func _apply_demo_save_state(state: Dictionary) -> bool:
 	)
 	if loaded_cooked_zhuyu_count < 0:
 		return false
+	if not _apply_generated_world_save_state(world_data):
+		return false
 
 	inventory_service.clear_inventory(OWNER_ID)
 	bestiary_service.clear_owner(OWNER_ID)
@@ -1942,6 +2751,25 @@ func _apply_demo_save_state(state: Dictionary) -> bool:
 		return false
 	_apply_optional_save_state(optional_data)
 	_apply_legacy_optional_save_state(world_data, optional_data)
+	if _step_has_collected_zhuyu(current_step):
+		zhuyu_collected = true
+	if _step_is_after_zhuyu_eaten(current_step):
+		zhuyu_consumed = true
+	if current_step == DemoStep.OBSERVE_SHENSHENG or current_step == DemoStep.COMPLETE:
+		stone_activated = true
+	if current_step == DemoStep.COMPLETE:
+		shensheng_discovered = true
+	if not world_data.has("collected_instances"):
+		_migrate_legacy_generated_instance_state()
+	if _has_collected_generated_instance(GENERATED_ZHUYU_TYPE):
+		zhuyu_collected = true
+	if _has_collected_generated_instance(GENERATED_MIGU_TYPE):
+		var generated_migu_config := _find_optional_config_by_id(
+			MIGU_BRANCH_ITEM_ID
+		)
+		if not generated_migu_config.is_empty():
+			_set_optional_done(generated_migu_config, true)
+
 	var migu_config := _find_optional_config_by_id(MIGU_BRANCH_ITEM_ID)
 	var has_collected_migu := (
 		not migu_config.is_empty()
@@ -1955,14 +2783,6 @@ func _apply_demo_save_state(state: Dictionary) -> bool:
 		migu_knowledge_state[MIGU_KNOWLEDGE_EFFECT] = true
 	elif migu_equipped:
 		migu_equipped = false
-	if _step_has_collected_zhuyu(current_step):
-		zhuyu_collected = true
-	if _step_is_after_zhuyu_eaten(current_step):
-		zhuyu_consumed = true
-	if current_step == DemoStep.OBSERVE_SHENSHENG or current_step == DemoStep.COMPLETE:
-		stone_activated = true
-	if current_step == DemoStep.COMPLETE:
-		shensheng_discovered = true
 
 	_restore_saved_player_position(state)
 	player_animation_state_machine.reset_to_idle()
@@ -2047,6 +2867,13 @@ func _reset_demo_state(history_message := "Demo 已重置") -> void:
 		inventory_service.clear_inventory(OWNER_ID)
 	if bestiary_service != null:
 		bestiary_service.clear_owner(OWNER_ID)
+	if not _initialize_default_generated_world():
+		_clear_collected_instance_ids()
+		_configure_generated_world_layout(0, {
+			GENERATED_ZHUYU_TYPE: 1,
+			GENERATED_MIGU_TYPE: 1,
+			GENERATED_SHENSHENG_TYPE: 1
+		})
 
 	player.position = PLAYER_START_POSITION
 	player_animation_state_machine.reset_to_idle()
@@ -2083,12 +2910,7 @@ func _reset_demo_state(history_message := "Demo 已重置") -> void:
 
 
 func _apply_world_visual_state() -> void:
-	zhuyu_pickup.visible = not zhuyu_collected
-	zhuyu_label.visible = not zhuyu_collected
-	if _has_zhuyu_knowledge(ZHUYU_KNOWLEDGE_APPEARANCE):
-		zhuyu_label.text = "祝余"
-	else:
-		zhuyu_label.text = "陌生青华草"
+	_update_generated_zhuyu_visuals()
 
 	if stone_activated:
 		guidance_stone.modulate.a = 0.55
@@ -2097,12 +2919,7 @@ func _apply_world_visual_state() -> void:
 		guidance_stone.modulate.a = 1.0
 		guidance_stone_label.text = "山海石碑"
 
-	if shensheng_discovered:
-		shensheng_creature.modulate.a = 0.45
-		shensheng_label.text = "狌狌（已发现）"
-	else:
-		shensheng_creature.modulate.a = 1.0
-		shensheng_label.text = "狌狌"
+	_update_generated_shensheng_visuals()
 
 	_update_optional_content_visuals()
 
@@ -2290,9 +3107,9 @@ func _verify_demo_data(data_registry: Variant) -> bool:
 
 
 func _is_near_zhuyu() -> bool:
-	if zhuyu_collected or zhuyu_pickup == null or not zhuyu_pickup.visible:
-		return false
-	return player.global_position.distance_to(zhuyu_pickup.global_position) <= interaction_distance
+	return not _nearest_generated_instance_id(
+		GENERATED_ZHUYU_TYPE
+	).is_empty()
 
 
 func _is_near_campfire() -> bool:
@@ -2308,9 +3125,10 @@ func _is_near_stone() -> bool:
 
 
 func _is_near_shensheng() -> bool:
-	if shensheng_creature == null or not shensheng_creature.visible:
-		return false
-	return player.global_position.distance_to(shensheng_creature.global_position) <= interaction_distance
+	return not _nearest_generated_instance_id(
+		GENERATED_SHENSHENG_TYPE,
+		false
+	).is_empty()
 
 
 func _all_optional_content() -> Array:
@@ -2342,11 +3160,10 @@ func _set_optional_done(config: Dictionary, done: bool) -> void:
 
 
 func _is_near_optional(config: Dictionary) -> bool:
-	if (
-		str(config.get("id", "")) == MIGU_BRANCH_ITEM_ID
-		and _is_optional_done(config)
-	):
-		return false
+	if str(config.get("id", "")) == MIGU_BRANCH_ITEM_ID:
+		return not _nearest_generated_instance_id(
+			GENERATED_MIGU_TYPE
+		).is_empty()
 	var node: Node2D = config.get("node", null) as Node2D
 	if node == null or not node.visible:
 		return false
@@ -2396,6 +3213,8 @@ func _update_optional_near_state_logs() -> void:
 func _update_optional_content_visuals() -> void:
 	for config in _all_optional_content():
 		var content_id := str(config.get("id", ""))
+		if content_id == MIGU_BRANCH_ITEM_ID:
+			continue
 		var node: Node2D = config.get("node", null) as Node2D
 		var label: Label = config.get("label", null) as Label
 		if node == null or label == null:
@@ -2419,21 +3238,28 @@ func _update_optional_content_visuals() -> void:
 		else:
 			node.modulate.a = _to_float_or_default(config.get("locked_alpha", 0.3), 0.3)
 
+	_update_generated_migu_visuals()
 	_update_optional_progress_journal()
 
 
 func _set_optional_content_alpha(alpha: float) -> void:
 	for config in _all_optional_content():
+		if str(config.get("id", "")) == MIGU_BRANCH_ITEM_ID:
+			continue
 		var node: Node2D = config.get("node", null) as Node2D
 		if node != null:
 			node.modulate.a = alpha
+	_set_generated_type_alpha(GENERATED_MIGU_TYPE, alpha)
 
 
 func _reset_optional_content_scale() -> void:
 	for config in _all_optional_content():
+		if str(config.get("id", "")) == MIGU_BRANCH_ITEM_ID:
+			continue
 		var node: Node2D = config.get("node", null) as Node2D
 		if node != null:
 			node.scale = Vector2.ONE
+	_set_generated_type_scale(GENERATED_MIGU_TYPE, Vector2.ONE)
 
 
 func _format_optional_display_names(separator: String) -> String:
@@ -2579,12 +3405,12 @@ func _update_objective_guidance() -> void:
 				zhuyu_pickup.modulate.a = 1.0
 				zhuyu_pickup.scale = Vector2(1.15, 1.15)
 			guidance_stone.modulate.a = 0.35
-			shensheng_creature.modulate.a = 0.35
+			_set_generated_type_alpha(GENERATED_SHENSHENG_TYPE, 0.35)
 			_set_optional_content_alpha(0.3)
 			target_hint_label.text = _format_target_hint("祝余", "按 E 采集", active_target)
 		DemoStep.EAT_ZHUYU:
 			guidance_stone.modulate.a = 0.35
-			shensheng_creature.modulate.a = 0.35
+			_set_generated_type_alpha(GENERATED_SHENSHENG_TYPE, 0.35)
 			_set_optional_content_alpha(0.3)
 			if cooked_zhuyu_count > 0:
 				target_hint_label.text = "目标提示：熟祝余已备好，按 E 食用"
@@ -2593,18 +3419,18 @@ func _update_objective_guidance() -> void:
 		DemoStep.ACTIVATE_STONE:
 			guidance_stone.modulate.a = 1.0
 			guidance_stone.scale = Vector2(1.15, 1.15)
-			shensheng_creature.modulate.a = 0.35
+			_set_generated_type_alpha(GENERATED_SHENSHENG_TYPE, 0.35)
 			_set_optional_content_alpha(0.3)
 			target_hint_label.text = _format_target_hint("山海石碑", "按 E 激活", active_target)
 		DemoStep.OBSERVE_SHENSHENG:
 			guidance_stone.modulate.a = 0.55
-			shensheng_creature.modulate.a = 1.0
+			_set_generated_type_alpha(GENERATED_SHENSHENG_TYPE, 1.0)
 			shensheng_creature.scale = Vector2(1.15, 1.15)
 			_set_optional_content_alpha(0.3)
 			target_hint_label.text = _format_target_hint("狌狌", "按 E 观察", active_target)
 		DemoStep.COMPLETE:
 			guidance_stone.modulate.a = 0.55
-			shensheng_creature.modulate.a = 0.45
+			_set_generated_type_alpha(GENERATED_SHENSHENG_TYPE, 0.45)
 			_update_optional_content_visuals()
 			if _is_optional_exploration_complete():
 				target_hint_label.text = "目标提示：所有 Demo 内容已完成"
@@ -2613,9 +3439,9 @@ func _update_objective_guidance() -> void:
 
 
 func _reset_guidance_visuals() -> void:
-	zhuyu_pickup.scale = Vector2.ONE
+	_set_generated_type_scale(GENERATED_ZHUYU_TYPE, Vector2.ONE)
 	guidance_stone.scale = Vector2.ONE
-	shensheng_creature.scale = Vector2.ONE
+	_set_generated_type_scale(GENERATED_SHENSHENG_TYPE, Vector2.ONE)
 	_reset_optional_content_scale()
 
 

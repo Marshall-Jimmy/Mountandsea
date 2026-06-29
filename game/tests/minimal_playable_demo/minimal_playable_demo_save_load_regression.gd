@@ -1,6 +1,7 @@
 extends SceneTree
 
 const DEMO_SCENE := preload("res://scenes/demo/minimal_playable_demo.tscn")
+const WorldGenerator := preload("res://scripts/world/world_generator.gd")
 
 const OWNER_ID := "player"
 const ITEM_ID := "zhuyu_leaf"
@@ -43,7 +44,15 @@ const SHENSHENG_IDLE_FPS_MAX := 5.0
 const SHENSHENG_FEET_BASELINE_Y := 470
 const SHENSHENG_EDGE_ALPHA_CUTOFF := 32
 const SHENSHENG_MAX_NORMALIZED_ALPHA_DELTA := 0.055
-const SHENSHENG_EXPECTED_POSITION := Vector2(650.0, 260.0)
+const DEFAULT_WORLD_GENERATION_SEED := 20260628
+const GENERATED_ZHUYU_TYPE := "zhuyu"
+const GENERATED_MIGU_TYPE := "migu"
+const GENERATED_SHENSHENG_TYPE := "shensheng"
+const GENERATED_CONTENT_TYPES := [
+	GENERATED_ZHUYU_TYPE,
+	GENERATED_MIGU_TYPE,
+	GENERATED_SHENSHENG_TYPE
+]
 const STEP_COLLECT_ZHUYU := 0
 const STEP_OBSERVE_SHENSHENG := 2
 const STEP_COMPLETE := 3
@@ -92,6 +101,8 @@ func _run_test() -> void:
 	_assert_true(demo.get("initialized") == true, "Demo must initialize services")
 	if player != null:
 		initial_position = player.position
+	_assert_world_generated_placement_and_multi_instance_state()
+	_assert_generated_interaction_routing()
 	_assert_player_animation_pipeline()
 	_assert_shensheng_idle_pipeline()
 	_assert_history_panel_visible(true)
@@ -102,6 +113,7 @@ func _run_test() -> void:
 	_assert_knowledge_codex_and_hud_layout()
 	_assert_zhuyu_hunger_knowledge_loop()
 	_assert_campfire_cooking_loop()
+	_assert_post_progress_zhuyu_cooking()
 	_assert_migu_navigation_knowledge_loop()
 	if failed:
 		return
@@ -227,6 +239,508 @@ func _run_test() -> void:
 
 	print("minimal_playable_demo save/load regression passed")
 	quit(0)
+
+
+func _assert_world_generated_placement_and_multi_instance_state() -> void:
+	demo.call("_reset_demo_state")
+	_assert_true(
+		demo.get("generation_seed") == DEFAULT_WORLD_GENERATION_SEED,
+		"demo should load world_map.json default seed"
+	)
+
+	var generator := WorldGenerator.new()
+	var generation_result: Dictionary = generator.generate_from_files(
+		DEFAULT_WORLD_GENERATION_SEED
+	)
+	_assert_true(
+		not generation_result.is_empty(),
+		"default world generation should succeed"
+	)
+	var expected_content_value: Variant = demo.call(
+		"_extract_generated_demo_content",
+		generation_result
+	)
+	_assert_true(
+		expected_content_value is Dictionary,
+		"demo should read generated resource and encounter counts"
+	)
+	if not (expected_content_value is Dictionary):
+		return
+	var expected_content: Dictionary = expected_content_value
+	var generated_content_value: Variant = demo.get("generated_content")
+	_assert_true(
+		generated_content_value is Dictionary,
+		"demo should expose generated content counts"
+	)
+	if not (generated_content_value is Dictionary):
+		return
+	var generated_content: Dictionary = generated_content_value
+	var campfire := demo.get_node_or_null("WorldRoot/Campfire") as Node2D
+	_assert_true(campfire != null, "generated placement test requires Campfire")
+	var interaction_distance := float(demo.get("interaction_distance"))
+
+	for content_type in GENERATED_CONTENT_TYPES:
+		var slots_value: Variant = demo.call(
+			"_placement_slots_for_type",
+			content_type
+		)
+		_assert_true(
+			slots_value is Array,
+			"%s placement slots should be available" % content_type
+		)
+		if not (slots_value is Array):
+			continue
+		var slots: Array = slots_value
+		for slot_value in slots:
+			var slot: Vector2 = slot_value
+			_assert_true(
+				slot.distance_to(initial_position) > interaction_distance,
+				"%s placement slot should not block player spawn" % content_type
+			)
+			if campfire != null:
+				_assert_true(
+					slot.distance_to(campfire.global_position) > interaction_distance,
+					"%s placement slot should not block Campfire" % content_type
+				)
+		var expected_count := mini(
+			int(expected_content.get(content_type, 0)),
+			slots.size()
+		)
+		_assert_true(
+			generated_content.get(content_type, -1) == expected_count,
+			"%s generated count should map to placement count" % content_type
+		)
+		var nodes := _generated_nodes_for_type(content_type)
+		_assert_true(
+			nodes.size() == expected_count,
+			"%s generated node count should match clamped count" % content_type
+		)
+		for index in range(expected_count):
+			var instance_id := "%s_%d" % [content_type, index]
+			var node := nodes.get(instance_id, null) as Node2D
+			_assert_true(
+				node != null,
+				"%s should use a stable generated instance id" % instance_id
+			)
+			if node != null:
+				_assert_true(
+					slots.has(node.position),
+					"%s should use a fixed placement slot" % instance_id
+				)
+
+	var first_layout := _generated_position_snapshot()
+	var initial_save_value: Variant = demo.call("_build_demo_save_state")
+	_assert_true(
+		initial_save_value is Dictionary,
+		"generated initial state should be serializable"
+	)
+	if initial_save_value is Dictionary:
+		var initial_world: Variant = initial_save_value.get("world", {})
+		_assert_true(
+			initial_world is Dictionary
+			and initial_world.get("generation_seed", -1)
+			== DEFAULT_WORLD_GENERATION_SEED,
+			"save should persist generation seed"
+		)
+		_assert_true(
+			initial_world is Dictionary
+			and initial_world.get("generated_content", {}) == generated_content,
+			"save should persist generated content"
+		)
+		_assert_true(
+			initial_world is Dictionary
+			and initial_world.get("collected_instances", {}) is Dictionary,
+			"save should persist collected instance ids"
+		)
+
+	demo.call("_reset_demo_state")
+	_assert_true(
+		_generated_position_snapshot() == first_layout,
+		"reset should regenerate the same default seed layout"
+	)
+	demo.call(
+		"_configure_generated_world_layout",
+		DEFAULT_WORLD_GENERATION_SEED + 1,
+		generated_content
+	)
+	_assert_true(
+		_generated_position_snapshot() != first_layout,
+		"a different seed should be able to select different fixed slots"
+	)
+
+	demo.call("_configure_generated_world_layout", DEFAULT_WORLD_GENERATION_SEED, {
+		GENERATED_ZHUYU_TYPE: 0,
+		GENERATED_MIGU_TYPE: 0,
+		GENERATED_SHENSHENG_TYPE: 0
+	})
+	for content_type in GENERATED_CONTENT_TYPES:
+		_assert_true(
+			_generated_nodes_for_type(content_type).is_empty(),
+			"zero generated %s count should spawn no instances" % content_type
+		)
+
+	demo.call("_configure_generated_world_layout", DEFAULT_WORLD_GENERATION_SEED, {
+		GENERATED_ZHUYU_TYPE: 99,
+		GENERATED_MIGU_TYPE: 99,
+		GENERATED_SHENSHENG_TYPE: 99
+	})
+	var clamped_content: Dictionary = demo.get("generated_content")
+	_assert_true(
+		clamped_content.get(GENERATED_ZHUYU_TYPE, -1) == 5,
+		"zhuyu count should clamp to five placement slots"
+	)
+	_assert_true(
+		clamped_content.get(GENERATED_MIGU_TYPE, -1) == 2,
+		"migu count should clamp to two placement slots"
+	)
+	_assert_true(
+		clamped_content.get(GENERATED_SHENSHENG_TYPE, -1) == 3,
+		"shensheng count should clamp to three placement slots"
+	)
+	_assert_true(
+		_generated_nodes_for_type(GENERATED_ZHUYU_TYPE).size() == 5,
+		"clamped zhuyu count should control spawned nodes"
+	)
+	_assert_true(
+		_generated_nodes_for_type(GENERATED_MIGU_TYPE).size() == 2,
+		"clamped migu count should control spawned nodes"
+	)
+	_assert_true(
+		_generated_nodes_for_type(GENERATED_SHENSHENG_TYPE).size() == 3,
+		"clamped shensheng count should control spawned nodes"
+	)
+
+	demo.call("_reset_demo_state")
+	var default_zhuyu_count := int(
+		(demo.get("generated_content") as Dictionary).get(
+			GENERATED_ZHUYU_TYPE,
+			0
+		)
+	)
+	_assert_true(
+		default_zhuyu_count >= 2,
+		"default world rules should provide at least two zhuyu instances"
+	)
+	var first_zhuyu_result: Variant = demo.call(
+		"_on_zhuyu_interacted",
+		OWNER_ID,
+		ZHUYU_INTERACTABLE_ID,
+		{
+			"item_id": ITEM_ID,
+			"count": 1,
+			"instance_id": "zhuyu_0"
+		}
+	)
+	var second_zhuyu_result: Variant = demo.call(
+		"_on_zhuyu_interacted",
+		OWNER_ID,
+		"%s_1" % ZHUYU_INTERACTABLE_ID,
+		{
+			"item_id": ITEM_ID,
+			"count": 1,
+			"instance_id": "zhuyu_1"
+		}
+	)
+	_assert_true(first_zhuyu_result == true, "zhuyu_0 should collect once")
+	_assert_true(second_zhuyu_result == true, "zhuyu_1 should collect independently")
+	_assert_inventory_count(2)
+	_assert_true(
+		demo.call(
+			"_is_generated_instance_collected",
+			GENERATED_ZHUYU_TYPE,
+			"zhuyu_0"
+		) == true,
+		"zhuyu_0 should have independent collected state"
+	)
+	_assert_true(
+		demo.call(
+			"_is_generated_instance_collected",
+			GENERATED_ZHUYU_TYPE,
+			"zhuyu_1"
+		) == true,
+		"zhuyu_1 should have independent collected state"
+	)
+	var repeated_zhuyu_result: Variant = demo.call(
+		"_on_zhuyu_interacted",
+		OWNER_ID,
+		ZHUYU_INTERACTABLE_ID,
+		{
+			"item_id": ITEM_ID,
+			"count": 1,
+			"instance_id": "zhuyu_0"
+		}
+	)
+	_assert_true(
+		repeated_zhuyu_result == false,
+		"a collected zhuyu instance should not collect twice"
+	)
+	_assert_inventory_count(2)
+
+	var zhuyu_multi_save: Dictionary = demo.call("_build_demo_save_state")
+	demo.call("_reset_demo_state")
+	_assert_true(
+		demo.call("_apply_demo_save_state", zhuyu_multi_save) == true,
+		"multi-zhuyu state should load"
+	)
+	_assert_inventory_count(2)
+	_assert_true(
+		not (_generated_nodes_for_type(
+			GENERATED_ZHUYU_TYPE
+		).get("zhuyu_0") as Node2D).visible,
+		"loaded zhuyu_0 should stay hidden"
+	)
+	_assert_true(
+		not (_generated_nodes_for_type(
+			GENERATED_ZHUYU_TYPE
+		).get("zhuyu_1") as Node2D).visible,
+		"loaded zhuyu_1 should stay hidden"
+	)
+
+	_force_state_complete()
+	demo.call("_on_close_completion_pressed")
+	var multi_content: Dictionary = (
+		demo.get("generated_content") as Dictionary
+	).duplicate(true)
+	multi_content[GENERATED_MIGU_TYPE] = 2
+	multi_content[GENERATED_SHENSHENG_TYPE] = 3
+	demo.call(
+		"_configure_generated_world_layout",
+		demo.get("generation_seed"),
+		multi_content
+	)
+	var first_migu_result: Variant = demo.call(
+		"_on_optional_collectible_interacted",
+		OWNER_ID,
+		MIGU_BRANCH_INTERACTABLE_ID,
+		{
+			"item_id": MIGU_BRANCH_ITEM_ID,
+			"count": 1,
+			"instance_id": "migu_0"
+		}
+	)
+	var second_migu_result: Variant = demo.call(
+		"_on_optional_collectible_interacted",
+		OWNER_ID,
+		"%s_1" % MIGU_BRANCH_INTERACTABLE_ID,
+		{
+			"item_id": MIGU_BRANCH_ITEM_ID,
+			"count": 1,
+			"instance_id": "migu_1"
+		}
+	)
+	_assert_true(first_migu_result == true, "first migu should collect")
+	_assert_true(second_migu_result == true, "second migu should collect independently")
+	_assert_inventory_item_count(MIGU_BRANCH_ITEM_ID, 2)
+	_assert_true(demo.get("migu_equipped") == true, "first migu should auto-equip")
+	_assert_migu_knowledge(MIGU_KNOWLEDGE_EFFECT, true)
+	var repeated_migu_result: Variant = demo.call(
+		"_on_optional_collectible_interacted",
+		OWNER_ID,
+		MIGU_BRANCH_INTERACTABLE_ID,
+		{
+			"item_id": MIGU_BRANCH_ITEM_ID,
+			"count": 1,
+			"instance_id": "migu_0"
+		}
+	)
+	_assert_true(repeated_migu_result == true, "repeated migu collection should be harmless")
+	_assert_inventory_item_count(MIGU_BRANCH_ITEM_ID, 2)
+
+	var shensheng_nodes := _generated_nodes_for_type(
+		GENERATED_SHENSHENG_TYPE
+	)
+	_assert_true(
+		shensheng_nodes.size() == 3,
+		"generated shensheng count should create three visual instances"
+	)
+	for index in range(3):
+		var shensheng_node := shensheng_nodes.get(
+			"shensheng_%d" % index,
+			null
+		) as Node2D
+		_assert_true(
+			shensheng_node != null and shensheng_node.visible,
+			"generated shensheng_%d should be visible" % index
+		)
+		_assert_true(
+			shensheng_node != null
+			and shensheng_node.get_node_or_null("ShenshengSprite") is AnimatedSprite2D,
+			"generated shensheng_%d should reuse the idle sprite setup" % index
+		)
+		var generated_sprite: AnimatedSprite2D
+		if shensheng_node != null:
+			generated_sprite = shensheng_node.get_node_or_null(
+				"ShenshengSprite"
+			) as AnimatedSprite2D
+		_assert_true(
+			generated_sprite != null
+			and generated_sprite.animation == &"idle"
+			and generated_sprite.is_playing(),
+			"generated shensheng_%d should keep the idle animation playing" % index
+		)
+	var interaction_service_value: Variant = demo.get("interaction_service")
+	for index in range(3):
+		var shensheng_interactable_id: Variant = demo.call(
+			"_generated_interactable_id",
+			GENERATED_SHENSHENG_TYPE,
+			index
+		)
+		_assert_true(
+			interaction_service_value != null
+			and interaction_service_value.call(
+				"has_interactable",
+				shensheng_interactable_id
+			),
+			"generated shensheng_%d should be interactable" % index
+		)
+
+	var migu_multi_save: Dictionary = demo.call("_build_demo_save_state")
+	demo.call("_reset_demo_state")
+	_assert_true(
+		demo.call("_apply_demo_save_state", migu_multi_save) == true,
+		"multi-migu generated state should load"
+	)
+	_assert_inventory_item_count(MIGU_BRANCH_ITEM_ID, 2)
+	_assert_true(
+		not (_generated_nodes_for_type(
+			GENERATED_MIGU_TYPE
+		).get("migu_0") as Node2D).visible,
+		"loaded migu_0 should stay hidden"
+	)
+	_assert_true(
+		not (_generated_nodes_for_type(
+			GENERATED_MIGU_TYPE
+		).get("migu_1") as Node2D).visible,
+		"loaded migu_1 should stay hidden"
+	)
+
+	demo.call("_reset_demo_state", "Demo 开始：采集祝余叶")
+
+
+func _generated_nodes_for_type(content_type: String) -> Dictionary:
+	var all_nodes: Variant = demo.get("generated_instance_nodes")
+	_assert_true(
+		all_nodes is Dictionary,
+		"generated_instance_nodes should be a Dictionary"
+	)
+	if not (all_nodes is Dictionary):
+		return {}
+	var nodes: Variant = all_nodes.get(content_type, {})
+	_assert_true(
+		nodes is Dictionary,
+		"%s generated nodes should be a Dictionary" % content_type
+	)
+	return nodes if nodes is Dictionary else {}
+
+
+func _generated_position_snapshot() -> Dictionary:
+	var snapshot := {}
+	for content_type in GENERATED_CONTENT_TYPES:
+		var positions := {}
+		for instance_id in _generated_nodes_for_type(content_type):
+			var node := _generated_nodes_for_type(content_type).get(
+				instance_id,
+				null
+			) as Node2D
+			if node != null:
+				positions[instance_id] = node.position
+		snapshot[content_type] = positions
+	return snapshot
+
+
+func _assert_generated_interaction_routing() -> void:
+	_assert_true(
+		demo.call("_generated_instance_index", "zhuyu_0") == 0,
+		"generated instance index should parse numeric suffixes"
+	)
+	_assert_true(
+		demo.call("_generated_instance_index", "migu_1") == 1,
+		"generated instance index should parse later slots"
+	)
+	_assert_true(
+		demo.call("_generated_instance_index", "zhuyu_invalid") == -1,
+		"generated instance index should reject non-numeric suffixes"
+	)
+
+	demo.call("_reset_demo_state")
+	var zhuyu_node := _generated_nodes_for_type(
+		GENERATED_ZHUYU_TYPE
+	).get("zhuyu_0", null) as Node2D
+	_assert_true(zhuyu_node != null, "real interaction route requires zhuyu_0")
+	if zhuyu_node != null:
+		player.position = zhuyu_node.global_position
+		demo.call("_update_prompt")
+		_assert_prompt_contains("采集祝余")
+		demo.call("_try_interact")
+		_assert_true(
+			demo.call(
+				"_is_generated_instance_collected",
+				GENERATED_ZHUYU_TYPE,
+				"zhuyu_0"
+			) == true,
+			"_try_interact should route to the nearest generated zhuyu"
+		)
+		_assert_inventory_count(1)
+
+	_force_state_after_stone_activation()
+	var second_shensheng := _generated_nodes_for_type(
+		GENERATED_SHENSHENG_TYPE
+	).get("shensheng_1", null) as Node2D
+	_assert_true(
+		second_shensheng != null,
+		"real interaction route requires shensheng_1"
+	)
+	if second_shensheng != null:
+		player.position = second_shensheng.global_position
+		demo.call("_update_prompt")
+		_assert_prompt_contains("观察狌狌")
+		demo.call("_try_interact")
+		_assert_true(
+			demo.get("shensheng_discovered") == true
+			and demo.get("current_step") == STEP_COMPLETE,
+			"_try_interact should allow shensheng_1 to complete observation"
+		)
+	else:
+		_force_state_complete()
+	demo.call("_on_close_completion_pressed")
+	var third_shensheng := _generated_nodes_for_type(
+		GENERATED_SHENSHENG_TYPE
+	).get("shensheng_2", null) as Node2D
+	_assert_true(
+		third_shensheng != null,
+		"real interaction route requires shensheng_2"
+	)
+	if third_shensheng != null:
+		player.position = third_shensheng.global_position
+		demo.call("_update_prompt")
+		_assert_prompt_contains("已记录")
+		demo.call("_try_interact")
+		_assert_log_contains("已经记录在图鉴中")
+
+	var migu_node := _generated_nodes_for_type(
+		GENERATED_MIGU_TYPE
+	).get("migu_0", null) as Node2D
+	_assert_true(migu_node != null, "real interaction route requires migu_0")
+	if migu_node != null:
+		player.position = migu_node.global_position
+		demo.call("_update_prompt")
+		_assert_prompt_contains("采集迷穀")
+		demo.call("_try_interact")
+		_assert_true(
+			demo.call(
+				"_is_generated_instance_collected",
+				GENERATED_MIGU_TYPE,
+				"migu_0"
+			) == true,
+			"_try_interact should route to the nearest generated migu"
+		)
+		_assert_inventory_item_count(MIGU_BRANCH_ITEM_ID, 1)
+		_assert_true(
+			demo.get("migu_equipped") == true,
+			"real generated migu interaction should auto-equip"
+		)
+
+	demo.call("_reset_demo_state", "Demo 开始：采集祝余叶")
 
 
 func _assert_knowledge_codex_and_hud_layout() -> void:
@@ -704,7 +1218,7 @@ func _assert_campfire_cooking_loop() -> void:
 	if not (cooked_state_value is Dictionary):
 		return
 	var cooked_state: Dictionary = cooked_state_value
-	_assert_true(cooked_state.get("version", 0) == 4, "cooking save should use version 4")
+	_assert_true(cooked_state.get("version", 0) == 5, "cooking save should use version 5")
 	var cooked_world: Variant = cooked_state.get("world", {})
 	var cooked_inventory: Variant = cooked_state.get("inventory", {})
 	var cooked_knowledge: Variant = cooked_state.get("knowledge", {})
@@ -797,6 +1311,77 @@ func _assert_campfire_cooking_loop() -> void:
 	_assert_zhuyu_knowledge(ZHUYU_KNOWLEDGE_COOKING, false)
 
 
+func _assert_post_progress_zhuyu_cooking() -> void:
+	_force_state_complete()
+	demo.call("_on_close_completion_pressed")
+	var extra_zhuyu := _generated_nodes_for_type(
+		GENERATED_ZHUYU_TYPE
+	).get("zhuyu_1", null) as Node2D
+	var campfire := demo.get_node_or_null("WorldRoot/Campfire") as Node2D
+	_assert_true(
+		extra_zhuyu != null,
+		"post-progress cooking requires zhuyu_1"
+	)
+	_assert_true(campfire != null, "post-progress cooking requires Campfire")
+	if extra_zhuyu == null or campfire == null:
+		demo.call("_reset_demo_state")
+		return
+
+	player.position = extra_zhuyu.global_position
+	demo.call("_update_prompt")
+	_assert_prompt_contains("采集祝余")
+	demo.call("_try_interact")
+	_assert_inventory_count(1)
+	_assert_true(
+		demo.get("current_step") == STEP_COMPLETE,
+		"collecting later zhuyu should not rewind the completed main flow"
+	)
+
+	player.position = campfire.global_position
+	demo.call("_update_prompt")
+	_assert_prompt_contains("按 E 烹饪祝余")
+	demo.call("_try_interact")
+	_assert_inventory_count(0)
+	_assert_true(
+		demo.get("cooked_zhuyu_count") == 1,
+		"later-collected zhuyu should cook after main flow completion"
+	)
+	_assert_true(
+		demo.get("current_step") == STEP_COMPLETE,
+		"later cooking should preserve completed main flow"
+	)
+
+	var cooked_complete_state: Dictionary = demo.call("_build_demo_save_state")
+	demo.call("_reset_demo_state")
+	_assert_true(
+		demo.call("_apply_demo_save_state", cooked_complete_state) == true,
+		"post-progress cooked zhuyu should survive save/load"
+	)
+	_assert_true(
+		demo.get("cooked_zhuyu_count") == 1,
+		"load should restore post-progress cooked zhuyu"
+	)
+	player.position = campfire.global_position
+	demo.call("_update_prompt")
+	_assert_prompt_contains("按 E 食用熟祝余")
+	demo.call("_try_interact")
+	_assert_true(
+		demo.get("cooked_zhuyu_count") == 0,
+		"post-progress cooked zhuyu should remain consumable"
+	)
+	_assert_true(
+		demo.get("current_step") == STEP_COMPLETE,
+		"repeat cooked zhuyu consumption should not replay main progression"
+	)
+	_assert_float_near(
+		float(demo.get("zhuyu_satiety_remaining")),
+		COOKED_ZHUYU_SATIETY_DURATION,
+		"post-progress cooked zhuyu should refresh long satiety"
+	)
+
+	demo.call("_reset_demo_state")
+
+
 func _assert_migu_navigation_knowledge_loop() -> void:
 	demo.call("_reset_demo_state")
 	var origin: Vector2 = demo.get("demo_origin_position")
@@ -884,8 +1469,8 @@ func _assert_migu_navigation_knowledge_loop() -> void:
 	_assert_migu_knowledge(MIGU_KNOWLEDGE_EFFECT, true)
 	_assert_codex_contains("佩之不迷")
 	_assert_true(
-		migu_label != null and migu_label.text.contains("已佩戴"),
-		"collected migu should immediately show equipped state"
+		migu_label != null and not migu_label.visible,
+		"collected migu label should hide with its collected instance"
 	)
 	_assert_log_contains("已佩于身侧")
 	_assert_log_contains("佩之不迷")
@@ -1176,7 +1761,10 @@ func _assert_optional_state_complete() -> void:
 	var target_hint_label := demo.get_node_or_null("CanvasLayer/TargetHintLabel")
 	var completion_summary_label := demo.get_node_or_null("CanvasLayer/CompletionPanel/CompletionSummaryLabel")
 
-	_assert_true(migu_label != null and migu_label.text.contains("已佩戴"), "MiguBranchLabel should show auto-equipped state")
+	_assert_true(
+		migu_label != null and not migu_label.visible,
+		"MiguBranchLabel should stay hidden after its generated instance is collected"
+	)
 	_assert_true(basic_ore_label != null and basic_ore_label.text.contains("已采集"), "BasicOreLabel should show collected state")
 	_assert_true(lushu_label != null and lushu_label.text.contains("已发现"), "LushuLabel should show discovered state")
 	_assert_true(generic_beast_label != null and generic_beast_label.text.contains("已发现"), "GenericBeastLabel should show discovered state")
@@ -1241,6 +1829,26 @@ func _assert_legacy_optional_save_compatibility() -> void:
 	var legacy_result: Variant = demo.call("_apply_demo_save_state", legacy_state)
 	_assert_true(legacy_result == true, "legacy optional save state should load")
 	_assert_vec2_near(player.position, legacy_position, "legacy optional save should restore player position")
+	_assert_true(
+		demo.get("generation_seed") == DEFAULT_WORLD_GENERATION_SEED,
+		"legacy save should default to world_map.json generation seed"
+	)
+	_assert_true(
+		demo.call(
+			"_is_generated_instance_collected",
+			GENERATED_ZHUYU_TYPE,
+			"zhuyu_0"
+		) == true,
+		"legacy pickup_collected should migrate to zhuyu_0"
+	)
+	_assert_true(
+		demo.call(
+			"_is_generated_instance_collected",
+			GENERATED_MIGU_TYPE,
+			"migu_0"
+		) == true,
+		"legacy migu_collected should migrate to migu_0"
+	)
 	_assert_true(demo.get("zhuyu_consumed") == true, "legacy complete save should infer consumed zhuyu")
 	_assert_float_near(
 		float(demo.get("demo_hunger")),
@@ -1322,8 +1930,16 @@ func _assert_shensheng_idle_pipeline() -> void:
 		return
 
 	_assert_true(
-		shensheng.position == SHENSHENG_EXPECTED_POSITION,
-		"Shensheng interaction position must remain unchanged"
+		shensheng.get_meta("generated_instance_id", "") == "shensheng_0",
+		"primary Shensheng interaction should keep stable instance id shensheng_0"
+	)
+	var shensheng_slots: Variant = demo.call(
+		"_placement_slots_for_type",
+		GENERATED_SHENSHENG_TYPE
+	)
+	_assert_true(
+		shensheng_slots is Array and shensheng_slots.has(shensheng.position),
+		"primary Shensheng interaction should use a fixed generated placement slot"
 	)
 	_assert_true(
 		shensheng.color.a <= 0.05,
